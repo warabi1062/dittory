@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   CliValidationError,
@@ -10,8 +9,8 @@ import {
 } from "./parseCliOptions";
 
 describe("parseCliOptions", () => {
-  describe("デフォルト値", () => {
-    it("引数なしの場合はデフォルト値を返すこと", () => {
+  describe("引数なし", () => {
+    it("引数なしの場合は showHelp のみ設定されること", () => {
       // Arrange
       const args: string[] = [];
 
@@ -19,9 +18,10 @@ describe("parseCliOptions", () => {
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.targetDir).toBe(path.join(process.cwd(), "src"));
-      expect(result.minUsages).toBe(2);
-      expect(result.target).toBe("all");
+      expect(result.targetDir).toBeUndefined();
+      expect(result.minUsages).toBeUndefined();
+      expect(result.target).toBeUndefined();
+      expect(result.output).toBeUndefined();
       expect(result.tsconfig).toBeUndefined();
       expect(result.showHelp).toBe(false);
     });
@@ -166,7 +166,7 @@ describe("parseCliOptions", () => {
       );
     });
 
-    it("デフォルト値はsimpleであること", () => {
+    it("指定しない場合はundefinedであること", () => {
       // Arrange
       const args: string[] = [];
 
@@ -174,7 +174,7 @@ describe("parseCliOptions", () => {
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.output).toBe("simple");
+      expect(result.output).toBeUndefined();
     });
   });
 
@@ -340,7 +340,7 @@ describe("validateTsConfig", () => {
     // Act & Assert
     expect(() => validateTsConfig(nonExistentPath)).toThrow(CliValidationError);
     expect(() => validateTsConfig(nonExistentPath)).toThrow(
-      `tsconfig.json not found: ${nonExistentPath}`,
+      `tsconfig not found: ${nonExistentPath}`,
     );
   });
 });

@@ -2,11 +2,13 @@
 import path from "node:path";
 import { analyzeFunctionsCore } from "@/analyzeFunctions";
 import { analyzePropsCore } from "@/analyzeProps";
+import { loadConfig } from "@/cli/loadConfig";
 import {
-  type CliOptions,
   CliValidationError,
+  DEFAULT_OPTIONS,
   getHelpMessage,
   parseCliOptions,
+  type ResolvedOptions,
   validateTargetDir,
   validateTsConfig,
 } from "@/cli/parseCliOptions";
@@ -22,11 +24,11 @@ function exitWithError(message: string): never {
   process.exit(1);
 }
 
-function main(): void {
-  let options: CliOptions;
-
+async function main(): Promise<void> {
+  // CLI オプションをパース
+  let cliOptions: ReturnType<typeof parseCliOptions>;
   try {
-    options = parseCliOptions(process.argv.slice(2));
+    cliOptions = parseCliOptions(process.argv.slice(2));
   } catch (error) {
     if (error instanceof CliValidationError) {
       exitWithError(error.message);
@@ -34,12 +36,36 @@ function main(): void {
     throw error;
   }
 
-  const { targetDir, minUsages, target, output, tsconfig, showHelp } = options;
-
-  if (showHelp) {
+  if (cliOptions.showHelp) {
     console.log(getHelpMessage());
     process.exit(0);
   }
+
+  // コンフィグファイルを読み込む
+  let fileConfig: Awaited<ReturnType<typeof loadConfig>>;
+  try {
+    fileConfig = await loadConfig();
+  } catch (error) {
+    if (error instanceof Error) {
+      exitWithError(error.message);
+    }
+    throw error;
+  }
+
+  // オプションをマージ: CLI > コンフィグ > デフォルト
+  const options: ResolvedOptions = {
+    targetDir: path.resolve(
+      cliOptions.targetDir ?? fileConfig.targetDir ?? DEFAULT_OPTIONS.targetDir,
+    ),
+    minUsages:
+      cliOptions.minUsages ?? fileConfig.minUsages ?? DEFAULT_OPTIONS.minUsages,
+    target: cliOptions.target ?? fileConfig.target ?? DEFAULT_OPTIONS.target,
+    output: cliOptions.output ?? fileConfig.output ?? DEFAULT_OPTIONS.output,
+    tsconfig:
+      cliOptions.tsconfig ?? fileConfig.tsconfig ?? DEFAULT_OPTIONS.tsconfig,
+  };
+
+  const { targetDir, minUsages, target, output, tsconfig } = options;
 
   // 対象ディレクトリの存在を検証
   try {
@@ -52,9 +78,8 @@ function main(): void {
   }
 
   // tsconfig.json の存在を検証
-  const tsConfigPath = tsconfig ?? path.join(process.cwd(), "tsconfig.json");
   try {
-    validateTsConfig(tsConfigPath);
+    validateTsConfig(tsconfig);
   } catch (error) {
     if (error instanceof CliValidationError) {
       exitWithError(error.message);
@@ -69,7 +94,7 @@ function main(): void {
   }
 
   const sourceFilesToAnalyze = createFilteredSourceFiles(targetDir, {
-    tsConfigFilePath: tsConfigPath,
+    tsConfigFilePath: tsconfig,
   });
 
   // 各解析結果を収集
@@ -98,4 +123,7 @@ function main(): void {
   printAnalysisResult(result, output);
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

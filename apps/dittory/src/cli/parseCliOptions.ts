@@ -1,17 +1,39 @@
 import fs from "node:fs";
-import path from "node:path";
 
 export type AnalyzeMode = "all" | "components" | "functions";
 export type OutputMode = "simple" | "verbose";
 
-export interface CliOptions {
+/**
+ * CLI で明示的に指定されたオプション（デフォルト値なし）
+ */
+export interface RawCliOptions {
+  targetDir?: string;
+  minUsages?: number;
+  target?: AnalyzeMode;
+  output?: OutputMode;
+  tsconfig?: string;
+  showHelp: boolean;
+}
+
+/**
+ * 解決済みのオプション（デフォルト値適用後）
+ */
+export interface ResolvedOptions {
   targetDir: string;
   minUsages: number;
   target: AnalyzeMode;
   output: OutputMode;
-  tsconfig: string | undefined;
-  showHelp: boolean;
+  tsconfig: string;
 }
+
+/** デフォルトのオプション値 */
+export const DEFAULT_OPTIONS: ResolvedOptions = {
+  targetDir: "./src",
+  minUsages: 2,
+  target: "all",
+  output: "simple",
+  tsconfig: "./tsconfig.json",
+};
 
 export class CliValidationError extends Error {
   constructor(message: string) {
@@ -40,19 +62,16 @@ const VALID_OPTIONS: readonly string[] = [
 /**
  * CLIオプションをパースする
  *
+ * 明示的に指定されたオプションのみを返す（デフォルト値は含まない）
+ *
  * @throws {CliValidationError} オプションが無効な場合
  */
-export function parseCliOptions(args: string[]): CliOptions {
-  let targetDir = path.join(process.cwd(), "src");
-  let minUsages = 2;
-  let target: AnalyzeMode = "all";
-  let output: OutputMode = "simple";
-  let tsconfig: string | undefined;
-  let showHelp = false;
+export function parseCliOptions(args: string[]): RawCliOptions {
+  const result: RawCliOptions = { showHelp: false };
 
   for (const arg of args) {
     if (arg === "--help") {
-      showHelp = true;
+      result.showHelp = true;
       continue;
     }
 
@@ -69,7 +88,7 @@ export function parseCliOptions(args: string[]): CliOptions {
         throw new CliValidationError(`--min must be at least 1: ${value}`);
       }
 
-      minUsages = value;
+      result.minUsages = value;
     } else if (arg.startsWith("--target=")) {
       const value = arg.slice(9);
 
@@ -81,7 +100,7 @@ export function parseCliOptions(args: string[]): CliOptions {
         );
       }
 
-      target = value as AnalyzeMode;
+      result.target = value as AnalyzeMode;
     } else if (arg.startsWith("--output=")) {
       const value = arg.slice(9);
 
@@ -93,7 +112,7 @@ export function parseCliOptions(args: string[]): CliOptions {
         );
       }
 
-      output = value as OutputMode;
+      result.output = value as OutputMode;
     } else if (arg.startsWith("--tsconfig=")) {
       const value = arg.slice(11);
 
@@ -103,7 +122,7 @@ export function parseCliOptions(args: string[]): CliOptions {
         );
       }
 
-      tsconfig = value;
+      result.tsconfig = value;
     } else if (arg.startsWith("--")) {
       const optionName = arg.split("=")[0];
 
@@ -111,11 +130,11 @@ export function parseCliOptions(args: string[]): CliOptions {
         throw new CliValidationError(`Unknown option: ${optionName}`);
       }
     } else {
-      targetDir = arg;
+      result.targetDir = arg;
     }
   }
 
-  return { targetDir, minUsages, target, output, tsconfig, showHelp };
+  return result;
 }
 
 /**

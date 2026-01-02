@@ -108,6 +108,47 @@ Found 2 function(s) with constant arguments out of 24 function(s).
 | `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |
 | `--help` | Show help message | — |
 
+## Configuration File
+
+You can create a configuration file to set default options. dittory looks for config files in the following order:
+
+1. `dittory.config.js` or `dittory.config.mjs`
+2. `dittory.config.json`
+
+### JavaScript
+
+```js
+// dittory.config.js
+export default {
+  minUsages: 3,
+  target: "components",
+  output: "verbose",
+  tsconfig: "./tsconfig.app.json",
+  targetDir: "./src",
+};
+```
+
+### JSON
+
+```json
+// dittory.config.json
+{
+  "minUsages": 3,
+  "target": "components",
+  "output": "verbose",
+  "tsconfig": "./tsconfig.app.json",
+  "targetDir": "./src"
+}
+```
+
+### Priority
+
+CLI options take precedence over config file settings:
+
+```
+CLI options > Config file > Default values
+```
+
 ## Disabling Detection
 
 You can exclude specific usages from detection using comments:
