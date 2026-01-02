@@ -1,72 +1,89 @@
 import path from "node:path";
+import type { OutputMode } from "@/cli/parseCliOptions";
 import type { AnalysisResult, Constant, Exported } from "@/types";
 
-/**
- * exportされたコンポーネントの一覧を出力
- */
-export function printExportedComponents(exported: Exported[]): void {
-  const lines = [
-    "1. exportされたコンポーネントを収集中...",
-    `   → ${exported.length}個のコンポーネントを検出`,
-    ...exported.map(
-      (comp) =>
-        `      - ${comp.name} (${path.relative(process.cwd(), comp.sourceFilePath)})`,
-    ),
-    "",
-  ];
-  console.log(lines.join("\n"));
+function bold(text: string): string {
+  return `\x1b[1m${text}\x1b[0m`;
+}
+
+function green(text: string): string {
+  return `\x1b[32m${text}\x1b[0m`;
 }
 
 /**
- * 常に同じ値が渡されているpropsを出力
+ * 値を表示用にフォーマットする
+ *
+ * 内部的にはenum区別のためにファイルパスを含むが、表示時は不要なので除去する
+ * 例: "/path/to/file.ts:ButtonVariant.Primary=\"primary\"" → "ButtonVariant.Primary"
  */
-export function printConstantProps(constants: Constant[]): void {
-  console.log("=== 常に同じ値が渡されているprops ===\n");
-
-  if (constants.length === 0) {
-    console.log("常に同じ値が渡されているpropsは見つかりませんでした。");
-    return;
+function formatValueForDisplay(value: string): string {
+  // enum形式: "ファイルパス:EnumName.MemberName=値" のパターンをチェック
+  const enumMatch = value.match(/^.+:(\w+\.\w+)=.+$/);
+  if (enumMatch) {
+    return enumMatch[1];
   }
+  return value;
+}
 
-  for (const prop of constants) {
-    const relativeComponentPath = path.relative(
-      process.cwd(),
-      prop.targetSourceFile,
-    );
+/**
+ * グループ化された定数情報
+ */
+interface GroupedConstant {
+  targetName: string;
+  targetSourceFile: string;
+  targetLine: number;
+  params: Array<{
+    paramName: string;
+    value: string;
+    usageCount: number;
+    usages: Constant["usages"];
+  }>;
+}
 
-    console.log(`コンポーネント: ${prop.targetName}`);
-    console.log(`  定義: ${relativeComponentPath}`);
-    console.log(`  prop: ${prop.paramName}`);
-    console.log(`  常に渡される値: ${prop.value}`);
-    console.log(`  使用箇所: ${prop.usages.length}箇所`);
+/**
+ * Constant[]を関数/コンポーネント単位でグループ化する
+ */
+function groupConstantsByTarget(constants: Constant[]): GroupedConstant[] {
+  const groupMap = new Map<string, GroupedConstant>();
 
-    for (const usage of prop.usages) {
-      const relativePath = path.relative(process.cwd(), usage.usageFilePath);
-      console.log(`    - ${relativePath}:${usage.usageLine}`);
+  for (const constant of constants) {
+    const key = `${constant.targetSourceFile}:${constant.targetName}`;
+
+    let group = groupMap.get(key);
+    if (!group) {
+      group = {
+        targetName: constant.targetName,
+        targetSourceFile: constant.targetSourceFile,
+        targetLine: constant.targetLine,
+        params: [],
+      };
+      groupMap.set(key, group);
     }
 
-    console.log("");
+    group.params.push({
+      paramName: constant.paramName,
+      value: constant.value,
+      usageCount: constant.usages.length,
+      usages: constant.usages,
+    });
   }
-}
 
-/**
- * 解析結果を全て出力
- */
-export function printAnalysisResult(result: AnalysisResult): void {
-  printExportedComponents(result.exported);
-  printConstantProps(result.constants);
+  return Array.from(groupMap.values());
 }
 
 /**
  * exportされた関数の一覧を出力
  */
-export function printExportedFunctions(exported: Exported[]): void {
+function printExportedFunctions(exported: Exported[]): void {
   const lines = [
-    "2. exportされた関数を収集中...",
-    `   → ${exported.length}個の関数を検出`,
+    "Collecting exported functions...",
+    `   → Found ${exported.length} function(s)`,
     ...exported.map(
       (fn) =>
-        `      - ${fn.name} (${path.relative(process.cwd(), fn.sourceFilePath)})`,
+        `      - ${bold(green(fn.name))} (${path.relative(
+          process.cwd(),
+          fn.sourceFilePath,
+        )})`,
     ),
     "",
   ];
@@ -76,39 +93,71 @@ export function printExportedFunctions(exported: Exported[]): void {
 /**
  * 常に同じ値が渡されている引数を出力
  */
-export function printConstantArguments(constants: Constant[]): void {
-  console.log("=== 常に同じ値が渡されている引数 ===\n");
-
+function printConstantArguments(constants: Constant[]): void {
   if (constants.length === 0) {
-    console.log("常に同じ値が渡されている引数は見つかりませんでした。");
     return;
   }
 
-  for (const arg of constants) {
-    const relativeFunctionPath = path.relative(
-      process.cwd(),
-      arg.targetSourceFile,
+  const grouped = groupConstantsByTarget(constants);
+
+  for (const group of grouped) {
+    const relativePath = path.relative(process.cwd(), group.targetSourceFile);
+    const usageCount = group.params[0]?.usageCount ?? 0;
+    // 使用箇所は全パラメータで同じなので、最初のパラメータから取得
+    const usages = group.params[0]?.usages ?? [];
+
+    console.log(
+      `${bold(green(group.targetName))} ${relativePath}:${group.targetLine}`,
     );
+    console.log("Constant Arguments:");
 
-    console.log(`関数: ${arg.targetName}`);
-    console.log(`  定義: ${relativeFunctionPath}`);
-    console.log(`  引数: ${arg.paramName}`);
-    console.log(`  常に渡される値: ${arg.value}`);
-    console.log(`  使用箇所: ${arg.usages.length}箇所`);
-
-    for (const usage of arg.usages) {
-      const relativePath = path.relative(process.cwd(), usage.usageFilePath);
-      console.log(`    - ${relativePath}:${usage.usageLine}`);
+    for (const param of group.params) {
+      console.log(
+        `  - ${param.paramName} = ${formatValueForDisplay(param.value)}`,
+      );
     }
 
-    console.log("");
+    console.log(`Usages (${usageCount}):`);
+    for (const usage of usages) {
+      const usagePath = path.relative(process.cwd(), usage.usageFilePath);
+      console.log(`  - ${usagePath}:${usage.usageLine}`);
+    }
+
+    console.log("\n");
   }
 }
 
 /**
- * 関数解析結果を全て出力
+ * 統計情報を出力
  */
-export function printFunctionAnalysisResult(result: AnalysisResult): void {
-  printExportedFunctions(result.exported);
-  printConstantArguments(result.constants);
+function printStatistics(result: AnalysisResult): void {
+  const totalFunctions = result.exported.length;
+  const functionsWithConstants = groupConstantsByTarget(
+    result.constants,
+  ).length;
+
+  console.log("---");
+  console.log(
+    `Found ${functionsWithConstants} function(s) with constant arguments out of ${totalFunctions} function(s).`,
+  );
+}
+
+/**
+ * 解析結果を出力
+ */
+export function printAnalysisResult(
+  result: AnalysisResult,
+  mode: OutputMode,
+): void {
+  if (mode === "verbose") {
+    printExportedFunctions(result.exported);
+  }
+
+  if (result.constants.length === 0) {
+    console.log("No arguments with constant values were found.");
+  } else {
+    printConstantArguments(result.constants);
+  }
+
+  printStatistics(result);
 }

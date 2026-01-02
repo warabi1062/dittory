@@ -44,6 +44,7 @@ export interface Exported {
   /** クラスメソッドの場合は "ClassName.methodName" 形式 */
   name: string;
   sourceFilePath: string;
+  sourceLine: number;
   definitions: Definition[];
   declaration: FunctionDeclaration | VariableDeclaration | MethodDeclaration;
   usages: Record<string, Usage[]>;
@@ -55,6 +56,7 @@ export interface Exported {
 export interface Constant {
   targetName: string;
   targetSourceFile: string;
+  targetLine: number;
   paramName: string;
   value: string;
   usages: Usage[];

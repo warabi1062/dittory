@@ -8,17 +8,15 @@ import {
   parseCliOptions,
   validateTargetDir,
 } from "@/cli/parseCliOptions";
-import {
-  printAnalysisResult,
-  printFunctionAnalysisResult,
-} from "@/output/printAnalysisResult";
+import { printAnalysisResult } from "@/output/printAnalysisResult";
 import { createFilteredSourceFiles } from "@/source/createFilteredSourceFiles";
+import type { AnalysisResult } from "@/types";
 
 /**
  * エラーメッセージを表示してプロセスを終了する
  */
 function exitWithError(message: string): never {
-  console.error(`エラー: ${message}`);
+  console.error(`Error: ${message}`);
   process.exit(1);
 }
 
@@ -34,7 +32,7 @@ function main(): void {
     throw error;
   }
 
-  const { targetDir, minUsages, target, showHelp } = options;
+  const { targetDir, minUsages, target, output, showHelp } = options;
 
   if (showHelp) {
     console.log(getHelpMessage());
@@ -51,23 +49,38 @@ function main(): void {
     throw error;
   }
 
-  console.log(`解析対象ディレクトリ: ${targetDir}`);
-  console.log(`最小使用箇所数: ${minUsages}`);
-  console.log(`解析対象: ${target}\n`);
+  if (output === "verbose") {
+    console.log(`Target directory: ${targetDir}`);
+    console.log(`Minimum usage count: ${minUsages}`);
+    console.log(`Analysis target: ${target}\n`);
+  }
 
   const sourceFilesToAnalyze = createFilteredSourceFiles(targetDir);
 
+  // 各解析結果を収集
+  const allExported: AnalysisResult["exported"] = [];
+  const allConstants: AnalysisResult["constants"] = [];
+
   if (target === "all" || target === "components") {
     const propsResult = analyzePropsCore(sourceFilesToAnalyze, { minUsages });
-    printAnalysisResult(propsResult);
+    allExported.push(...propsResult.exported);
+    allConstants.push(...propsResult.constants);
   }
 
   if (target === "all" || target === "functions") {
     const functionsResult = analyzeFunctionsCore(sourceFilesToAnalyze, {
       minUsages,
     });
-    printFunctionAnalysisResult(functionsResult);
+    allExported.push(...functionsResult.exported);
+    allConstants.push(...functionsResult.constants);
   }
+
+  const result: AnalysisResult = {
+    exported: allExported,
+    constants: allConstants,
+  };
+
+  printAnalysisResult(result, output);
 }
 
 main();

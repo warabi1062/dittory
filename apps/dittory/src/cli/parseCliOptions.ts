@@ -2,11 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 
 export type AnalyzeMode = "all" | "components" | "functions";
+export type OutputMode = "simple" | "verbose";
 
 export interface CliOptions {
   targetDir: string;
   minUsages: number;
   target: AnalyzeMode;
+  output: OutputMode;
   showHelp: boolean;
 }
 
@@ -23,8 +25,15 @@ const VALID_TARGETS: readonly AnalyzeMode[] = [
   "functions",
 ];
 
+const VALID_OUTPUTS: readonly OutputMode[] = ["simple", "verbose"];
+
 /** 不明なオプションの検出に使用 */
-const VALID_OPTIONS: readonly string[] = ["--min", "--target", "--help"];
+const VALID_OPTIONS: readonly string[] = [
+  "--min",
+  "--target",
+  "--output",
+  "--help",
+];
 
 /**
  * CLIオプションをパースする
@@ -35,6 +44,7 @@ export function parseCliOptions(args: string[]): CliOptions {
   let targetDir = path.join(process.cwd(), "src");
   let minUsages = 2;
   let target: AnalyzeMode = "all";
+  let output: OutputMode = "simple";
   let showHelp = false;
 
   for (const arg of args) {
@@ -49,13 +59,11 @@ export function parseCliOptions(args: string[]): CliOptions {
 
       if (valueStr === "" || Number.isNaN(value)) {
         throw new CliValidationError(
-          `--min の値が無効です: "${valueStr}" (数値を指定してください)`,
+          `Invalid value for --min: "${valueStr}" (must be a number)`,
         );
       }
       if (value < 1) {
-        throw new CliValidationError(
-          `--min の値は1以上である必要があります: ${value}`,
-        );
+        throw new CliValidationError(`--min must be at least 1: ${value}`);
       }
 
       minUsages = value;
@@ -64,23 +72,33 @@ export function parseCliOptions(args: string[]): CliOptions {
 
       if (!VALID_TARGETS.includes(value as AnalyzeMode)) {
         throw new CliValidationError(
-          `--target の値が無効です: "${value}" (有効な値: ${VALID_TARGETS.join(", ")})`,
+          `Invalid value for --target: "${value}" (valid values: ${VALID_TARGETS.join(", ")})`,
         );
       }
 
       target = value as AnalyzeMode;
+    } else if (arg.startsWith("--output=")) {
+      const value = arg.slice(9);
+
+      if (!VALID_OUTPUTS.includes(value as OutputMode)) {
+        throw new CliValidationError(
+          `Invalid value for --output: "${value}" (valid values: ${VALID_OUTPUTS.join(", ")})`,
+        );
+      }
+
+      output = value as OutputMode;
     } else if (arg.startsWith("--")) {
       const optionName = arg.split("=")[0];
 
       if (!VALID_OPTIONS.includes(optionName)) {
-        throw new CliValidationError(`不明なオプション: ${optionName}`);
+        throw new CliValidationError(`Unknown option: ${optionName}`);
       }
     } else {
       targetDir = arg;
     }
   }
 
-  return { targetDir, minUsages, target, showHelp };
+  return { targetDir, minUsages, target, output, showHelp };
 }
 
 /**
@@ -90,14 +108,12 @@ export function parseCliOptions(args: string[]): CliOptions {
  */
 export function validateTargetDir(targetDir: string): void {
   if (!fs.existsSync(targetDir)) {
-    throw new CliValidationError(`ディレクトリが存在しません: ${targetDir}`);
+    throw new CliValidationError(`Directory does not exist: ${targetDir}`);
   }
 
   const stat = fs.statSync(targetDir);
   if (!stat.isDirectory()) {
-    throw new CliValidationError(
-      `指定されたパスはディレクトリではありません: ${targetDir}`,
-    );
+    throw new CliValidationError(`Path is not a directory: ${targetDir}`);
   }
 }
 
@@ -109,11 +125,12 @@ export function getHelpMessage(): string {
 Usage: dittory [options] [directory]
 
 Options:
-  --min=<number>    最小使用箇所数 (デフォルト: 2)
-  --target=<mode>   解析対象: all, components, functions (デフォルト: all)
-  --help            このヘルプを表示
+  --min=<number>    Minimum usage count (default: 2)
+  --target=<mode>   Analysis target: all, components, functions (default: all)
+  --output=<mode>   Output mode: simple, verbose (default: simple)
+  --help            Show this help message
 
 Arguments:
-  directory         解析対象ディレクトリ (デフォルト: ./src)
+  directory         Target directory to analyze (default: ./src)
 `;
 }

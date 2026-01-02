@@ -53,6 +53,7 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
         const callable: Exported = {
           name: `${exportName}.${methodName}`,
           sourceFilePath: sourceFile.getFilePath(),
+          sourceLine: method.getStartLineNumber(),
           definitions: parameters,
           declaration: method,
           usages: {},
