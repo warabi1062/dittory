@@ -105,6 +105,7 @@ Found 2 function(s) with constant arguments out of 24 function(s).
 | `--min=<n>` | Minimum number of usages to consider | `2` |
 | `--target=<mode>` | What to analyze: `all`, `components`, `functions` | `all` |
 | `--output=<mode>` | Output verbosity: `simple`, `verbose` | `simple` |
+| `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |
 | `--help` | Show help message | — |
 
 ## Disabling Detection

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import path from "node:path";
 import { analyzeFunctionsCore } from "@/analyzeFunctions";
 import { analyzePropsCore } from "@/analyzeProps";
 import {
@@ -7,6 +8,7 @@ import {
   getHelpMessage,
   parseCliOptions,
   validateTargetDir,
+  validateTsConfig,
 } from "@/cli/parseCliOptions";
 import { printAnalysisResult } from "@/output/printAnalysisResult";
 import { createFilteredSourceFiles } from "@/source/createFilteredSourceFiles";
@@ -32,7 +34,7 @@ function main(): void {
     throw error;
   }
 
-  const { targetDir, minUsages, target, output, showHelp } = options;
+  const { targetDir, minUsages, target, output, tsconfig, showHelp } = options;
 
   if (showHelp) {
     console.log(getHelpMessage());
@@ -49,13 +51,26 @@ function main(): void {
     throw error;
   }
 
+  // tsconfig.json の存在を検証
+  const tsConfigPath = tsconfig ?? path.join(process.cwd(), "tsconfig.json");
+  try {
+    validateTsConfig(tsConfigPath);
+  } catch (error) {
+    if (error instanceof CliValidationError) {
+      exitWithError(error.message);
+    }
+    throw error;
+  }
+
   if (output === "verbose") {
     console.log(`Target directory: ${targetDir}`);
     console.log(`Minimum usage count: ${minUsages}`);
     console.log(`Analysis target: ${target}\n`);
   }
 
-  const sourceFilesToAnalyze = createFilteredSourceFiles(targetDir);
+  const sourceFilesToAnalyze = createFilteredSourceFiles(targetDir, {
+    tsConfigFilePath: tsConfigPath,
+  });
 
   // 各解析結果を収集
   const allExported: AnalysisResult["exported"] = [];

@@ -50,10 +50,9 @@ describe("createFilteredSourceFiles", () => {
     const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
 
     // Act
-    const sourceFiles = createFilteredSourceFiles(
-      fixturesDir,
-      isTestOrStorybookFileStrict,
-    );
+    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+    });
 
     // Assert
     expect(sourceFiles.length).toBeGreaterThan(0);
@@ -67,10 +66,9 @@ describe("createFilteredSourceFiles", () => {
     const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
 
     // Act
-    const sourceFiles = createFilteredSourceFiles(
-      fixturesDir,
-      isTestOrStorybookFileStrict,
-    );
+    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+    });
 
     // Assert
     expect(
@@ -83,10 +81,9 @@ describe("createFilteredSourceFiles", () => {
     const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
 
     // Act
-    const sourceFiles = createFilteredSourceFiles(
-      fixturesDir,
-      isTestOrStorybookFileStrict,
-    );
+    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+    });
 
     // Assert
     expect(
@@ -99,10 +96,9 @@ describe("createFilteredSourceFiles", () => {
     const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
 
     // Act
-    const sourceFiles = createFilteredSourceFiles(
-      fixturesDir,
-      isTestOrStorybookFileStrict,
-    );
+    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+    });
 
     // Assert
     expect(
@@ -115,10 +111,9 @@ describe("createFilteredSourceFiles", () => {
     const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
 
     // Act
-    const sourceFiles = createFilteredSourceFiles(
-      fixturesDir,
-      isTestOrStorybookFileStrict,
-    );
+    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+    });
 
     // Assert
     expect(
@@ -136,10 +131,9 @@ describe("createFilteredSourceFiles", () => {
     const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
 
     // Act
-    const sourceFiles = createFilteredSourceFiles(
-      fixturesDir,
-      isTestOrStorybookFileStrict,
-    );
+    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+    });
 
     // Assert
     expect(

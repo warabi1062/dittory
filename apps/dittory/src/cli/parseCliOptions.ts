@@ -9,6 +9,7 @@ export interface CliOptions {
   minUsages: number;
   target: AnalyzeMode;
   output: OutputMode;
+  tsconfig: string | undefined;
   showHelp: boolean;
 }
 
@@ -32,6 +33,7 @@ const VALID_OPTIONS: readonly string[] = [
   "--min",
   "--target",
   "--output",
+  "--tsconfig",
   "--help",
 ];
 
@@ -45,6 +47,7 @@ export function parseCliOptions(args: string[]): CliOptions {
   let minUsages = 2;
   let target: AnalyzeMode = "all";
   let output: OutputMode = "simple";
+  let tsconfig: string | undefined;
   let showHelp = false;
 
   for (const arg of args) {
@@ -72,7 +75,9 @@ export function parseCliOptions(args: string[]): CliOptions {
 
       if (!VALID_TARGETS.includes(value as AnalyzeMode)) {
         throw new CliValidationError(
-          `Invalid value for --target: "${value}" (valid values: ${VALID_TARGETS.join(", ")})`,
+          `Invalid value for --target: "${value}" (valid values: ${VALID_TARGETS.join(
+            ", ",
+          )})`,
         );
       }
 
@@ -82,11 +87,23 @@ export function parseCliOptions(args: string[]): CliOptions {
 
       if (!VALID_OUTPUTS.includes(value as OutputMode)) {
         throw new CliValidationError(
-          `Invalid value for --output: "${value}" (valid values: ${VALID_OUTPUTS.join(", ")})`,
+          `Invalid value for --output: "${value}" (valid values: ${VALID_OUTPUTS.join(
+            ", ",
+          )})`,
         );
       }
 
       output = value as OutputMode;
+    } else if (arg.startsWith("--tsconfig=")) {
+      const value = arg.slice(11);
+
+      if (value === "") {
+        throw new CliValidationError(
+          "Invalid value for --tsconfig: path cannot be empty",
+        );
+      }
+
+      tsconfig = value;
     } else if (arg.startsWith("--")) {
       const optionName = arg.split("=")[0];
 
@@ -98,7 +115,7 @@ export function parseCliOptions(args: string[]): CliOptions {
     }
   }
 
-  return { targetDir, minUsages, target, output, showHelp };
+  return { targetDir, minUsages, target, output, tsconfig, showHelp };
 }
 
 /**
@@ -118,6 +135,17 @@ export function validateTargetDir(targetDir: string): void {
 }
 
 /**
+ * tsconfig.json の存在を検証する
+ *
+ * @throws {CliValidationError} ファイルが存在しない場合
+ */
+export function validateTsConfig(tsConfigPath: string): void {
+  if (!fs.existsSync(tsConfigPath)) {
+    throw new CliValidationError(`tsconfig not found: ${tsConfigPath}`);
+  }
+}
+
+/**
  * ヘルプメッセージを取得する
  */
 export function getHelpMessage(): string {
@@ -128,6 +156,7 @@ Options:
   --min=<number>    Minimum usage count (default: 2)
   --target=<mode>   Analysis target: all, components, functions (default: all)
   --output=<mode>   Output mode: simple, verbose (default: simple)
+  --tsconfig=<path> Path to tsconfig.json (default: ./tsconfig.json)
   --help            Show this help message
 
 Arguments:
