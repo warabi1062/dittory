@@ -7,6 +7,7 @@ import {
 } from "ts-morph";
 import type { Definition, Exported, Usage } from "@/types";
 import { flattenObjectExpression } from "./flattenObjectExpression";
+import { hasDisableComment } from "./hasDisableComment";
 import { UNDEFINED_VALUE } from "./resolveExpressionValue";
 
 /**
@@ -24,6 +25,11 @@ export class ExtractUsages {
    * @returns 引数使用状況の配列
    */
   static fromCall(callExpression: CallExpression, callable: Exported): Usage[] {
+    // dittory-disable-next-line コメントがある場合は除外
+    if (hasDisableComment(callExpression)) {
+      return [];
+    }
+
     const usages: Usage[] = [];
     const sourceFile = callExpression.getSourceFile();
     const args = callExpression.getArguments();
@@ -67,6 +73,11 @@ export class ExtractUsages {
     element: JsxOpeningElement | JsxSelfClosingElement,
     definitions: Definition[],
   ): Usage[] {
+    // dittory-disable-next-line コメントがある場合は除外
+    if (hasDisableComment(element)) {
+      return [];
+    }
+
     const usages: Usage[] = [];
     const sourceFile = element.getSourceFile();
 

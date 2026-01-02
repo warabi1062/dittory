@@ -107,6 +107,29 @@ Found 2 function(s) with constant arguments out of 24 function(s).
 | `--output=<mode>` | Output verbosity: `simple`, `verbose` | `simple` |
 | `--help` | Show help message | — |
 
+## Disabling Detection
+
+You can exclude specific usages from detection using comments:
+
+```ts
+// Exclude the next line
+// dittory-disable-next-line
+fetchData(id, { cache: false });
+
+// Exclude the same line
+fetchData(id, { cache: false }); // dittory-disable-line
+```
+
+These comments can be combined with other directive comments like `eslint-disable-line` or `@ts-ignore`:
+
+```ts
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// dittory-disable-next-line
+const result = calculate(x);
+
+doSomething(); // eslint-disable-line -- dittory-disable-line
+```
+
 ## Requirements
 
 - Node.js >= 18
