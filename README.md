@@ -1,79 +1,165 @@
 # dittory
 
-TypeScript/Reactコードベースを静的解析し、常に同じ値が渡されているpropsや関数引数を検出するCLIツールです。
+[![npm version](https://img.shields.io/npm/v/dittory.svg)](https://www.npmjs.com/package/dittory)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 特徴
+A static analysis CLI that detects **parameters always receiving the same value** in React components and functions.
 
-- **Reactコンポーネント解析**: exportされたReactコンポーネントのprops使用状況を分析
-- **関数解析**: exportされた関数の引数使用状況を分析
-- **クラスメソッド解析**: exportされたクラスのメソッド引数使用状況を分析
-- **定数検出**: 常に同じ値が渡されているprops/引数を特定し、定数化の候補として報告
+> **dittory** = "ditto" (same) + "-ory" — finds repetitive patterns in your code
 
-## インストール
+## Why?
+
+When a prop or argument is always passed the same value across your codebase, it's often a sign that:
+
+- The parameter could be **removed** and replaced with a default value
+- The API could be **simplified** by eliminating unnecessary options
+- There's **copy-paste code** that should be refactored
+
+dittory helps you identify these opportunities automatically.
+
+## Installation
 
 ```bash
-pnpm add -D dittory
+npm install -g dittory
 ```
 
-## 使い方
+Or use directly with npx:
 
 ```bash
-# デフォルト（./src ディレクトリを解析）
 npx dittory
-
-# 特定のディレクトリを解析
-npx dittory ./path/to/src
-
-# オプション指定
-npx dittory --min=3 --target=components ./src
 ```
 
-## オプション
-
-| オプション | 説明 | デフォルト |
-|-----------|------|-----------|
-| `--min=<number>` | 定数として報告する最小使用箇所数 | 2 |
-| `--target=<mode>` | 解析対象 (`all`, `components`, `functions`) | all |
-| `--help` | ヘルプを表示 | - |
-
-## 出力例
-
-```
-解析対象ディレクトリ: ./src
-最小使用箇所数: 2
-解析対象: all
-
-=== 常に同じ値が渡されているprops ===
-
-Button (src/components/Button.tsx)
-  - variant: "primary" (3箇所)
-  - size: "medium" (5箇所)
-
-=== 常に同じ値が渡されている関数引数 ===
-
-fetchData (src/api/client.ts)
-  - timeout: 5000 (4箇所)
-```
-
-## 開発
+## Usage
 
 ```bash
-# 依存関係のインストール
-pnpm install
+# Analyze ./src directory (default)
+dittory
 
-# ビルド
-pnpm build
+# Analyze a specific directory
+dittory ./path/to/src
 
-# テスト
-pnpm test
+# Set minimum usage count (default: 2)
+dittory --min=3
 
-# 型チェック
-pnpm typecheck
+# Analyze specific targets
+dittory --target=components  # React components only
+dittory --target=functions   # Functions and class methods only
+dittory --target=all         # Both (default)
 
-# リント
-pnpm lint
+# Output mode
+dittory --output=simple      # Show only constants (default)
+dittory --output=verbose     # Show all exported functions and details
 ```
 
-## ライセンス
+## Example Output
+
+```
+Button src/components/Button.tsx:15
+Constant Arguments:
+  - variant = "primary"
+Usages (5):
+  - src/pages/Home.tsx:23
+  - src/pages/About.tsx:45
+  - src/pages/Contact.tsx:12
+  - src/features/auth/Login.tsx:67
+  - src/features/auth/Register.tsx:89
+
+
+fetchUser src/api/users.ts:42
+Constant Arguments:
+  - includeProfile = true
+  - cache = false
+Usages (3):
+  - src/hooks/useUser.ts:18
+  - src/pages/Profile.tsx:31
+  - src/components/UserCard.tsx:55
+
+
+---
+Found 2 function(s) with constant arguments out of 24 function(s).
+```
+
+## What It Detects
+
+| Target | Description |
+|--------|-------------|
+| **React Components** | Props passed to JSX elements (`<Button variant="primary" />`) |
+| **Functions** | Arguments passed to exported function calls |
+| **Class Methods** | Arguments passed to methods of exported classes |
+
+## CLI Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--min=<n>` | Minimum number of usages to consider | `2` |
+| `--target=<mode>` | What to analyze: `all`, `components`, `functions` | `all` |
+| `--output=<mode>` | Output verbosity: `simple`, `verbose` | `simple` |
+| `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |
+| `--help` | Show help message | — |
+
+## Configuration File
+
+Create a configuration file to set default options. dittory looks for:
+
+1. `dittory.config.js` or `dittory.config.mjs`
+2. `dittory.config.json`
+
+```js
+// dittory.config.js
+/** @type {import('dittory').DittoryConfig} */
+export default {
+  minUsages: 3,
+  target: "components",
+  output: "verbose",
+  tsconfig: "./tsconfig.app.json",
+  targetDir: "./src",
+};
+```
+
+**Priority:** CLI options > Config file > Default values
+
+## Disabling Detection
+
+Exclude specific usages from detection using comments:
+
+```ts
+// Exclude the next line
+// dittory-disable-next-line
+fetchData(id, { cache: false });
+
+// Exclude the same line
+fetchData(id, { cache: false }); // dittory-disable-line
+```
+
+Works alongside other directives like `eslint-disable-line` or `@ts-ignore`.
+
+## Use Cases
+
+### Simplify Component APIs
+
+```tsx
+// Before: variant is always "primary" across 20 usages
+<Button variant="primary" onClick={handleClick}>Submit</Button>
+
+// After: make "primary" the default
+<Button onClick={handleClick}>Submit</Button>
+```
+
+### Remove Unused Flexibility
+
+```ts
+// Before: cache is always false in all 15 call sites
+const data = await fetchData(id, { cache: false });
+
+// After: remove the option or change the default
+const data = await fetchData(id);
+```
+
+## Requirements
+
+- Node.js >= 18
+- Project must have a `tsconfig.json`
+
+## License
 
 MIT
