@@ -1,12 +1,9 @@
 {
-  "name": "dittory-docs",
-  "version": "0.0.2",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vitepress dev",
-    "build": "vitepress build",
-    "preview": "vitepress preview"
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
     "vitepress": "^1.6.3"
