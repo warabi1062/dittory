@@ -5,6 +5,7 @@ export default defineConfig({
   description:
     "A static analysis CLI tool that detects parameters always receiving the same value",
   lang: "en-US",
+  base: "/dittory/",
 
   head: [
     ["link", { rel: "icon", type: "image/svg+xml", href: "/logo.svg" }],
