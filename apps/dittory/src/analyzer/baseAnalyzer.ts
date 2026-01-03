@@ -21,16 +21,23 @@ interface UsageData {
 }
 
 /**
+ * 対象ごとの情報（行番号とパラメータ使用状況）
+ */
+interface TargetInfo {
+  line: number;
+  params: Map<string, UsageData>;
+}
+
+/**
  * 使用状況を階層的にグループ化したマップ
  *
  * 3階層の構造で使用状況を整理する:
  * 1. ソースファイルパス: どのファイルで定義された対象か
- * 2. 対象名: 関数名/コンポーネント名
- * 3. パラメータ名: 各パラメータごとの使用状況
+ * 2. 対象名: 関数名/コンポーネント名（+ 行番号とパラメータ使用状況）
  *
  * この構造により、定数検出時に効率的に走査できる。
  */
-type GroupedMap = Map<string, Map<string, Map<string, UsageData>>>;
+type GroupedMap = Map<string, Map<string, TargetInfo>>;
 
 /**
  * 分析処理の基底クラス
@@ -91,7 +98,7 @@ export abstract class BaseAnalyzer {
         }
         paramMap.set(paramName, { values, usages });
       }
-      fileMap.set(item.name, paramMap);
+      fileMap.set(item.name, { line: item.sourceLine, params: paramMap });
     }
 
     return groupedMap;
@@ -104,8 +111,8 @@ export abstract class BaseAnalyzer {
     const result: Constant[] = [];
 
     for (const [sourceFile, targetMap] of groupedMap) {
-      for (const [targetName, paramMap] of targetMap) {
-        for (const [paramName, usageData] of paramMap) {
+      for (const [targetName, targetInfo] of targetMap) {
+        for (const [paramName, usageData] of targetInfo.params) {
           const isConstant =
             usageData.usages.length >= this.minUsages &&
             usageData.values.size === 1;
@@ -125,6 +132,7 @@ export abstract class BaseAnalyzer {
           result.push({
             targetName,
             targetSourceFile: sourceFile,
+            targetLine: targetInfo.line,
             paramName,
             value,
             usages: usageData.usages,

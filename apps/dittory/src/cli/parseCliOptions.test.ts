@@ -1,16 +1,16 @@
 import fs from "node:fs";
-import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   CliValidationError,
   getHelpMessage,
   parseCliOptions,
   validateTargetDir,
+  validateTsConfig,
 } from "./parseCliOptions";
 
 describe("parseCliOptions", () => {
-  describe("デフォルト値", () => {
-    it("引数なしの場合はデフォルト値を返すこと", () => {
+  describe("引数なし", () => {
+    it("引数なしの場合は showHelp のみ設定されること", () => {
       // Arrange
       const args: string[] = [];
 
@@ -18,9 +18,11 @@ describe("parseCliOptions", () => {
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.targetDir).toBe(path.join(process.cwd(), "src"));
-      expect(result.minUsages).toBe(2);
-      expect(result.target).toBe("all");
+      expect(result.targetDir).toBeUndefined();
+      expect(result.minUsages).toBeUndefined();
+      expect(result.target).toBeUndefined();
+      expect(result.output).toBeUndefined();
+      expect(result.tsconfig).toBeUndefined();
       expect(result.showHelp).toBe(false);
     });
   });
@@ -44,7 +46,7 @@ describe("parseCliOptions", () => {
       // Act & Assert
       expect(() => parseCliOptions(args)).toThrow(CliValidationError);
       expect(() => parseCliOptions(args)).toThrow(
-        '--min の値が無効です: "" (数値を指定してください)',
+        'Invalid value for --min: "" (must be a number)',
       );
     });
 
@@ -55,7 +57,7 @@ describe("parseCliOptions", () => {
       // Act & Assert
       expect(() => parseCliOptions(args)).toThrow(CliValidationError);
       expect(() => parseCliOptions(args)).toThrow(
-        '--min の値が無効です: "abc" (数値を指定してください)',
+        'Invalid value for --min: "abc" (must be a number)',
       );
     });
 
@@ -66,7 +68,7 @@ describe("parseCliOptions", () => {
       // Act & Assert
       expect(() => parseCliOptions(args)).toThrow(CliValidationError);
       expect(() => parseCliOptions(args)).toThrow(
-        "--min の値は1以上である必要があります: 0",
+        "--min must be at least 1: 0",
       );
     });
   });
@@ -112,7 +114,7 @@ describe("parseCliOptions", () => {
       // Act & Assert
       expect(() => parseCliOptions(args)).toThrow(CliValidationError);
       expect(() => parseCliOptions(args)).toThrow(
-        '--target の値が無効です: "invalid" (有効な値: all, components, functions)',
+        'Invalid value for --target: "invalid" (valid values: all, components, functions)',
       );
     });
   });
@@ -130,6 +132,87 @@ describe("parseCliOptions", () => {
     });
   });
 
+  describe("--output オプション", () => {
+    it("simpleを指定した場合はsimpleを使用すること", () => {
+      // Arrange
+      const args = ["--output=simple"];
+
+      // Act
+      const result = parseCliOptions(args);
+
+      // Assert
+      expect(result.output).toBe("simple");
+    });
+
+    it("verboseを指定した場合はverboseを使用すること", () => {
+      // Arrange
+      const args = ["--output=verbose"];
+
+      // Act
+      const result = parseCliOptions(args);
+
+      // Assert
+      expect(result.output).toBe("verbose");
+    });
+
+    it("無効な値を指定した場合はエラーを投げること", () => {
+      // Arrange
+      const args = ["--output=invalid"];
+
+      // Act & Assert
+      expect(() => parseCliOptions(args)).toThrow(CliValidationError);
+      expect(() => parseCliOptions(args)).toThrow(
+        'Invalid value for --output: "invalid" (valid values: simple, verbose)',
+      );
+    });
+
+    it("指定しない場合はundefinedであること", () => {
+      // Arrange
+      const args: string[] = [];
+
+      // Act
+      const result = parseCliOptions(args);
+
+      // Assert
+      expect(result.output).toBeUndefined();
+    });
+  });
+
+  describe("--tsconfig オプション", () => {
+    it("パスを指定した場合はその値を使用すること", () => {
+      // Arrange
+      const args = ["--tsconfig=./config/tsconfig.json"];
+
+      // Act
+      const result = parseCliOptions(args);
+
+      // Assert
+      expect(result.tsconfig).toBe("./config/tsconfig.json");
+    });
+
+    it("値が空の場合はエラーを投げること", () => {
+      // Arrange
+      const args = ["--tsconfig="];
+
+      // Act & Assert
+      expect(() => parseCliOptions(args)).toThrow(CliValidationError);
+      expect(() => parseCliOptions(args)).toThrow(
+        "Invalid value for --tsconfig: path cannot be empty",
+      );
+    });
+
+    it("デフォルト値はundefinedであること", () => {
+      // Arrange
+      const args: string[] = [];
+
+      // Act
+      const result = parseCliOptions(args);
+
+      // Assert
+      expect(result.tsconfig).toBeUndefined();
+    });
+  });
+
   describe("不明なオプション", () => {
     it("不明なオプションを指定した場合はエラーを投げること", () => {
       // Arrange
@@ -137,9 +220,7 @@ describe("parseCliOptions", () => {
 
       // Act & Assert
       expect(() => parseCliOptions(args)).toThrow(CliValidationError);
-      expect(() => parseCliOptions(args)).toThrow(
-        "不明なオプション: --unknown",
-      );
+      expect(() => parseCliOptions(args)).toThrow("Unknown option: --unknown");
     });
 
     it("不明なオプションに値がある場合もエラーを投げること", () => {
@@ -148,9 +229,7 @@ describe("parseCliOptions", () => {
 
       // Act & Assert
       expect(() => parseCliOptions(args)).toThrow(CliValidationError);
-      expect(() => parseCliOptions(args)).toThrow(
-        "不明なオプション: --unknown",
-      );
+      expect(() => parseCliOptions(args)).toThrow("Unknown option: --unknown");
     });
   });
 
@@ -219,7 +298,7 @@ describe("validateTargetDir", () => {
       CliValidationError,
     );
     expect(() => validateTargetDir(nonExistentPath)).toThrow(
-      `ディレクトリが存在しません: ${nonExistentPath}`,
+      `Directory does not exist: ${nonExistentPath}`,
     );
   });
 
@@ -227,7 +306,41 @@ describe("validateTargetDir", () => {
     // Arrange & Act & Assert
     expect(() => validateTargetDir(testFile)).toThrow(CliValidationError);
     expect(() => validateTargetDir(testFile)).toThrow(
-      `指定されたパスはディレクトリではありません: ${testFile}`,
+      `Path is not a directory: ${testFile}`,
+    );
+  });
+});
+
+describe("validateTsConfig", () => {
+  const testTsConfig = "/tmp/dittory-test-tsconfig.json";
+
+  beforeEach(() => {
+    // テスト用 tsconfig.json を作成
+    if (!fs.existsSync(testTsConfig)) {
+      fs.writeFileSync(testTsConfig, "{}");
+    }
+  });
+
+  afterEach(() => {
+    // テスト用ファイルを削除
+    if (fs.existsSync(testTsConfig)) {
+      fs.unlinkSync(testTsConfig);
+    }
+  });
+
+  it("存在するファイルの場合はエラーを投げないこと", () => {
+    // Arrange & Act & Assert
+    expect(() => validateTsConfig(testTsConfig)).not.toThrow();
+  });
+
+  it("存在しないファイルの場合はエラーを投げること", () => {
+    // Arrange
+    const nonExistentPath = "/non/existent/tsconfig.json";
+
+    // Act & Assert
+    expect(() => validateTsConfig(nonExistentPath)).toThrow(CliValidationError);
+    expect(() => validateTsConfig(nonExistentPath)).toThrow(
+      `tsconfig not found: ${nonExistentPath}`,
     );
   });
 });
@@ -241,6 +354,7 @@ describe("getHelpMessage", () => {
     expect(result).toContain("Usage: dittory [options] [directory]");
     expect(result).toContain("--min=<number>");
     expect(result).toContain("--target=<mode>");
+    expect(result).toContain("--tsconfig=<path>");
     expect(result).toContain("--help");
     expect(result).toContain("directory");
   });

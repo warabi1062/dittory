@@ -1,32 +1,34 @@
 #!/usr/bin/env node
+import path from "node:path";
 import { analyzeFunctionsCore } from "@/analyzeFunctions";
 import { analyzePropsCore } from "@/analyzeProps";
+import { loadConfig } from "@/cli/loadConfig";
 import {
-  type CliOptions,
   CliValidationError,
+  DEFAULT_OPTIONS,
   getHelpMessage,
   parseCliOptions,
+  type ResolvedOptions,
   validateTargetDir,
+  validateTsConfig,
 } from "@/cli/parseCliOptions";
-import {
-  printAnalysisResult,
-  printFunctionAnalysisResult,
-} from "@/output/printAnalysisResult";
+import { printAnalysisResult } from "@/output/printAnalysisResult";
 import { createFilteredSourceFiles } from "@/source/createFilteredSourceFiles";
+import type { AnalysisResult } from "@/types";
 
 /**
  * エラーメッセージを表示してプロセスを終了する
  */
 function exitWithError(message: string): never {
-  console.error(`エラー: ${message}`);
+  console.error(`Error: ${message}`);
   process.exit(1);
 }
 
-function main(): void {
-  let options: CliOptions;
-
+async function main(): Promise<void> {
+  // CLI オプションをパース
+  let cliOptions: ReturnType<typeof parseCliOptions>;
   try {
-    options = parseCliOptions(process.argv.slice(2));
+    cliOptions = parseCliOptions(process.argv.slice(2));
   } catch (error) {
     if (error instanceof CliValidationError) {
       exitWithError(error.message);
@@ -34,12 +36,36 @@ function main(): void {
     throw error;
   }
 
-  const { targetDir, minUsages, target, showHelp } = options;
-
-  if (showHelp) {
+  if (cliOptions.showHelp) {
     console.log(getHelpMessage());
     process.exit(0);
   }
+
+  // コンフィグファイルを読み込む
+  let fileConfig: Awaited<ReturnType<typeof loadConfig>>;
+  try {
+    fileConfig = await loadConfig();
+  } catch (error) {
+    if (error instanceof Error) {
+      exitWithError(error.message);
+    }
+    throw error;
+  }
+
+  // オプションをマージ: CLI > コンフィグ > デフォルト
+  const options: ResolvedOptions = {
+    targetDir: path.resolve(
+      cliOptions.targetDir ?? fileConfig.targetDir ?? DEFAULT_OPTIONS.targetDir,
+    ),
+    minUsages:
+      cliOptions.minUsages ?? fileConfig.minUsages ?? DEFAULT_OPTIONS.minUsages,
+    target: cliOptions.target ?? fileConfig.target ?? DEFAULT_OPTIONS.target,
+    output: cliOptions.output ?? fileConfig.output ?? DEFAULT_OPTIONS.output,
+    tsconfig:
+      cliOptions.tsconfig ?? fileConfig.tsconfig ?? DEFAULT_OPTIONS.tsconfig,
+  };
+
+  const { targetDir, minUsages, target, output, tsconfig } = options;
 
   // 対象ディレクトリの存在を検証
   try {
@@ -51,23 +77,53 @@ function main(): void {
     throw error;
   }
 
-  console.log(`解析対象ディレクトリ: ${targetDir}`);
-  console.log(`最小使用箇所数: ${minUsages}`);
-  console.log(`解析対象: ${target}\n`);
+  // tsconfig.json の存在を検証
+  try {
+    validateTsConfig(tsconfig);
+  } catch (error) {
+    if (error instanceof CliValidationError) {
+      exitWithError(error.message);
+    }
+    throw error;
+  }
 
-  const sourceFilesToAnalyze = createFilteredSourceFiles(targetDir);
+  if (output === "verbose") {
+    console.log(`Target directory: ${targetDir}`);
+    console.log(`Minimum usage count: ${minUsages}`);
+    console.log(`Analysis target: ${target}\n`);
+  }
+
+  const sourceFilesToAnalyze = createFilteredSourceFiles(targetDir, {
+    tsConfigFilePath: tsconfig,
+  });
+
+  // 各解析結果を収集
+  const allExported: AnalysisResult["exported"] = [];
+  const allConstants: AnalysisResult["constants"] = [];
 
   if (target === "all" || target === "components") {
     const propsResult = analyzePropsCore(sourceFilesToAnalyze, { minUsages });
-    printAnalysisResult(propsResult);
+    allExported.push(...propsResult.exported);
+    allConstants.push(...propsResult.constants);
   }
 
   if (target === "all" || target === "functions") {
     const functionsResult = analyzeFunctionsCore(sourceFilesToAnalyze, {
       minUsages,
     });
-    printFunctionAnalysisResult(functionsResult);
+    allExported.push(...functionsResult.exported);
+    allConstants.push(...functionsResult.constants);
   }
+
+  const result: AnalysisResult = {
+    exported: allExported,
+    constants: allConstants,
+  };
+
+  printAnalysisResult(result, output);
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

@@ -67,6 +67,7 @@ export class ComponentAnalyzer extends BaseAnalyzer {
       const component: Exported = {
         name: exportName,
         sourceFilePath: sourceFile.getFilePath(),
+        sourceLine: declaration.getStartLineNumber(),
         definitions: props,
         declaration,
         usages: {},

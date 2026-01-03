@@ -67,6 +67,7 @@ export class FunctionAnalyzer extends BaseAnalyzer {
       const callable: Exported = {
         name: exportName,
         sourceFilePath: sourceFile.getFilePath(),
+        sourceLine: declaration.getStartLineNumber(),
         definitions: parameters,
         declaration,
         usages: {},
