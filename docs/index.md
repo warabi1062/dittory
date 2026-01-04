@@ -1,25 +1,52 @@
 ---
-# https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
 hero:
-  name: "dittory"
-  text: "A static analysis CLI that detects parameters always receiving the same value in React components and functions"
-  tagline: My great project tagline
+  name: dittory
+  text: Find Repetitive Patterns
+  tagline: A static analysis CLI tool that detects parameters always receiving the same value in React components and functions.
   actions:
     - theme: brand
-      text: Markdown Examples
-      link: /markdown-examples
+      text: Get Started
+      link: /guide/getting-started
     - theme: alt
-      text: API Examples
-      link: /api-examples
+      text: View on GitHub
+      link: https://github.com/warabi1062/dittory
 
 features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+  - icon: "🔍"
+    title: Smart Detection
+    details: Automatically finds props and arguments that are always passed the same value across your entire codebase.
+  - icon: "⚡"
+    title: Fast Analysis
+    details: Built on ts-morph for efficient TypeScript/TSX parsing with full type awareness.
+  - icon: "🛠️"
+    title: Flexible Configuration
+    details: Configure via CLI options or config files. Supports both JavaScript and JSON configs.
+  - icon: "🎯"
+    title: Targeted Analysis
+    details: Analyze React components, functions, or both. Fine-tune with minimum usage thresholds.
 ---
 
+## Quick Start
+
+```bash
+# Install globally
+npm install -g dittory
+
+# Or use directly with npx
+npx dittory
+
+# Analyze a specific directory
+npx dittory ./src --min=3
+```
+
+## Why dittory?
+
+When a prop or argument is always passed the same value across your codebase, it's often a sign that:
+
+- The parameter could be **removed** and replaced with a default value
+- The API could be **simplified** by eliminating unnecessary options
+- There's **copy-paste code** that should be refactored
+
+**dittory** = "ditto" (same) + "-ory" — finds the repetitive patterns in your code.
