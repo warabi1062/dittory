@@ -2,6 +2,7 @@ import path from "node:path";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { analyzePropsCore } from "@/analyzeProps";
+import { collectCallSites } from "@/extraction/callSiteCollector";
 import type { AnalysisResult } from "@/types";
 
 const fixturesDir: string = path.join(__dirname, "__tests__", "fixtures");
@@ -22,8 +23,11 @@ describe("analyzePropsCore", () => {
     project.addSourceFileAtPath(path.join(fixturesDir, "UsageConstant.tsx"));
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert
@@ -40,8 +44,11 @@ describe("analyzePropsCore", () => {
     project.addSourceFileAtPath(path.join(fixturesDir, "UsageDifferent.tsx"));
 
     // Act - Differentコンポーネントを使用
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - Differentは異なる値なのでcolorは定数ではない
@@ -56,8 +63,11 @@ describe("analyzePropsCore", () => {
     project.addSourceFileAtPath(path.join(fixturesDir, "UsageOptional.tsx"));
 
     // Act - Optionalコンポーネントを使用（disabledが2箇所でtrue、1箇所でundefined）
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - disabledは定数として検出されない
@@ -79,8 +89,11 @@ describe("analyzePropsCore", () => {
     );
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - ConfigDifferent1とConfigDifferent2で異なる値のconfig
@@ -99,8 +112,11 @@ describe("analyzePropsCore", () => {
     project.addSourceFileAtPath(path.join(fixturesDir, "UsageConfigSame2.tsx"));
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - ConfigSame1とConfigSame2で同じ値のconfig
@@ -120,8 +136,11 @@ describe("analyzePropsCore", () => {
     project.addSourceFileAtPath(path.join(fixturesDir, "UsageMixedStatus.tsx"));
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - StatusAとStatusBは異なる値なので検出されない
@@ -138,8 +157,11 @@ describe("analyzePropsCore", () => {
     project.addSourceFileAtPath(path.join(fixturesDir, "UsageMixedStatus.tsx"));
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - MixedStatusでStatusAとStatusBが混在するため検出されない
@@ -155,8 +177,11 @@ describe("analyzePropsCore", () => {
     project.addSourceFileAtPath(path.join(fixturesDir, "UsageVariant.tsx"));
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert
@@ -174,8 +199,11 @@ describe("analyzePropsCore", () => {
     project.addSourceFileAtPath(path.join(fixturesDir, "UsageNumber.tsx"));
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - Numberコンポーネントでpriorityが常に10
@@ -196,8 +224,11 @@ describe("analyzePropsCore", () => {
     );
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - NestedConstantでconfig.themeとconfig.sizeが常に同じ値
@@ -225,8 +256,11 @@ describe("analyzePropsCore", () => {
     );
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - NestedDifferentでconfig.themeとconfig.sizeが異なる値
@@ -248,8 +282,11 @@ describe("analyzePropsCore", () => {
     project.addSourceFileAtPath(path.join(fixturesDir, "UsageDeepNested.tsx"));
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - DeepNestedでstyle.colors.primaryとsecondaryが検出される
@@ -275,8 +312,11 @@ describe("analyzePropsCore", () => {
     );
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - OptionalNestedでconfig.themeは常に同じだがconfig.sizeは片方にしかない
@@ -302,8 +342,11 @@ describe("analyzePropsCore", () => {
     );
 
     // Act
-    const result: AnalysisResult = analyzePropsCore(project.getSourceFiles(), {
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
     });
 
     // Assert - onClickは同じ関数が渡されているが、関数型なので検出されない

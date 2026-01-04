@@ -1,6 +1,9 @@
 import { Project, SyntaxKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { flattenObjectExpression } from "@/extraction/flattenObjectExpression";
+import type { ResolveContext } from "@/extraction/resolveExpressionValue";
+
+const emptyContext: ResolveContext = { callSiteMap: new Map() };
 
 describe("flattenObjectExpression", () => {
   it("オブジェクトリテラルをフラット化すること", () => {
@@ -17,7 +20,11 @@ describe("flattenObjectExpression", () => {
     if (!objectLiteral) return;
 
     // Act
-    const result = flattenObjectExpression(objectLiteral, "style");
+    const result = flattenObjectExpression(
+      objectLiteral,
+      "style",
+      emptyContext,
+    );
 
     // Assert
     expect(result).toHaveLength(2);
@@ -43,7 +50,11 @@ describe("flattenObjectExpression", () => {
     if (!objectLiteral) return;
 
     // Act
-    const result = flattenObjectExpression(objectLiteral, "config");
+    const result = flattenObjectExpression(
+      objectLiteral,
+      "config",
+      emptyContext,
+    );
 
     // Assert
     expect(result).toHaveLength(2);
@@ -73,7 +84,11 @@ describe("flattenObjectExpression", () => {
     if (!objectLiteral) return;
 
     // Act
-    const result = flattenObjectExpression(objectLiteral, "style");
+    const result = flattenObjectExpression(
+      objectLiteral,
+      "style",
+      emptyContext,
+    );
 
     // Assert
     expect(result).toHaveLength(1);
@@ -97,7 +112,7 @@ describe("flattenObjectExpression", () => {
     if (!stringLiteral) return;
 
     // Act
-    const result = flattenObjectExpression(stringLiteral, "prop");
+    const result = flattenObjectExpression(stringLiteral, "prop", emptyContext);
 
     // Assert
     expect(result).toHaveLength(1);
@@ -118,7 +133,7 @@ describe("flattenObjectExpression", () => {
     if (!objectLiteral) return;
 
     // Act
-    const result = flattenObjectExpression(objectLiteral, "");
+    const result = flattenObjectExpression(objectLiteral, "", emptyContext);
 
     // Assert
     expect(result).toHaveLength(2);

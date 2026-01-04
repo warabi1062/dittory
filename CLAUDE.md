@@ -23,6 +23,23 @@ pnpm vitest run src/analyzer/componentAnalyzer.test.ts
 
 コード修正後は必ず `pnpm lint && pnpm test && pnpm typecheck` を実行してエラーがないことを確認すること。
 
+## ドキュメント
+
+ドキュメントは `/docs` ディレクトリにあり、VitePressで構築されている。
+
+```bash
+cd docs
+pnpm dev      # 開発サーバー起動
+pnpm build    # ビルド
+```
+
+主要なドキュメントファイル:
+- `docs/guide/cli-options.md` - CLIオプションの説明
+- `docs/config/options.md` - 設定オプションのリファレンス
+- `docs/guide/getting-started.md` - 導入ガイド
+
+CLIオプションや設定を変更した場合は、対応するドキュメントも更新すること。
+
 ## コーディング規約
 
 ### Linting

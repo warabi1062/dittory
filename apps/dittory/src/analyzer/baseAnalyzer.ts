@@ -1,15 +1,31 @@
-import { FUNCTION_VALUE_PREFIX } from "@/extraction/resolveExpressionValue";
+import {
+  type Identifier,
+  Node,
+  type ParameterDeclaration,
+  type ReferencedSymbol,
+} from "ts-morph";
+import type { CallSiteMap } from "@/extraction/callSiteCollector";
+import {
+  FUNCTION_VALUE_PREFIX,
+  type ResolveContext,
+} from "@/extraction/resolveExpressionValue";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type {
   AnalysisResult,
   AnalyzerOptions,
   ClassifiedDeclaration,
   Constant,
+  Definition,
   Exported,
   FileFilter,
   Usage,
 } from "@/types";
 import { getSingleValueFromSet } from "@/utils/getSingleValueFromSet";
+
+/**
+ * ts-morph の参照情報を表す型
+ */
+type ReferenceEntry = ReturnType<ReferencedSymbol["getReferences"]>[number];
 
 /**
  * 使用データのグループ
@@ -45,10 +61,116 @@ type GroupedMap = Map<string, Map<string, TargetInfo>>;
 export abstract class BaseAnalyzer {
   protected shouldExcludeFile: FileFilter;
   protected minUsages: number;
+  protected callSiteMap!: CallSiteMap;
 
   constructor(options: AnalyzerOptions = {}) {
     this.shouldExcludeFile = options.shouldExcludeFile ?? isTestOrStorybookFile;
     this.minUsages = options.minUsages ?? 2;
+  }
+
+  /**
+   * 呼び出し情報を設定する
+   * パラメータ経由で渡された値を解決するために使用
+   *
+   * @param callSiteMap - 呼び出し情報マップ
+   */
+  setCallSiteMap(callSiteMap: CallSiteMap): void {
+    this.callSiteMap = callSiteMap;
+  }
+
+  /**
+   * コンテキストを取得する
+   */
+  protected getResolveContext(): ResolveContext {
+    return {
+      callSiteMap: this.callSiteMap,
+    };
+  }
+
+  /**
+   * 識別子から全参照を検索し、除外対象ファイルからの参照をフィルタリングする
+   *
+   * @param nameNode - 検索対象の識別子ノード
+   * @returns フィルタリングされた参照エントリの配列
+   */
+  protected findFilteredReferences(nameNode: Identifier): ReferenceEntry[] {
+    return nameNode
+      .findReferences()
+      .flatMap((referencedSymbol) => referencedSymbol.getReferences())
+      .filter(
+        (ref) => !this.shouldExcludeFile(ref.getSourceFile().getFilePath()),
+      );
+  }
+
+  /**
+   * 使用状況をグループに追加する
+   *
+   * @param groupedUsages - 使用状況のグループ（パラメータ名 → 使用状況配列）
+   * @param usages - 追加する使用状況の配列
+   */
+  protected addUsagesToGroup(
+    groupedUsages: Record<string, Usage[]>,
+    usages: Usage[],
+  ): void {
+    for (const usage of usages) {
+      if (!groupedUsages[usage.name]) {
+        groupedUsages[usage.name] = [];
+      }
+      groupedUsages[usage.name].push(usage);
+    }
+  }
+
+  /**
+   * ノードからパラメータ定義を取得する
+   *
+   * FunctionDeclaration, MethodDeclaration, VariableDeclaration（ArrowFunction/FunctionExpression）
+   * からパラメータを抽出し、Definition配列として返す。
+   *
+   * @param node - パラメータを抽出する対象のノード
+   * @returns パラメータ定義の配列
+   */
+  protected getParameterDefinitions(node: Node): Definition[] {
+    const params = this.extractParameterDeclarations(node);
+    return params.map((param, index) => ({
+      name: param.getName(),
+      index,
+      required: !param.hasQuestionToken() && !param.hasInitializer(),
+    }));
+  }
+
+  /**
+   * ノードからParameterDeclarationの配列を抽出する
+   *
+   * 以下のノードタイプに対応:
+   * - FunctionDeclaration: 直接パラメータを取得
+   * - MethodDeclaration: 直接パラメータを取得
+   * - VariableDeclaration: 初期化子がArrowFunctionまたはFunctionExpressionの場合にパラメータを取得
+   *
+   * @param node - パラメータを抽出する対象のノード
+   * @returns ParameterDeclarationの配列
+   */
+  protected extractParameterDeclarations(node: Node): ParameterDeclaration[] {
+    if (Node.isFunctionDeclaration(node)) {
+      return node.getParameters();
+    }
+
+    if (Node.isMethodDeclaration(node)) {
+      return node.getParameters();
+    }
+
+    if (Node.isVariableDeclaration(node)) {
+      const initializer = node.getInitializer();
+      if (initializer) {
+        if (
+          Node.isArrowFunction(initializer) ||
+          Node.isFunctionExpression(initializer)
+        ) {
+          return initializer.getParameters();
+        }
+      }
+    }
+
+    return [];
   }
 
   /**

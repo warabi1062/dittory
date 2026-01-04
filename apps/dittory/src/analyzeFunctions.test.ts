@@ -2,6 +2,7 @@ import path from "node:path";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { analyzeFunctionsCore } from "@/analyzeFunctions";
+import { collectCallSites } from "@/extraction/callSiteCollector";
 import type { AnalysisResult } from "@/types";
 
 const fixturesDir: string = path.join(__dirname, "__tests__", "fixtures");
@@ -24,12 +25,12 @@ describe("analyzeFunctionsCore", () => {
     );
 
     // Act
-    const result: AnalysisResult = analyzeFunctionsCore(
-      project.getSourceFiles(),
-      {
-        shouldExcludeFile: isTestOrStorybookFileStrict,
-      },
-    );
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
+    });
 
     // Assert
     const prefixArg = result.constants.find((a) => a.paramName === "prefix");
@@ -47,12 +48,12 @@ describe("analyzeFunctionsCore", () => {
     );
 
     // Act
-    const result: AnalysisResult = analyzeFunctionsCore(
-      project.getSourceFiles(),
-      {
-        shouldExcludeFile: isTestOrStorybookFileStrict,
-      },
-    );
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
+    });
 
     // Assert
     const prefixArg = result.constants.find((a) => a.paramName === "prefix");
@@ -68,12 +69,12 @@ describe("analyzeFunctionsCore", () => {
     );
 
     // Act
-    const result: AnalysisResult = analyzeFunctionsCore(
-      project.getSourceFiles(),
-      {
-        shouldExcludeFile: isTestOrStorybookFileStrict,
-      },
-    );
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
+    });
 
     // Assert - suffixは一部で渡されていないため定数として検出されない
     const suffixArg = result.constants.find((a) => a.paramName === "suffix");
@@ -94,12 +95,12 @@ describe("analyzeFunctionsCore", () => {
     );
 
     // Act
-    const result: AnalysisResult = analyzeFunctionsCore(
-      project.getSourceFiles(),
-      {
-        shouldExcludeFile: isTestOrStorybookFileStrict,
-      },
-    );
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
+    });
 
     // Assert - bは常に100
     const bArg = result.constants.find((a) => a.paramName === "b");
@@ -115,12 +116,12 @@ describe("analyzeFunctionsCore", () => {
     project.addSourceFileAtPath(path.join(fixturesDir, "UsageConstant.tsx"));
 
     // Act
-    const result: AnalysisResult = analyzeFunctionsCore(
-      project.getSourceFiles(),
-      {
-        shouldExcludeFile: isTestOrStorybookFileStrict,
-      },
-    );
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
+    });
 
     // Assert - TestCompはReactコンポーネントなので関数として検出されない
     const testCompFunc = result.exported.find((f) => f.name === "TestComp");
@@ -134,12 +135,12 @@ describe("analyzeFunctionsCore", () => {
     project.addSourceFileAtPath(path.join(fixturesDir, "usageStaticMethod.ts"));
 
     // Act
-    const result: AnalysisResult = analyzeFunctionsCore(
-      project.getSourceFiles(),
-      {
-        shouldExcludeFile: isTestOrStorybookFileStrict,
-      },
-    );
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
+    });
 
     // Assert - Logger.logが検出される（名前は「ClassName.methodName」形式）
     const loggerLog = result.exported.find((f) => f.name === "Logger.log");
@@ -165,12 +166,12 @@ describe("analyzeFunctionsCore", () => {
     );
 
     // Act
-    const result: AnalysisResult = analyzeFunctionsCore(
-      project.getSourceFiles(),
-      {
-        shouldExcludeFile: isTestOrStorybookFileStrict,
-      },
-    );
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
+    });
 
     // Assert - callbackは同じ関数が渡されているが、関数型なので検出されない
     const callbackArg = result.constants.find(

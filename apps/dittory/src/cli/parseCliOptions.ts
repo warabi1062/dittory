@@ -172,13 +172,13 @@ export function getHelpMessage(): string {
 Usage: dittory [options] [directory]
 
 Options:
-  --min=<number>    Minimum usage count (default: 2)
-  --target=<mode>   Analysis target: all, components, functions (default: all)
-  --output=<mode>   Output mode: simple, verbose (default: simple)
-  --tsconfig=<path> Path to tsconfig.json (default: ./tsconfig.json)
-  --help            Show this help message
+  --min=<number>       Minimum usage count (default: 2)
+  --target=<mode>      Analysis target: all, components, functions (default: all)
+  --output=<mode>      Output mode: simple, verbose (default: simple)
+  --tsconfig=<path>    Path to tsconfig.json (default: ./tsconfig.json)
+  --help               Show this help message
 
 Arguments:
-  directory         Target directory to analyze (default: ./src)
+  directory            Target directory to analyze (default: ./src)
 `;
 }

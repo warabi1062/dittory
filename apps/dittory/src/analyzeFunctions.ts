@@ -1,6 +1,7 @@
 import type { SourceFile } from "ts-morph";
 import { ClassMethodAnalyzer } from "@/analyzer/classMethodAnalyzer";
 import { FunctionAnalyzer } from "@/analyzer/functionAnalyzer";
+import type { CallSiteMap } from "@/extraction/callSiteCollector";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type { AnalysisResult, FileFilter } from "@/types";
@@ -8,6 +9,8 @@ import type { AnalysisResult, FileFilter } from "@/types";
 interface AnalyzeFunctionsOptions {
   shouldExcludeFile?: FileFilter;
   minUsages?: number;
+  /** 呼び出し情報（パラメータ経由で渡された値を解決するために使用） */
+  callSiteMap: CallSiteMap;
 }
 
 /**
@@ -24,9 +27,13 @@ interface AnalyzeFunctionsOptions {
  */
 export function analyzeFunctionsCore(
   sourceFiles: SourceFile[],
-  options: AnalyzeFunctionsOptions = {},
+  options: AnalyzeFunctionsOptions,
 ): AnalysisResult {
-  const { shouldExcludeFile = isTestOrStorybookFile, minUsages = 2 } = options;
+  const {
+    shouldExcludeFile = isTestOrStorybookFile,
+    minUsages = 2,
+    callSiteMap,
+  } = options;
 
   // 宣言を事前分類
   const declarations = classifyDeclarations(sourceFiles);
@@ -37,10 +44,12 @@ export function analyzeFunctionsCore(
 
   // 関数を分析
   const functionAnalyzer = new FunctionAnalyzer(analyzerOptions);
+  functionAnalyzer.setCallSiteMap(callSiteMap);
   const functionResult = functionAnalyzer.analyze(functions);
 
   // クラスメソッドを分析
   const classMethodAnalyzer = new ClassMethodAnalyzer(analyzerOptions);
+  classMethodAnalyzer.setCallSiteMap(callSiteMap);
   const classMethodResult = classMethodAnalyzer.analyze(classes);
 
   // 結果をマージ
