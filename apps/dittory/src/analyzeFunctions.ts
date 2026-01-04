@@ -11,8 +11,6 @@ interface AnalyzeFunctionsOptions {
   minUsages?: number;
   /** 呼び出し情報（パラメータ経由で渡された値を解決するために使用） */
   callSiteMap: CallSiteMap;
-  /** パラメータ参照の再帰解決の最大深さ */
-  maxDepth?: number;
 }
 
 /**
@@ -35,7 +33,6 @@ export function analyzeFunctionsCore(
     shouldExcludeFile = isTestOrStorybookFile,
     minUsages = 2,
     callSiteMap,
-    maxDepth,
   } = options;
 
   // 宣言を事前分類
@@ -47,12 +44,12 @@ export function analyzeFunctionsCore(
 
   // 関数を分析
   const functionAnalyzer = new FunctionAnalyzer(analyzerOptions);
-  functionAnalyzer.setCallSiteMap(callSiteMap, maxDepth);
+  functionAnalyzer.setCallSiteMap(callSiteMap);
   const functionResult = functionAnalyzer.analyze(functions);
 
   // クラスメソッドを分析
   const classMethodAnalyzer = new ClassMethodAnalyzer(analyzerOptions);
-  classMethodAnalyzer.setCallSiteMap(callSiteMap, maxDepth);
+  classMethodAnalyzer.setCallSiteMap(callSiteMap);
   const classMethodResult = classMethodAnalyzer.analyze(classes);
 
   // 結果をマージ

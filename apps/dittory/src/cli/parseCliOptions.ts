@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import { DEFAULT_MAX_DEPTH } from "@/extraction/callSiteCollector";
 
 export type AnalyzeMode = "all" | "components" | "functions";
 export type OutputMode = "simple" | "verbose";
@@ -13,7 +12,6 @@ export interface RawCliOptions {
   target?: AnalyzeMode;
   output?: OutputMode;
   tsconfig?: string;
-  maxDepth?: number;
   showHelp: boolean;
 }
 
@@ -26,7 +24,6 @@ export interface ResolvedOptions {
   target: AnalyzeMode;
   output: OutputMode;
   tsconfig: string;
-  maxDepth: number;
 }
 
 /** デフォルトのオプション値 */
@@ -36,7 +33,6 @@ export const DEFAULT_OPTIONS: ResolvedOptions = {
   target: "all",
   output: "simple",
   tsconfig: "./tsconfig.json",
-  maxDepth: DEFAULT_MAX_DEPTH,
 };
 
 export class CliValidationError extends Error {
@@ -60,7 +56,6 @@ const VALID_OPTIONS: readonly string[] = [
   "--target",
   "--output",
   "--tsconfig",
-  "--max-depth",
   "--help",
 ];
 
@@ -128,22 +123,6 @@ export function parseCliOptions(args: string[]): RawCliOptions {
       }
 
       result.tsconfig = value;
-    } else if (arg.startsWith("--max-depth=")) {
-      const valueStr = arg.slice(12);
-      const value = Number.parseInt(valueStr, 10);
-
-      if (valueStr === "" || Number.isNaN(value)) {
-        throw new CliValidationError(
-          `Invalid value for --max-depth: "${valueStr}" (must be a number)`,
-        );
-      }
-      if (value < 1) {
-        throw new CliValidationError(
-          `--max-depth must be at least 1: ${value}`,
-        );
-      }
-
-      result.maxDepth = value;
     } else if (arg.startsWith("--")) {
       const optionName = arg.split("=")[0];
 
@@ -197,7 +176,6 @@ Options:
   --target=<mode>      Analysis target: all, components, functions (default: all)
   --output=<mode>      Output mode: simple, verbose (default: simple)
   --tsconfig=<path>    Path to tsconfig.json (default: ./tsconfig.json)
-  --max-depth=<number> Max depth for parameter chain resolution (default: ${DEFAULT_MAX_DEPTH})
   --help               Show this help message
 
 Arguments:

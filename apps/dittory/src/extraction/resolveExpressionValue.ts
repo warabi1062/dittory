@@ -1,5 +1,5 @@
 import { Node, SyntaxKind } from "ts-morph";
-import { type CallSiteMap, DEFAULT_MAX_DEPTH } from "./callSiteCollector";
+import type { CallSiteMap } from "./callSiteCollector";
 
 /**
  * 引数が渡されなかった場合を表す特別な値
@@ -29,8 +29,6 @@ export const PARAM_REF_PREFIX = "[param]";
 export interface ResolveContext {
   /** 呼び出し情報（パラメータ参照の解決に使用） */
   callSiteMap: CallSiteMap;
-  /** パラメータ参照の再帰解決の最大深さ */
-  maxDepth?: number;
 }
 
 /**
@@ -80,13 +78,10 @@ export function resolveExpressionValue(
     if (isParameterReference(expression.getExpression())) {
       // callSiteMapがある場合は、呼び出し元で渡された値を解決
       if (context?.callSiteMap) {
-        const maxDepth = context.maxDepth ?? DEFAULT_MAX_DEPTH;
         const resolved = resolveParameterFromCallSites(
           expression,
           context.callSiteMap,
           new Set(),
-          0,
-          maxDepth,
         );
         if (resolved !== undefined) {
           return resolved;
@@ -177,13 +172,7 @@ function resolveParameterFromCallSites(
   expression: Node,
   callSiteMap: CallSiteMap,
   visited: Set<string> = new Set(),
-  depth: number = 0,
-  maxDepth: number = DEFAULT_MAX_DEPTH,
 ): string | undefined {
-  // 深さ制限チェック
-  if (depth >= maxDepth) {
-    return undefined;
-  }
   // 関数スコープを特定
   const functionInfo = findContainingFunctionInfo(expression);
   if (!functionInfo) {
@@ -247,8 +236,6 @@ function resolveParameterFromCallSites(
                   parentValue,
                   callSiteMap,
                   new Set(visited),
-                  depth + 1,
-                  maxDepth,
                 );
                 if (resolved === undefined) {
                   return undefined;
@@ -284,14 +271,7 @@ function resolveParamRefRecursive(
   paramRef: string,
   callSiteMap: CallSiteMap,
   visited: Set<string>,
-  depth: number = 0,
-  maxDepth: number = DEFAULT_MAX_DEPTH,
 ): string | undefined {
-  // 深さ制限チェック
-  if (depth >= maxDepth) {
-    return undefined;
-  }
-
   if (!paramRef.startsWith(PARAM_REF_PREFIX)) {
     return paramRef;
   }
@@ -334,8 +314,6 @@ function resolveParamRefRecursive(
           value,
           callSiteMap,
           new Set(visited),
-          depth + 1,
-          maxDepth,
         );
         if (resolved === undefined) {
           return undefined;

@@ -124,7 +124,6 @@ export const App = () => <Parent number="42" />;
 | Nested access | `props.user.name` | ✅ |
 | Multi-level chains | `A → B → C` propagation | ✅ |
 | Circular reference protection | Prevents infinite loops | ✅ |
-| Depth limit | `--max-depth` option (default: 10) | ✅ |
 
 ### Scope
 
@@ -198,7 +197,6 @@ const Enhanced = withAuth(Component);
 | `--target=<mode>` | What to analyze: `all`, `components`, `functions` | `all` |
 | `--output=<mode>` | Output verbosity: `simple`, `verbose` | `simple` |
 | `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |
-| `--max-depth=<n>` | Max depth for parameter chain resolution | `10` |
 | `--help` | Show help message | — |
 
 ## Configuration File
@@ -217,7 +215,6 @@ export default {
   output: "verbose",
   tsconfig: "./tsconfig.app.json",
   targetDir: "./src",
-  maxDepth: 10, // Max depth for parameter chain resolution
 };
 ```
 

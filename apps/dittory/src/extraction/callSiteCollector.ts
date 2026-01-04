@@ -411,9 +411,6 @@ export function collectCallSites(
   return callSiteMap;
 }
 
-/** 再帰解決のデフォルト最大深さ */
-export const DEFAULT_MAX_DEPTH = 10;
-
 /**
  * パラメータ参照を解決する
  * callSiteMapを使って、パラメータに渡されたすべての値を取得し、
@@ -422,21 +419,12 @@ export const DEFAULT_MAX_DEPTH = 10;
  * @param paramRef - パラメータ参照文字列
  * @param callSiteMap - 呼び出し情報マップ
  * @param visited - 循環参照防止用のセット
- * @param depth - 現在の再帰深さ
- * @param maxDepth - 最大再帰深さ（デフォルト: 10）
  */
 export function resolveParameterValue(
   paramRef: string,
   callSiteMap: CallSiteMap,
   visited: Set<string> = new Set(),
-  depth: number = 0,
-  maxDepth: number = DEFAULT_MAX_DEPTH,
 ): string | undefined {
-  // 深さ制限チェック
-  if (depth >= maxDepth) {
-    return undefined;
-  }
-
   // 循環参照を防ぐ
   if (visited.has(paramRef)) {
     return undefined;
@@ -491,8 +479,6 @@ export function resolveParameterValue(
             propValue,
             callSiteMap,
             new Set(visited),
-            depth + 1,
-            maxDepth,
           );
           if (resolved === undefined) {
             return undefined;
@@ -520,8 +506,6 @@ export function resolveParameterValue(
           value,
           callSiteMap,
           new Set(visited),
-          depth + 1,
-          maxDepth,
         );
         if (resolved === undefined) {
           return undefined;

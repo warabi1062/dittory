@@ -19,7 +19,6 @@ export interface DittoryConfig {
   output?: OutputMode;
   tsconfig?: string;
   targetDir?: string;
-  maxDepth?: number;
 }
 
 /**
@@ -159,15 +158,6 @@ function validateConfig(config: Record<string, unknown>): DittoryConfig {
       );
     }
     result.targetDir = config.targetDir;
-  }
-
-  if ("maxDepth" in config) {
-    if (typeof config.maxDepth !== "number" || config.maxDepth < 1) {
-      throw new Error(
-        `Invalid config: maxDepth must be a number >= 1, got ${config.maxDepth}`,
-      );
-    }
-    result.maxDepth = config.maxDepth;
   }
 
   return result;

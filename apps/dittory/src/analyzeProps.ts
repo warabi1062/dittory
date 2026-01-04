@@ -10,8 +10,6 @@ interface AnalyzePropsOptions {
   minUsages?: number;
   /** 呼び出し情報（パラメータ経由で渡された値を解決するために使用） */
   callSiteMap: CallSiteMap;
-  /** パラメータ参照の再帰解決の最大深さ */
-  maxDepth?: number;
 }
 
 /**
@@ -34,7 +32,6 @@ export function analyzePropsCore(
     shouldExcludeFile = isTestOrStorybookFile,
     minUsages = 2,
     callSiteMap,
-    maxDepth,
   } = options;
 
   // 宣言を事前分類し、Reactコンポーネントのみ抽出
@@ -45,7 +42,7 @@ export function analyzePropsCore(
     shouldExcludeFile,
     minUsages,
   });
-  analyzer.setCallSiteMap(callSiteMap, maxDepth);
+  analyzer.setCallSiteMap(callSiteMap);
 
   return analyzer.analyze(components);
 }

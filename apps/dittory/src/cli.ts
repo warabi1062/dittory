@@ -64,11 +64,9 @@ async function main(): Promise<void> {
     output: cliOptions.output ?? fileConfig.output ?? DEFAULT_OPTIONS.output,
     tsconfig:
       cliOptions.tsconfig ?? fileConfig.tsconfig ?? DEFAULT_OPTIONS.tsconfig,
-    maxDepth:
-      cliOptions.maxDepth ?? fileConfig.maxDepth ?? DEFAULT_OPTIONS.maxDepth,
   };
 
-  const { targetDir, minUsages, target, output, tsconfig, maxDepth } = options;
+  const { targetDir, minUsages, target, output, tsconfig } = options;
 
   // 対象ディレクトリの存在を検証
   try {
@@ -111,7 +109,6 @@ async function main(): Promise<void> {
     const propsResult = analyzePropsCore(sourceFilesToAnalyze, {
       minUsages,
       callSiteMap,
-      maxDepth,
     });
     allExported.push(...propsResult.exported);
     allConstants.push(...propsResult.constants);
@@ -121,7 +118,6 @@ async function main(): Promise<void> {
     const functionsResult = analyzeFunctionsCore(sourceFilesToAnalyze, {
       minUsages,
       callSiteMap,
-      maxDepth,
     });
     allExported.push(...functionsResult.exported);
     allConstants.push(...functionsResult.constants);

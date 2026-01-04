@@ -50,7 +50,6 @@ export abstract class BaseAnalyzer {
   protected shouldExcludeFile: FileFilter;
   protected minUsages: number;
   protected callSiteMap!: CallSiteMap;
-  protected maxDepth: number | undefined;
 
   constructor(options: AnalyzerOptions = {}) {
     this.shouldExcludeFile = options.shouldExcludeFile ?? isTestOrStorybookFile;
@@ -62,11 +61,9 @@ export abstract class BaseAnalyzer {
    * パラメータ経由で渡された値を解決するために使用
    *
    * @param callSiteMap - 呼び出し情報マップ
-   * @param maxDepth - パラメータ参照の再帰解決の最大深さ
    */
-  setCallSiteMap(callSiteMap: CallSiteMap, maxDepth?: number): void {
+  setCallSiteMap(callSiteMap: CallSiteMap): void {
     this.callSiteMap = callSiteMap;
-    this.maxDepth = maxDepth;
   }
 
   /**
@@ -75,7 +72,6 @@ export abstract class BaseAnalyzer {
   protected getResolveContext(): ResolveContext {
     return {
       callSiteMap: this.callSiteMap,
-      maxDepth: this.maxDepth,
     };
   }
 
