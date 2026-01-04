@@ -11,7 +11,7 @@ export type FlattenedValue = { key: string; value: string };
  *
  * @param expression - 解析対象の式ノード
  * @param prefix - キー名のプレフィックス（ネストしたプロパティの親パスを表す）
- * @param context - 呼び出し情報などのコンテキスト（オプション）
+ * @param context - 呼び出し情報などのコンテキスト
  * @returns フラット化されたkey-valueペアの配列
  *
  * @example
@@ -20,7 +20,7 @@ export type FlattenedValue = { key: string; value: string };
 export function flattenObjectExpression(
   expression: Node,
   prefix: string,
-  context?: ResolveContext,
+  context: ResolveContext,
 ): FlattenedValue[] {
   if (!Node.isObjectLiteralExpression(expression)) {
     // オブジェクトリテラル以外の場合は単一の値として返す

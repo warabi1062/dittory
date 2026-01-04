@@ -40,11 +40,11 @@ export interface ResolveContext {
  * 必要に応じてファイルパスを含めた識別子を返す。
  *
  * @param expression - 解決対象の式
- * @param context - 呼び出し情報などのコンテキスト（オプション）
+ * @param context - 呼び出し情報などのコンテキスト
  */
 export function resolveExpressionValue(
   expression: Node,
-  context?: ResolveContext,
+  context: ResolveContext,
 ): string {
   // 関数型の場合は定数として扱わない。
   // 同じ関数参照でも使用箇所ごとに異なる値として扱うことで、
@@ -76,16 +76,14 @@ export function resolveExpressionValue(
 
     // 左辺がパラメータを参照している場合（例: props.number）
     if (isParameterReference(expression.getExpression())) {
-      // callSiteMapがある場合は、呼び出し元で渡された値を解決
-      if (context?.callSiteMap) {
-        const resolved = resolveParameterFromCallSites(
-          expression,
-          context.callSiteMap,
-          new Set(),
-        );
-        if (resolved !== undefined) {
-          return resolved;
-        }
+      // 呼び出し元で渡された値を解決
+      const resolved = resolveParameterFromCallSites(
+        expression,
+        context.callSiteMap,
+        new Set(),
+      );
+      if (resolved !== undefined) {
+        return resolved;
       }
       // 解決できない場合は使用箇所ごとにユニークな値として扱う
       const sourceFile = expression.getSourceFile();

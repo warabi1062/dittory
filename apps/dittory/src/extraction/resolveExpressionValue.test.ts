@@ -1,9 +1,12 @@
 import { Project, SyntaxKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
+  type ResolveContext,
   resolveExpressionValue,
   UNDEFINED_VALUE,
 } from "@/extraction/resolveExpressionValue";
+
+const emptyContext: ResolveContext = { callSiteMap: new Map() };
 
 describe("resolveExpressionValue", () => {
   it("文字列リテラルを解決すること", () => {
@@ -20,7 +23,7 @@ describe("resolveExpressionValue", () => {
     if (!stringLiteral) return;
 
     // Act
-    const result = resolveExpressionValue(stringLiteral);
+    const result = resolveExpressionValue(stringLiteral, emptyContext);
 
     // Assert
     expect(result).toBe('"hello"');
@@ -40,7 +43,7 @@ describe("resolveExpressionValue", () => {
     if (!numericLiteral) return;
 
     // Act
-    const result = resolveExpressionValue(numericLiteral);
+    const result = resolveExpressionValue(numericLiteral, emptyContext);
 
     // Assert
     expect(result).toBe("42");
@@ -61,7 +64,7 @@ describe("resolveExpressionValue", () => {
     if (!expression) return;
 
     // Act
-    const result = resolveExpressionValue(expression);
+    const result = resolveExpressionValue(expression, emptyContext);
 
     // Assert
     expect(result).toBe("true");
@@ -85,7 +88,7 @@ describe("resolveExpressionValue", () => {
     if (!identifier) return;
 
     // Act
-    const result = resolveExpressionValue(identifier);
+    const result = resolveExpressionValue(identifier, emptyContext);
 
     // Assert
     expect(result).toBe("true");
@@ -111,7 +114,7 @@ describe("resolveExpressionValue", () => {
     if (!propertyAccess) return;
 
     // Act
-    const result = resolveExpressionValue(propertyAccess);
+    const result = resolveExpressionValue(propertyAccess, emptyContext);
 
     // Assert
     expect(result).toContain("Status.Active");
@@ -136,7 +139,7 @@ describe("resolveExpressionValue", () => {
     if (!identifier) return;
 
     // Act
-    const result = resolveExpressionValue(identifier);
+    const result = resolveExpressionValue(identifier, emptyContext);
 
     // Assert
     expect(result).toBe('"hello"');
@@ -159,7 +162,7 @@ describe("resolveExpressionValue", () => {
     if (!identifier) return;
 
     // Act
-    const result = resolveExpressionValue(identifier);
+    const result = resolveExpressionValue(identifier, emptyContext);
 
     // Assert
     expect(result).toContain("message");
@@ -181,7 +184,7 @@ describe("resolveExpressionValue", () => {
     if (!expression) return;
 
     // Act
-    const result = resolveExpressionValue(expression);
+    const result = resolveExpressionValue(expression, emptyContext);
 
     // Assert
     expect(result).toBe(UNDEFINED_VALUE);
@@ -202,7 +205,7 @@ describe("resolveExpressionValue", () => {
     if (!binaryExpression) return;
 
     // Act
-    const result = resolveExpressionValue(binaryExpression);
+    const result = resolveExpressionValue(binaryExpression, emptyContext);
 
     // Assert
     expect(result).toBe("1 + 2");
@@ -229,7 +232,7 @@ describe("resolveExpressionValue", () => {
     if (!identifier) return;
 
     // Act
-    const result = resolveExpressionValue(identifier);
+    const result = resolveExpressionValue(identifier, emptyContext);
 
     // Assert
     // インポート元の初期化子の値が解決される
@@ -270,8 +273,8 @@ describe("resolveExpressionValue", () => {
     if (!identifier1 || !identifier2) return;
 
     // Act
-    const result1 = resolveExpressionValue(identifier1);
-    const result2 = resolveExpressionValue(identifier2);
+    const result1 = resolveExpressionValue(identifier1, emptyContext);
+    const result2 = resolveExpressionValue(identifier2, emptyContext);
 
     // Assert
     // 両方とも同じ値として解決される
@@ -300,7 +303,7 @@ describe("resolveExpressionValue", () => {
     if (!identifier) return;
 
     // Act
-    const result = resolveExpressionValue(identifier);
+    const result = resolveExpressionValue(identifier, emptyContext);
 
     // Assert
     // alias2 -> alias1 -> original -> 100 と辿って最終的な値が解決される
@@ -335,7 +338,7 @@ describe("resolveExpressionValue", () => {
     if (!identifier) return;
 
     // Act
-    const result = resolveExpressionValue(identifier);
+    const result = resolveExpressionValue(identifier, emptyContext);
 
     // Assert
     // value -> derived -> base -> 42 と辿って最終的な値が解決される
@@ -374,8 +377,8 @@ describe("resolveExpressionValue", () => {
     if (!expression1 || !expression2) return;
 
     // Act
-    const result1 = resolveExpressionValue(expression1);
-    const result2 = resolveExpressionValue(expression2);
+    const result1 = resolveExpressionValue(expression1, emptyContext);
+    const result2 = resolveExpressionValue(expression2, emptyContext);
 
     // Assert
     // 同じ props.number でも、異なるファイルからの参照は異なる値として扱われる
@@ -402,7 +405,7 @@ describe("resolveExpressionValue", () => {
     if (!expression) return;
 
     // Act
-    const result = resolveExpressionValue(expression);
+    const result = resolveExpressionValue(expression, emptyContext);
 
     // Assert
     // ネストしたプロパティアクセスでもパラメータ参照として認識される

@@ -22,13 +22,13 @@ export class ExtractUsages {
    *
    * @param callExpression - 関数呼び出しノード
    * @param callable - 対象の関数情報
-   * @param context - 呼び出し情報などのコンテキスト（オプション）
+   * @param context - 呼び出し情報などのコンテキスト
    * @returns 引数使用状況の配列
    */
   static fromCall(
     callExpression: CallExpression,
     callable: Exported,
-    context?: ResolveContext,
+    context: ResolveContext,
   ): Usage[] {
     // dittory-disable-next-line コメントがある場合は除外
     if (hasDisableComment(callExpression)) {
@@ -76,13 +76,13 @@ export class ExtractUsages {
    *
    * @param element - JSX要素ノード
    * @param definitions - props定義の配列
-   * @param context - 呼び出し情報などのコンテキスト（オプション）
+   * @param context - 呼び出し情報などのコンテキスト
    * @returns props使用状況の配列
    */
   static fromJsxElement(
     element: JsxOpeningElement | JsxSelfClosingElement,
     definitions: Definition[],
-    context?: ResolveContext,
+    context: ResolveContext,
   ): Usage[] {
     // dittory-disable-next-line コメントがある場合は除外
     if (hasDisableComment(element)) {
