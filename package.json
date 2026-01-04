@@ -3,8 +3,7 @@
   "type": "module",
   "scripts": {
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs",
-    "docs:dev": "vitepress dev docs"
+    "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
     "vitepress": "^1.6.3"
