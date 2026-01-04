@@ -84,9 +84,14 @@ export function parseTargetId(targetId: string): {
 
 /**
  * 式から ArgValue を抽出する
- * 呼び出し情報収集時に使用する
+ *
+ * 式の値を型安全な ArgValue として返す。
+ * 呼び出し情報収集時および式の値解決時に使用する。
+ *
+ * @param expression - 解析対象の式ノード
+ * @returns 式の値を表す ArgValue
  */
-function extractArgValue(expression: Node): ArgValue {
+export function extractArgValue(expression: Node): ArgValue {
   const type = expression.getType();
 
   // 関数型の場合
@@ -154,6 +159,13 @@ function extractArgValue(expression: Node): ArgValue {
           value: `${decl.getSourceFile().getFilePath()}:${expression.getText()}`,
         };
       }
+
+      // その他の宣言タイプ（インポート宣言など）
+      // ファイルパス + 変数名で識別する
+      return {
+        type: ArgValueType.Literal,
+        value: `${decl.getSourceFile().getFilePath()}:${expression.getText()}`,
+      };
     }
   }
 

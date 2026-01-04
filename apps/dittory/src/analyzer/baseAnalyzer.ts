@@ -1,4 +1,9 @@
-import type { Identifier, ReferencedSymbol } from "ts-morph";
+import {
+  type Identifier,
+  Node,
+  type ParameterDeclaration,
+  type ReferencedSymbol,
+} from "ts-morph";
 import type { CallSiteMap } from "@/extraction/callSiteCollector";
 import {
   FUNCTION_VALUE_PREFIX,
@@ -10,6 +15,7 @@ import type {
   AnalyzerOptions,
   ClassifiedDeclaration,
   Constant,
+  Definition,
   Exported,
   FileFilter,
   Usage,
@@ -112,6 +118,59 @@ export abstract class BaseAnalyzer {
       }
       groupedUsages[usage.name].push(usage);
     }
+  }
+
+  /**
+   * ノードからパラメータ定義を取得する
+   *
+   * FunctionDeclaration, MethodDeclaration, VariableDeclaration（ArrowFunction/FunctionExpression）
+   * からパラメータを抽出し、Definition配列として返す。
+   *
+   * @param node - パラメータを抽出する対象のノード
+   * @returns パラメータ定義の配列
+   */
+  protected getParameterDefinitions(node: Node): Definition[] {
+    const params = this.extractParameterDeclarations(node);
+    return params.map((param, index) => ({
+      name: param.getName(),
+      index,
+      required: !param.hasQuestionToken() && !param.hasInitializer(),
+    }));
+  }
+
+  /**
+   * ノードからParameterDeclarationの配列を抽出する
+   *
+   * 以下のノードタイプに対応:
+   * - FunctionDeclaration: 直接パラメータを取得
+   * - MethodDeclaration: 直接パラメータを取得
+   * - VariableDeclaration: 初期化子がArrowFunctionまたはFunctionExpressionの場合にパラメータを取得
+   *
+   * @param node - パラメータを抽出する対象のノード
+   * @returns ParameterDeclarationの配列
+   */
+  protected extractParameterDeclarations(node: Node): ParameterDeclaration[] {
+    if (Node.isFunctionDeclaration(node)) {
+      return node.getParameters();
+    }
+
+    if (Node.isMethodDeclaration(node)) {
+      return node.getParameters();
+    }
+
+    if (Node.isVariableDeclaration(node)) {
+      const initializer = node.getInitializer();
+      if (initializer) {
+        if (
+          Node.isArrowFunction(initializer) ||
+          Node.isFunctionExpression(initializer)
+        ) {
+          return initializer.getParameters();
+        }
+      }
+    }
+
+    return [];
   }
 
   /**

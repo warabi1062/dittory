@@ -1,9 +1,8 @@
-import { Node, type ParameterDeclaration } from "ts-morph";
+import { Node } from "ts-morph";
 import { ExtractUsages } from "@/extraction/extractUsages";
 import type {
   AnalyzerOptions,
   ClassifiedDeclaration,
-  Definition,
   Exported,
   Usage,
 } from "@/types";
@@ -48,7 +47,7 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
 
       for (const method of methods) {
         const methodName = method.getName();
-        const parameters = this.getParameters(method);
+        const parameters = this.getParameterDefinitions(method);
 
         const callable: Exported = {
           name: `${exportName}.${methodName}`,
@@ -108,29 +107,5 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
     }
 
     return results;
-  }
-
-  /**
-   * メソッドのパラメータ定義を取得する
-   */
-  private getParameters(method: Node): Definition[] {
-    const params = this.extractParameterDeclarations(method);
-
-    return params.map((param, index) => ({
-      name: param.getName(),
-      index,
-      required: !param.hasQuestionToken() && !param.hasInitializer(),
-    }));
-  }
-
-  /**
-   * メソッド宣言からParameterDeclarationの配列を抽出する
-   */
-  private extractParameterDeclarations(method: Node): ParameterDeclaration[] {
-    if (Node.isMethodDeclaration(method)) {
-      return method.getParameters();
-    }
-
-    return [];
   }
 }

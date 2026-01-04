@@ -1,9 +1,8 @@
-import { Node, type ParameterDeclaration, SyntaxKind } from "ts-morph";
+import { Node, SyntaxKind } from "ts-morph";
 import { ExtractUsages } from "@/extraction/extractUsages";
 import type {
   AnalyzerOptions,
   ClassifiedDeclaration,
-  Definition,
   Exported,
   Usage,
 } from "@/types";
@@ -57,7 +56,7 @@ export class FunctionAnalyzer extends BaseAnalyzer {
       const references = this.findFilteredReferences(nameNode);
 
       // 関数の宣言からパラメータ定義を取得
-      const parameters = this.getParameters(declaration);
+      const parameters = this.getParameterDefinitions(declaration);
 
       const callable: Exported = {
         name: exportName,
@@ -103,43 +102,5 @@ export class FunctionAnalyzer extends BaseAnalyzer {
     }
 
     return results;
-  }
-
-  /**
-   * 関数のパラメータ定義を取得する
-   */
-  private getParameters(declaration: Node): Definition[] {
-    const params = this.extractParameterDeclarations(declaration);
-
-    return params.map((param, index) => ({
-      name: param.getName(),
-      index,
-      required: !param.hasQuestionToken() && !param.hasInitializer(),
-    }));
-  }
-
-  /**
-   * 宣言からParameterDeclarationの配列を抽出する
-   */
-  private extractParameterDeclarations(
-    declaration: Node,
-  ): ParameterDeclaration[] {
-    if (Node.isFunctionDeclaration(declaration)) {
-      return declaration.getParameters();
-    }
-
-    if (Node.isVariableDeclaration(declaration)) {
-      const initializer = declaration.getInitializer();
-      if (initializer) {
-        if (
-          Node.isArrowFunction(initializer) ||
-          Node.isFunctionExpression(initializer)
-        ) {
-          return initializer.getParameters();
-        }
-      }
-    }
-
-    return [];
   }
 }
