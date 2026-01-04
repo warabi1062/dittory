@@ -41,6 +41,7 @@
   },
   "license": "MIT",
   "repository": "github:warabi1062/dittory",
+  "homepage": "https://warabi1062.github.io/dittory/",
   "packageManager": "pnpm@10.6.4",
   "devDependencies": {
     "@biomejs/biome": "2.3.10",
