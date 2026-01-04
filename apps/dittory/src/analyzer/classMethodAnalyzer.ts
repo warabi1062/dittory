@@ -66,12 +66,7 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
         }
 
         // 名前ノードから全参照を検索し、除外対象ファイルからの参照をフィルタ
-        const references = nameNode
-          .findReferences()
-          .flatMap((referencedSymbol) => referencedSymbol.getReferences())
-          .filter(
-            (ref) => !this.shouldExcludeFile(ref.getSourceFile().getFilePath()),
-          );
+        const references = this.findFilteredReferences(nameNode);
 
         // 参照からメソッド呼び出しを抽出し、usagesをパラメータ名ごとにグループ化
         const groupedUsages: Record<string, Usage[]> = {};
@@ -104,12 +99,7 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
             callable,
             this.getResolveContext(),
           );
-          for (const usage of usages) {
-            if (!groupedUsages[usage.name]) {
-              groupedUsages[usage.name] = [];
-            }
-            groupedUsages[usage.name].push(usage);
-          }
+          this.addUsagesToGroup(groupedUsages, usages);
         }
 
         callable.usages = groupedUsages;

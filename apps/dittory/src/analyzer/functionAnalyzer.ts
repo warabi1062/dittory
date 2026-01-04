@@ -54,12 +54,7 @@ export class FunctionAnalyzer extends BaseAnalyzer {
       }
 
       // 名前ノードから全参照を検索し、除外対象ファイルからの参照をフィルタ
-      const references = nameNode
-        .findReferences()
-        .flatMap((referencedSymbol) => referencedSymbol.getReferences())
-        .filter(
-          (ref) => !this.shouldExcludeFile(ref.getSourceFile().getFilePath()),
-        );
+      const references = this.findFilteredReferences(nameNode);
 
       // 関数の宣言からパラメータ定義を取得
       const parameters = this.getParameters(declaration);
@@ -100,12 +95,7 @@ export class FunctionAnalyzer extends BaseAnalyzer {
           callable,
           this.getResolveContext(),
         );
-        for (const usage of usages) {
-          if (!groupedUsages[usage.name]) {
-            groupedUsages[usage.name] = [];
-          }
-          groupedUsages[usage.name].push(usage);
-        }
+        this.addUsagesToGroup(groupedUsages, usages);
       }
 
       callable.usages = groupedUsages;

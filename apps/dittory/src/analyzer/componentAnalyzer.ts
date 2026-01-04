@@ -54,12 +54,7 @@ export class ComponentAnalyzer extends BaseAnalyzer {
       }
 
       // 名前ノードから全参照を検索し、除外対象ファイルからの参照をフィルタ
-      const references = nameNode
-        .findReferences()
-        .flatMap((referencedSymbol) => referencedSymbol.getReferences())
-        .filter(
-          (ref) => !this.shouldExcludeFile(ref.getSourceFile().getFilePath()),
-        );
+      const references = this.findFilteredReferences(nameNode);
 
       // コンポーネントの宣言からprops定義を取得
       const props = getProps(declaration);
@@ -103,12 +98,7 @@ export class ComponentAnalyzer extends BaseAnalyzer {
           component.definitions,
           this.getResolveContext(),
         );
-        for (const usage of usages) {
-          if (!groupedUsages[usage.name]) {
-            groupedUsages[usage.name] = [];
-          }
-          groupedUsages[usage.name].push(usage);
-        }
+        this.addUsagesToGroup(groupedUsages, usages);
       }
 
       component.usages = groupedUsages;

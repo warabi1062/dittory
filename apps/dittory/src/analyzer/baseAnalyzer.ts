@@ -1,3 +1,4 @@
+import type { Identifier, ReferencedSymbol } from "ts-morph";
 import type { CallSiteMap } from "@/extraction/callSiteCollector";
 import {
   FUNCTION_VALUE_PREFIX,
@@ -14,6 +15,11 @@ import type {
   Usage,
 } from "@/types";
 import { getSingleValueFromSet } from "@/utils/getSingleValueFromSet";
+
+/**
+ * ts-morph の参照情報を表す型
+ */
+type ReferenceEntry = ReturnType<ReferencedSymbol["getReferences"]>[number];
 
 /**
  * 使用データのグループ
@@ -73,6 +79,39 @@ export abstract class BaseAnalyzer {
     return {
       callSiteMap: this.callSiteMap,
     };
+  }
+
+  /**
+   * 識別子から全参照を検索し、除外対象ファイルからの参照をフィルタリングする
+   *
+   * @param nameNode - 検索対象の識別子ノード
+   * @returns フィルタリングされた参照エントリの配列
+   */
+  protected findFilteredReferences(nameNode: Identifier): ReferenceEntry[] {
+    return nameNode
+      .findReferences()
+      .flatMap((referencedSymbol) => referencedSymbol.getReferences())
+      .filter(
+        (ref) => !this.shouldExcludeFile(ref.getSourceFile().getFilePath()),
+      );
+  }
+
+  /**
+   * 使用状況をグループに追加する
+   *
+   * @param groupedUsages - 使用状況のグループ（パラメータ名 → 使用状況配列）
+   * @param usages - 追加する使用状況の配列
+   */
+  protected addUsagesToGroup(
+    groupedUsages: Record<string, Usage[]>,
+    usages: Usage[],
+  ): void {
+    for (const usage of usages) {
+      if (!groupedUsages[usage.name]) {
+        groupedUsages[usage.name] = [];
+      }
+      groupedUsages[usage.name].push(usage);
+    }
   }
 
   /**
