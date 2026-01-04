@@ -8,6 +8,7 @@ import {
 } from "ts-morph";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type { FileFilter } from "@/types";
+import { createParameterRef, isParameterReference } from "./parameterUtils";
 
 /**
  * 呼び出し箇所での引数情報
@@ -88,7 +89,7 @@ function extractLiteralValue(expression: Node): string {
     }
 
     // パラメータのプロパティアクセスの場合
-    if (isParameterPropertyAccess(expression)) {
+    if (isParameterReference(expression.getExpression())) {
       return createParameterRef(expression);
     }
   }
@@ -130,121 +131,6 @@ function extractLiteralValue(expression: Node): string {
     return type.getText();
   }
 
-  return expression.getText();
-}
-
-/**
- * 式がパラメータのプロパティアクセスかどうかを判定
- */
-function isParameterPropertyAccess(expression: Node): boolean {
-  if (Node.isIdentifier(expression)) {
-    const symbol = expression.getSymbol();
-    const decl = symbol?.getDeclarations()[0];
-    if (!decl) return false;
-    const kind = decl.getKind();
-    return kind === SyntaxKind.Parameter || kind === SyntaxKind.BindingElement;
-  }
-  if (Node.isPropertyAccessExpression(expression)) {
-    return isParameterPropertyAccess(expression.getExpression());
-  }
-  return false;
-}
-
-/**
- * パラメータ参照の識別子を作成
- * 形式: "[param]ファイルパス:関数名:パラメータ名.プロパティパス"
- */
-function createParameterRef(expression: Node): string {
-  // 式から関数スコープを特定
-  const functionScope = findContainingFunction(expression);
-  if (!functionScope) {
-    // フォールバック: ファイルパス+行番号
-    const sourceFile = expression.getSourceFile();
-    const line = expression.getStartLineNumber();
-    return `[param]${sourceFile.getFilePath()}:${line}`;
-  }
-
-  const { filePath, functionName, parameterPath } =
-    extractParameterInfo(expression);
-
-  return `[param]${filePath}:${functionName}:${parameterPath}`;
-}
-
-/**
- * 式を含む関数宣言を見つける
- */
-function findContainingFunction(node: Node): Node | undefined {
-  let current: Node | undefined = node;
-  while (current) {
-    if (
-      Node.isFunctionDeclaration(current) ||
-      Node.isArrowFunction(current) ||
-      Node.isFunctionExpression(current) ||
-      Node.isMethodDeclaration(current)
-    ) {
-      return current;
-    }
-    current = current.getParent();
-  }
-  return undefined;
-}
-
-/**
- * パラメータ参照から情報を抽出
- */
-function extractParameterInfo(expression: Node): {
-  filePath: string;
-  functionName: string;
-  parameterPath: string;
-} {
-  const sourceFile = expression.getSourceFile();
-  const filePath = sourceFile.getFilePath();
-
-  // 関数名を取得
-  const functionScope = findContainingFunction(expression);
-  let functionName = "anonymous";
-
-  if (functionScope) {
-    if (Node.isFunctionDeclaration(functionScope)) {
-      functionName = functionScope.getName() ?? "anonymous";
-    } else if (
-      Node.isArrowFunction(functionScope) ||
-      Node.isFunctionExpression(functionScope)
-    ) {
-      // 変数宣言からの名前を取得
-      const parent = functionScope.getParent();
-      if (parent && Node.isVariableDeclaration(parent)) {
-        functionName = parent.getName();
-      }
-    } else if (Node.isMethodDeclaration(functionScope)) {
-      const className = functionScope
-        .getParent()
-        ?.asKind(SyntaxKind.ClassDeclaration)
-        ?.getName();
-      const methodName = functionScope.getName();
-      functionName = className ? `${className}.${methodName}` : methodName;
-    }
-  }
-
-  // パラメータパスを構築 (例: "props.number")
-  const parameterPath = buildParameterPath(expression);
-
-  return { filePath, functionName, parameterPath };
-}
-
-/**
- * 式からパラメータパスを構築
- * 例: props.nested.value → "props.nested.value"
- */
-function buildParameterPath(expression: Node): string {
-  if (Node.isIdentifier(expression)) {
-    return expression.getText();
-  }
-  if (Node.isPropertyAccessExpression(expression)) {
-    const left = buildParameterPath(expression.getExpression());
-    const right = expression.getName();
-    return `${left}.${right}`;
-  }
   return expression.getText();
 }
 
@@ -409,119 +295,4 @@ export function collectCallSites(
   }
 
   return callSiteMap;
-}
-
-/**
- * パラメータ参照を解決する
- * callSiteMapを使って、パラメータに渡されたすべての値を取得し、
- * すべて同じ値ならその値を返す。異なる値があればundefinedを返す。
- *
- * @param paramRef - パラメータ参照文字列
- * @param callSiteMap - 呼び出し情報マップ
- * @param visited - 循環参照防止用のセット
- */
-export function resolveParameterValue(
-  paramRef: string,
-  callSiteMap: CallSiteMap,
-  visited: Set<string> = new Set(),
-): string | undefined {
-  // 循環参照を防ぐ
-  if (visited.has(paramRef)) {
-    return undefined;
-  }
-  visited.add(paramRef);
-
-  // paramRefの形式: "[param]ファイルパス:関数名:パラメータパス"
-  if (!paramRef.startsWith("[param]")) {
-    return paramRef;
-  }
-
-  const content = paramRef.substring("[param]".length);
-  const parts = content.split(":");
-  if (parts.length < 3) {
-    return undefined;
-  }
-
-  // ファイルパスに:が含まれる可能性があるため、最後の2つを関数名とパラメータパス、残りをファイルパスとする
-  // 上で parts.length >= 3 を検証済みなので必ず値が存在する
-  const parameterPath = parts[parts.length - 1];
-  const functionName = parts[parts.length - 2];
-  const filePath = parts.slice(0, -2).join(":");
-
-  const targetId = createTargetId(filePath, functionName);
-  const callSiteInfo = callSiteMap.get(targetId);
-  if (!callSiteInfo) {
-    return undefined;
-  }
-
-  // パラメータパスからルートパラメータ名とプロパティパスを抽出
-  // 例: "props.number" → rootParam="props", propertyPath=["number"]
-  // 例: "a" → rootParam="a", propertyPath=[]
-  const paramParts = parameterPath.split(".");
-  const rootParam = paramParts[0];
-  const propertyPath = paramParts.slice(1);
-
-  // すべての呼び出し箇所で渡された値を収集
-  const resolvedValues = new Set<string>();
-
-  // JSXコンポーネントの場合: props.number に対して、呼び出し側では number= で渡される
-  // なので propertyPath がある場合は最後のプロパティ名で検索
-  if (propertyPath.length > 0) {
-    const propName = propertyPath[propertyPath.length - 1];
-    const propArgs = callSiteInfo.get(propName);
-
-    if (propArgs && propArgs.length > 0) {
-      for (const propArg of propArgs) {
-        let propValue = propArg.value;
-        // 再帰的にパラメータ参照を解決
-        if (propValue.startsWith("[param]")) {
-          const resolved = resolveParameterValue(
-            propValue,
-            callSiteMap,
-            new Set(visited),
-          );
-          if (resolved === undefined) {
-            return undefined;
-          }
-          propValue = resolved;
-        }
-        resolvedValues.add(propValue);
-      }
-    } else {
-      // プロパティが見つからない場合
-      return undefined;
-    }
-  } else {
-    // 通常の関数引数の場合: rootParam で直接検索
-    const args = callSiteInfo.get(rootParam);
-    if (!args || args.length === 0) {
-      return undefined;
-    }
-
-    for (const arg of args) {
-      let value = arg.value;
-      // 再帰的にパラメータ参照を解決
-      if (value.startsWith("[param]")) {
-        const resolved = resolveParameterValue(
-          value,
-          callSiteMap,
-          new Set(visited),
-        );
-        if (resolved === undefined) {
-          return undefined;
-        }
-        value = resolved;
-      }
-      resolvedValues.add(value);
-    }
-  }
-
-  // すべて同じ値なら、その値を返す
-  if (resolvedValues.size === 1) {
-    return [...resolvedValues][0];
-  }
-
-  // 異なる値がある場合は解決不可を示す undefined を返す
-  // 注意: これは UNDEFINED_VALUE（実際に undefined が渡された場合）とは異なる
-  return undefined;
 }
