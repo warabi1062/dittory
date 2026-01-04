@@ -383,8 +383,8 @@ describe("resolveExpressionValue", () => {
     // Assert
     // 同じ props.number でも、異なるファイルからの参照は異なる値として扱われる
     expect(result1).not.toBe(result2);
-    expect(result1).toContain("[param]");
-    expect(result2).toContain("[param]");
+    expect(result1).toContain("paramRef:");
+    expect(result2).toContain("paramRef:");
   });
 
   it("ネストしたパラメータプロパティアクセスも使用箇所ごとにユニークな値を返すこと", () => {
@@ -409,6 +409,6 @@ describe("resolveExpressionValue", () => {
 
     // Assert
     // ネストしたプロパティアクセスでもパラメータ参照として認識される
-    expect(result).toContain("[param]");
+    expect(result).toContain("paramRef:");
   });
 });

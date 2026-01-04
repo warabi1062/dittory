@@ -8,7 +8,31 @@ import {
 } from "ts-morph";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type { FileFilter } from "@/types";
-import { createParameterRef, isParameterReference } from "./parameterUtils";
+
+/**
+ * ArgValueのtype識別子
+ */
+export const ArgValueType = {
+  Literal: "literal",
+  Function: "function",
+  ParamRef: "paramRef",
+  Undefined: "undefined",
+} as const;
+
+/**
+ * 引数の値を表す union 型
+ * 文字列エンコーディングの代わりに型安全な表現を使用
+ */
+export type ArgValue =
+  | { type: typeof ArgValueType.Literal; value: string }
+  | { type: typeof ArgValueType.Function; filePath: string; line: number }
+  | {
+      type: typeof ArgValueType.ParamRef;
+      filePath: string;
+      functionName: string;
+      path: string;
+    }
+  | { type: typeof ArgValueType.Undefined };
 
 /**
  * 呼び出し箇所での引数情報
@@ -16,8 +40,8 @@ import { createParameterRef, isParameterReference } from "./parameterUtils";
 export interface CallSiteArg {
   /** 引数のインデックス（0始まり）またはプロパティ名 */
   name: string;
-  /** 引数の値（リテラル値は解決済み、パラメータ参照は "[param]..." 形式） */
-  value: string;
+  /** 引数の値 */
+  value: ArgValue;
   /** 呼び出し元ファイルパス */
   filePath: string;
   /** 呼び出し元行番号 */
@@ -58,17 +82,119 @@ export function parseTargetId(targetId: string): {
 }
 
 /**
- * 式からリテラル値を抽出する（パラメータ参照は解決しない簡易版）
+ * 式がパラメータ（関数の引数）を参照しているかどうかを判定する
+ */
+function isParameterReference(expression: Node): boolean {
+  if (Node.isIdentifier(expression)) {
+    const symbol = expression.getSymbol();
+    const decl = symbol?.getDeclarations()[0];
+    if (!decl) return false;
+    const kind = decl.getKind();
+    return kind === SyntaxKind.Parameter || kind === SyntaxKind.BindingElement;
+  }
+  if (Node.isPropertyAccessExpression(expression)) {
+    return isParameterReference(expression.getExpression());
+  }
+  return false;
+}
+
+/**
+ * 式を含む関数宣言を見つける
+ */
+function findContainingFunction(node: Node): Node | undefined {
+  let current: Node | undefined = node;
+  while (current) {
+    if (
+      Node.isFunctionDeclaration(current) ||
+      Node.isArrowFunction(current) ||
+      Node.isFunctionExpression(current) ||
+      Node.isMethodDeclaration(current)
+    ) {
+      return current;
+    }
+    current = current.getParent();
+  }
+  return undefined;
+}
+
+/**
+ * 関数スコープから関数名を取得する
+ */
+function getFunctionName(functionScope: Node): string {
+  if (Node.isFunctionDeclaration(functionScope)) {
+    return functionScope.getName() ?? "anonymous";
+  }
+  if (
+    Node.isArrowFunction(functionScope) ||
+    Node.isFunctionExpression(functionScope)
+  ) {
+    const parent = functionScope.getParent();
+    if (parent && Node.isVariableDeclaration(parent)) {
+      return parent.getName();
+    }
+    return "anonymous";
+  }
+  if (Node.isMethodDeclaration(functionScope)) {
+    const className = functionScope
+      .getParent()
+      ?.asKind(SyntaxKind.ClassDeclaration)
+      ?.getName();
+    const methodName = functionScope.getName();
+    return className ? `${className}.${methodName}` : methodName;
+  }
+  return "anonymous";
+}
+
+/**
+ * 式からパラメータパスを構築
+ */
+function buildParameterPath(expression: Node): string {
+  if (Node.isIdentifier(expression)) {
+    return expression.getText();
+  }
+  if (Node.isPropertyAccessExpression(expression)) {
+    const left = buildParameterPath(expression.getExpression());
+    const right = expression.getName();
+    return `${left}.${right}`;
+  }
+  return expression.getText();
+}
+
+/**
+ * パラメータ参照の ArgValue を作成する
+ */
+function createParamRefValue(expression: Node): ArgValue {
+  const sourceFile = expression.getSourceFile();
+  const filePath = sourceFile.getFilePath();
+  const functionScope = findContainingFunction(expression);
+
+  if (!functionScope) {
+    // フォールバック: 関数スコープが見つからない場合は literal として扱う
+    return { type: ArgValueType.Literal, value: expression.getText() };
+  }
+
+  const functionName = getFunctionName(functionScope);
+  const path = buildParameterPath(expression);
+
+  return { type: ArgValueType.ParamRef, filePath, functionName, path };
+}
+
+/**
+ * 式から ArgValue を抽出する
  * 呼び出し情報収集時に使用する
  */
-function extractLiteralValue(expression: Node): string {
+function extractArgValue(expression: Node): ArgValue {
   const type = expression.getType();
 
-  // 関数型の場合はファイルパス+行番号でユニーク化
+  // 関数型の場合
   if (type.getCallSignatures().length > 0) {
     const sourceFile = expression.getSourceFile();
     const line = expression.getStartLineNumber();
-    return `[function]${sourceFile.getFilePath()}:${line}`;
+    return {
+      type: ArgValueType.Function,
+      filePath: sourceFile.getFilePath(),
+      line,
+    };
   }
 
   // PropertyAccessExpression (例: Status.Active, props.number)
@@ -84,20 +210,23 @@ function extractLiteralValue(expression: Node): string {
         const enumName = enumDecl.getName();
         const memberName = decl.getName();
         const value = decl.getValue();
-        return `${filePath}:${enumName}.${memberName}=${JSON.stringify(value)}`;
+        return {
+          type: ArgValueType.Literal,
+          value: `${filePath}:${enumName}.${memberName}=${JSON.stringify(value)}`,
+        };
       }
     }
 
     // パラメータのプロパティアクセスの場合
     if (isParameterReference(expression.getExpression())) {
-      return createParameterRef(expression);
+      return createParamRefValue(expression);
     }
   }
 
   // Identifier (変数参照)
   if (Node.isIdentifier(expression)) {
     if (expression.getText() === "undefined") {
-      return "undefined";
+      return { type: ArgValueType.Undefined };
     }
 
     const symbol = expression.getSymbol();
@@ -108,30 +237,36 @@ function extractLiteralValue(expression: Node): string {
       const kind = decl.getKind();
       // パラメータまたはBindingElementの場合
       if (kind === SyntaxKind.Parameter || kind === SyntaxKind.BindingElement) {
-        return createParameterRef(expression);
+        return createParamRefValue(expression);
       }
 
       // 変数宣言の場合は初期化子を再帰的に解決
       if (Node.isVariableDeclaration(decl)) {
         const initializer = decl.getInitializer();
         if (initializer) {
-          return extractLiteralValue(initializer);
+          return extractArgValue(initializer);
         }
-        return `${decl.getSourceFile().getFilePath()}:${expression.getText()}`;
+        return {
+          type: ArgValueType.Literal,
+          value: `${decl.getSourceFile().getFilePath()}:${expression.getText()}`,
+        };
       }
     }
   }
 
   // リテラル型
   if (type.isStringLiteral() || type.isNumberLiteral()) {
-    return JSON.stringify(type.getLiteralValue());
+    return {
+      type: ArgValueType.Literal,
+      value: JSON.stringify(type.getLiteralValue()),
+    };
   }
 
   if (type.isBooleanLiteral()) {
-    return type.getText();
+    return { type: ArgValueType.Literal, value: type.getText() };
   }
 
-  return expression.getText();
+  return { type: ArgValueType.Literal, value: expression.getText() };
 }
 
 /**
@@ -157,15 +292,15 @@ function extractFromJsxElement(
     const propName = attr.getNameNode().getText();
     const initializer = attr.getInitializer();
 
-    let value: string;
+    let value: ArgValue;
     if (!initializer) {
       // boolean shorthand
-      value = "true";
+      value = { type: ArgValueType.Literal, value: "true" };
     } else if (Node.isJsxExpression(initializer)) {
       const expr = initializer.getExpression();
-      value = expr ? extractLiteralValue(expr) : "undefined";
+      value = expr ? extractArgValue(expr) : { type: ArgValueType.Undefined };
     } else {
-      value = initializer.getText();
+      value = { type: ArgValueType.Literal, value: initializer.getText() };
     }
 
     const args = info.get(propName) ?? [];
@@ -201,7 +336,9 @@ function extractFromCallExpression(
   for (let i = 0; i < paramNames.length; i++) {
     const paramName = paramNames[i];
     const arg = args[i];
-    const value = arg ? extractLiteralValue(arg) : "undefined";
+    const value: ArgValue = arg
+      ? extractArgValue(arg)
+      : { type: ArgValueType.Undefined };
 
     const argList = info.get(paramName) ?? [];
     argList.push({

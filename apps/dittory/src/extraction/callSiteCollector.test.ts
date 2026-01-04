@@ -28,21 +28,16 @@ describe("collectCallSites", () => {
     // Act
     const callSiteMap = collectCallSites(sourceFiles);
 
-    // Debug
-    console.log("callSiteMap keys:", [...callSiteMap.keys()]);
-    for (const [key, value] of callSiteMap) {
-      console.log(`  ${key}:`, [...value.keys()]);
-    }
-
     // Assert
     const childTargetId = createTargetId("/src/Child.tsx", "Child");
-    console.log("Looking for targetId:", childTargetId);
     const childInfo = callSiteMap.get(childTargetId);
 
     expect(childInfo).toBeDefined();
     expect(childInfo?.get("value")).toBeDefined();
     expect(childInfo?.get("value")?.length).toBe(1);
-    expect(childInfo?.get("value")?.[0].value).toBe('"hello"');
+
+    const value = childInfo?.get("value")?.[0].value;
+    expect(value).toEqual({ type: "literal", value: '"hello"' });
   });
 
   it("パラメータ参照を含む呼び出し情報を収集すること", () => {
@@ -82,10 +77,12 @@ describe("collectCallSites", () => {
     expect(childInfo?.get("number")?.length).toBe(1);
 
     const value = childInfo?.get("number")?.[0].value;
-    console.log("Parameter reference value:", value);
-    expect(value).toContain("[param]");
-    expect(value).toContain("ParentComponent");
-    expect(value).toContain("props.number");
+    expect(value).toEqual({
+      type: "paramRef",
+      filePath: "/src/Parent.tsx",
+      functionName: "ParentComponent",
+      path: "props.number",
+    });
   });
 
   it("親コンポーネントへの呼び出し情報も収集すること", () => {
@@ -133,6 +130,8 @@ describe("collectCallSites", () => {
     expect(parentInfo).toBeDefined();
     expect(parentInfo?.get("number")).toBeDefined();
     expect(parentInfo?.get("number")?.length).toBe(1);
-    expect(parentInfo?.get("number")?.[0].value).toBe('"42"');
+
+    const value = parentInfo?.get("number")?.[0].value;
+    expect(value).toEqual({ type: "literal", value: '"42"' });
   });
 });

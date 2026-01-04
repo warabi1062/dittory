@@ -1,11 +1,10 @@
-import { Node } from "ts-morph";
-import type { CallSiteMap } from "./callSiteCollector";
+import { Node, SyntaxKind } from "ts-morph";
 import {
-  createParameterRef,
-  isParameterReference,
-  PARAM_REF_PREFIX,
-  resolveParameterValue,
-} from "./parameterUtils";
+  type ArgValue,
+  ArgValueType,
+  type CallSiteMap,
+} from "./callSiteCollector";
+import { argValueToKey, resolveParameterValue } from "./parameterUtils";
 
 /**
  * 引数が渡されなかった場合を表す特別な値
@@ -30,6 +29,103 @@ export const FUNCTION_VALUE_PREFIX = "[function]";
 export interface ResolveContext {
   /** 呼び出し情報（パラメータ参照の解決に使用） */
   callSiteMap: CallSiteMap;
+}
+
+/**
+ * 式がパラメータ（関数の引数）を参照しているかどうかを判定する
+ */
+function isParameterReference(expression: Node): boolean {
+  if (Node.isIdentifier(expression)) {
+    const symbol = expression.getSymbol();
+    const decl = symbol?.getDeclarations()[0];
+    if (!decl) return false;
+    const kind = decl.getKind();
+    return kind === SyntaxKind.Parameter || kind === SyntaxKind.BindingElement;
+  }
+  if (Node.isPropertyAccessExpression(expression)) {
+    return isParameterReference(expression.getExpression());
+  }
+  return false;
+}
+
+/**
+ * 式を含む関数宣言を見つける
+ */
+function findContainingFunction(node: Node): Node | undefined {
+  let current: Node | undefined = node;
+  while (current) {
+    if (
+      Node.isFunctionDeclaration(current) ||
+      Node.isArrowFunction(current) ||
+      Node.isFunctionExpression(current) ||
+      Node.isMethodDeclaration(current)
+    ) {
+      return current;
+    }
+    current = current.getParent();
+  }
+  return undefined;
+}
+
+/**
+ * 関数スコープから関数名を取得する
+ */
+function getFunctionName(functionScope: Node): string {
+  if (Node.isFunctionDeclaration(functionScope)) {
+    return functionScope.getName() ?? "anonymous";
+  }
+  if (
+    Node.isArrowFunction(functionScope) ||
+    Node.isFunctionExpression(functionScope)
+  ) {
+    const parent = functionScope.getParent();
+    if (parent && Node.isVariableDeclaration(parent)) {
+      return parent.getName();
+    }
+    return "anonymous";
+  }
+  if (Node.isMethodDeclaration(functionScope)) {
+    const className = functionScope
+      .getParent()
+      ?.asKind(SyntaxKind.ClassDeclaration)
+      ?.getName();
+    const methodName = functionScope.getName();
+    return className ? `${className}.${methodName}` : methodName;
+  }
+  return "anonymous";
+}
+
+/**
+ * 式からパラメータパスを構築
+ */
+function buildParameterPath(expression: Node): string {
+  if (Node.isIdentifier(expression)) {
+    return expression.getText();
+  }
+  if (Node.isPropertyAccessExpression(expression)) {
+    const left = buildParameterPath(expression.getExpression());
+    const right = expression.getName();
+    return `${left}.${right}`;
+  }
+  return expression.getText();
+}
+
+/**
+ * パラメータ参照の ArgValue を作成する
+ */
+function createParamRefValue(expression: Node): ArgValue {
+  const sourceFile = expression.getSourceFile();
+  const filePath = sourceFile.getFilePath();
+  const functionScope = findContainingFunction(expression);
+
+  if (!functionScope) {
+    return { type: ArgValueType.Literal, value: expression.getText() };
+  }
+
+  const functionName = getFunctionName(functionScope);
+  const path = buildParameterPath(expression);
+
+  return { type: ArgValueType.ParamRef, filePath, functionName, path };
 }
 
 /**
@@ -77,16 +173,14 @@ export function resolveExpressionValue(
 
     // 左辺がパラメータを参照している場合（例: props.number）
     if (isParameterReference(expression.getExpression())) {
-      // パラメータ参照文字列を作成して解決を試みる
-      const paramRef = createParameterRef(expression);
+      // パラメータ参照を作成して解決を試みる
+      const paramRef = createParamRefValue(expression);
       const resolved = resolveParameterValue(paramRef, context.callSiteMap);
       if (resolved !== undefined) {
-        return resolved;
+        return argValueToKey(resolved);
       }
       // 解決できない場合は使用箇所ごとにユニークな値として扱う
-      const sourceFile = expression.getSourceFile();
-      const line = expression.getStartLineNumber();
-      return `${PARAM_REF_PREFIX}${sourceFile.getFilePath()}:${line}`;
+      return argValueToKey(paramRef);
     }
   }
 
