@@ -8,7 +8,7 @@ import {
 import type { Definition, Exported, Usage } from "@/types";
 import { flattenObjectExpression } from "./flattenObjectExpression";
 import { hasDisableComment } from "./hasDisableComment";
-import { UNDEFINED_VALUE } from "./resolveExpressionValue";
+import { type ResolveContext, UNDEFINED_VALUE } from "./resolveExpressionValue";
 
 /**
  * 使用状況を抽出するユーティリティクラス
@@ -22,9 +22,14 @@ export class ExtractUsages {
    *
    * @param callExpression - 関数呼び出しノード
    * @param callable - 対象の関数情報
+   * @param context - 呼び出し情報などのコンテキスト（オプション）
    * @returns 引数使用状況の配列
    */
-  static fromCall(callExpression: CallExpression, callable: Exported): Usage[] {
+  static fromCall(
+    callExpression: CallExpression,
+    callable: Exported,
+    context?: ResolveContext,
+  ): Usage[] {
     // dittory-disable-next-line コメントがある場合は除外
     if (hasDisableComment(callExpression)) {
       return [];
@@ -49,7 +54,11 @@ export class ExtractUsages {
       }
 
       // オブジェクトリテラルの場合は再帰的にフラット化
-      for (const { key, value } of flattenObjectExpression(arg, param.name)) {
+      for (const { key, value } of flattenObjectExpression(
+        arg,
+        param.name,
+        context,
+      )) {
         usages.push({
           name: key,
           value,
@@ -67,11 +76,13 @@ export class ExtractUsages {
    *
    * @param element - JSX要素ノード
    * @param definitions - props定義の配列
+   * @param context - 呼び出し情報などのコンテキスト（オプション）
    * @returns props使用状況の配列
    */
   static fromJsxElement(
     element: JsxOpeningElement | JsxSelfClosingElement,
     definitions: Definition[],
+    context?: ResolveContext,
   ): Usage[] {
     // dittory-disable-next-line コメントがある場合は除外
     if (hasDisableComment(element)) {
@@ -124,6 +135,7 @@ export class ExtractUsages {
         for (const { key, value } of flattenObjectExpression(
           expression,
           prop.name,
+          context,
         )) {
           usages.push({
             name: key,

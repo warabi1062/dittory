@@ -101,6 +101,7 @@ export class ComponentAnalyzer extends BaseAnalyzer {
         const usages = ExtractUsages.fromJsxElement(
           jsxElement,
           component.definitions,
+          this.getResolveContext(),
         );
         for (const usage of usages) {
           if (!groupedUsages[usage.name]) {

@@ -87,6 +87,109 @@ Found 2 function(s) with constant arguments out of 24 function(s).
 | **Functions** | Arguments passed to exported function calls |
 | **Class Methods** | Arguments passed to methods of exported classes |
 
+## Supported Detection Patterns
+
+### Value Types
+
+| Pattern | Example | Supported |
+|---------|---------|-----------|
+| String literals | `"hello"` | ✅ |
+| Number literals | `42` | ✅ |
+| Boolean literals | `true`, `false` | ✅ |
+| Enum values | `Status.Active` | ✅ |
+| Imported constants | `import { VALUE } from "./constants"` | ✅ |
+| Variable references | `const x = 3; fn(x)` | ✅ |
+| Variable chains | `const a = 1; const b = a; fn(b)` → resolves to `1` | ✅ |
+| Object literals | `{ nested: { value: 1 } }` | ✅ |
+| Function references | `onClick={handleClick}` | ✅ (by location) |
+| `undefined` | `fn(undefined)` | ✅ |
+
+### Parameter Propagation (Call Graph Analysis)
+
+dittory can track values through component/function chains:
+
+```tsx
+// App passes "42" to Parent, Parent passes props.number to Child
+// → Child.number is detected as constant "42"
+
+const Child = ({ number }) => <div>{number}</div>;
+const Parent = ({ number }) => <Child number={number} />;
+export const App = () => <Parent number="42" />;
+```
+
+| Pattern | Example | Supported |
+|---------|---------|-----------|
+| Direct props access | `props.value` | ✅ |
+| Destructured props | `({ value }) => ...` | ✅ |
+| Nested access | `props.user.name` | ✅ |
+| Multi-level chains | `A → B → C` propagation | ✅ |
+| Circular reference protection | Prevents infinite loops | ✅ |
+| Depth limit | `--max-depth` option (default: 10) | ✅ |
+
+### Scope
+
+| Pattern | Supported |
+|---------|-----------|
+| Exported functions/components | ✅ |
+| Non-exported (internal) functions | ❌ |
+
+## Unsupported Detection Patterns
+
+### Spread Syntax
+
+```tsx
+// ❌ Props passed via spread are NOT tracked
+const Parent = ({ num, ...others }) => <Child {...others} />;
+```
+
+### Dynamic Values
+
+```tsx
+// ❌ Values computed at runtime
+<Button count={items.length} />
+<Input value={getValue()} />
+<List items={data.filter(x => x.active)} />
+```
+
+### Conditional Branches
+
+When different code paths pass different values, dittory correctly identifies them as different values (not constant):
+
+```tsx
+// Different values in branches → correctly NOT reported as constant
+const App = () => {
+  if (condition) {
+    return <Button variant="primary" />;
+  }
+  return <Button variant="secondary" />;
+};
+```
+
+Note: This is expected behavior. dittory performs static analysis and considers all code paths.
+
+### Template Literals
+
+```tsx
+// ❌ Template strings with expressions
+<Label text={`Hello, ${name}`} />
+```
+
+### Array/Object Spread in Arguments
+
+```tsx
+// ❌ Spread in function arguments
+fn(...args);
+fn({ ...defaults, custom: value });
+```
+
+### Higher-Order Components / Render Props
+
+```tsx
+// ❌ HOC patterns are not analyzed
+const Enhanced = withAuth(Component);
+<Enhanced role="admin" />
+```
+
 ## CLI Options
 
 | Option | Description | Default |
@@ -95,6 +198,7 @@ Found 2 function(s) with constant arguments out of 24 function(s).
 | `--target=<mode>` | What to analyze: `all`, `components`, `functions` | `all` |
 | `--output=<mode>` | Output verbosity: `simple`, `verbose` | `simple` |
 | `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |
+| `--max-depth=<n>` | Max depth for parameter chain resolution | `10` |
 | `--help` | Show help message | — |
 
 ## Configuration File
@@ -113,6 +217,7 @@ export default {
   output: "verbose",
   tsconfig: "./tsconfig.app.json",
   targetDir: "./src",
+  maxDepth: 10, // Max depth for parameter chain resolution
 };
 ```
 

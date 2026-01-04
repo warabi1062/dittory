@@ -1,5 +1,6 @@
 import type { SourceFile } from "ts-morph";
 import { ComponentAnalyzer } from "@/analyzer/componentAnalyzer";
+import type { CallSiteMap } from "@/extraction/callSiteCollector";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type { AnalysisResult, FileFilter } from "@/types";
@@ -7,6 +8,10 @@ import type { AnalysisResult, FileFilter } from "@/types";
 interface AnalyzePropsOptions {
   shouldExcludeFile?: FileFilter;
   minUsages?: number;
+  /** 呼び出し情報（パラメータ経由で渡された値を解決するために使用） */
+  callSiteMap: CallSiteMap;
+  /** パラメータ参照の再帰解決の最大深さ */
+  maxDepth?: number;
 }
 
 /**
@@ -23,9 +28,14 @@ interface AnalyzePropsOptions {
  */
 export function analyzePropsCore(
   sourceFiles: SourceFile[],
-  options: AnalyzePropsOptions = {},
+  options: AnalyzePropsOptions,
 ): AnalysisResult {
-  const { shouldExcludeFile = isTestOrStorybookFile, minUsages = 2 } = options;
+  const {
+    shouldExcludeFile = isTestOrStorybookFile,
+    minUsages = 2,
+    callSiteMap,
+    maxDepth,
+  } = options;
 
   // 宣言を事前分類し、Reactコンポーネントのみ抽出
   const declarations = classifyDeclarations(sourceFiles);
@@ -35,6 +45,7 @@ export function analyzePropsCore(
     shouldExcludeFile,
     minUsages,
   });
+  analyzer.setCallSiteMap(callSiteMap, maxDepth);
 
   return analyzer.analyze(components);
 }

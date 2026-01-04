@@ -95,7 +95,11 @@ export class FunctionAnalyzer extends BaseAnalyzer {
         }
 
         // 関数呼び出しから引数使用状況を抽出
-        const usages = ExtractUsages.fromCall(callExpression, callable);
+        const usages = ExtractUsages.fromCall(
+          callExpression,
+          callable,
+          this.getResolveContext(),
+        );
         for (const usage of usages) {
           if (!groupedUsages[usage.name]) {
             groupedUsages[usage.name] = [];

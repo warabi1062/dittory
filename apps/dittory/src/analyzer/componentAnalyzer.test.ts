@@ -1,6 +1,7 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { ComponentAnalyzer } from "@/analyzer/componentAnalyzer";
+import { UNDEFINED_VALUE } from "@/extraction/resolveExpressionValue";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 
 /**
@@ -208,6 +209,6 @@ describe("ComponentAnalyzer", () => {
     expect(button?.usages.color).toHaveLength(1);
     expect(button?.usages.color[0].value).toBe('"blue"');
     expect(button?.usages.size).toHaveLength(1);
-    expect(button?.usages.size[0].value).toBe("undefined");
+    expect(button?.usages.size[0].value).toBe(UNDEFINED_VALUE);
   });
 });

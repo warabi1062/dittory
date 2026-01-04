@@ -12,6 +12,7 @@ import {
   validateTargetDir,
   validateTsConfig,
 } from "@/cli/parseCliOptions";
+import { collectCallSites } from "@/extraction/callSiteCollector";
 import { printAnalysisResult } from "@/output/printAnalysisResult";
 import { createFilteredSourceFiles } from "@/source/createFilteredSourceFiles";
 import type { AnalysisResult } from "@/types";
@@ -63,9 +64,11 @@ async function main(): Promise<void> {
     output: cliOptions.output ?? fileConfig.output ?? DEFAULT_OPTIONS.output,
     tsconfig:
       cliOptions.tsconfig ?? fileConfig.tsconfig ?? DEFAULT_OPTIONS.tsconfig,
+    maxDepth:
+      cliOptions.maxDepth ?? fileConfig.maxDepth ?? DEFAULT_OPTIONS.maxDepth,
   };
 
-  const { targetDir, minUsages, target, output, tsconfig } = options;
+  const { targetDir, minUsages, target, output, tsconfig, maxDepth } = options;
 
   // 対象ディレクトリの存在を検証
   try {
@@ -97,12 +100,19 @@ async function main(): Promise<void> {
     tsConfigFilePath: tsconfig,
   });
 
+  // 呼び出し情報を事前収集（パラメータ経由で渡された値を解決するために使用）
+  const callSiteMap = collectCallSites(sourceFilesToAnalyze);
+
   // 各解析結果を収集
   const allExported: AnalysisResult["exported"] = [];
   const allConstants: AnalysisResult["constants"] = [];
 
   if (target === "all" || target === "components") {
-    const propsResult = analyzePropsCore(sourceFilesToAnalyze, { minUsages });
+    const propsResult = analyzePropsCore(sourceFilesToAnalyze, {
+      minUsages,
+      callSiteMap,
+      maxDepth,
+    });
     allExported.push(...propsResult.exported);
     allConstants.push(...propsResult.constants);
   }
@@ -110,6 +120,8 @@ async function main(): Promise<void> {
   if (target === "all" || target === "functions") {
     const functionsResult = analyzeFunctionsCore(sourceFilesToAnalyze, {
       minUsages,
+      callSiteMap,
+      maxDepth,
     });
     allExported.push(...functionsResult.exported);
     allConstants.push(...functionsResult.constants);

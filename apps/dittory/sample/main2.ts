@@ -1,4 +1,4 @@
-import { value1 } from "sample/constant";
+import { fuga } from "sample/constant";
 import { sum } from "sample/sum";
 
-  sum(value1, 2);
+sum(fuga, 2);

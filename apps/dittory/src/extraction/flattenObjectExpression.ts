@@ -1,5 +1,8 @@
 import { Node } from "ts-morph";
-import { resolveExpressionValue } from "@/extraction/resolveExpressionValue";
+import {
+  type ResolveContext,
+  resolveExpressionValue,
+} from "@/extraction/resolveExpressionValue";
 
 export type FlattenedValue = { key: string; value: string };
 
@@ -8,6 +11,7 @@ export type FlattenedValue = { key: string; value: string };
  *
  * @param expression - 解析対象の式ノード
  * @param prefix - キー名のプレフィックス（ネストしたプロパティの親パスを表す）
+ * @param context - 呼び出し情報などのコンテキスト（オプション）
  * @returns フラット化されたkey-valueペアの配列
  *
  * @example
@@ -16,10 +20,13 @@ export type FlattenedValue = { key: string; value: string };
 export function flattenObjectExpression(
   expression: Node,
   prefix: string,
+  context?: ResolveContext,
 ): FlattenedValue[] {
   if (!Node.isObjectLiteralExpression(expression)) {
     // オブジェクトリテラル以外の場合は単一の値として返す
-    return [{ key: prefix, value: resolveExpressionValue(expression) }];
+    return [
+      { key: prefix, value: resolveExpressionValue(expression, context) },
+    ];
   }
 
   return expression.getProperties().flatMap((property) => {
@@ -29,7 +36,7 @@ export function flattenObjectExpression(
       const initializer = property.getInitializer();
 
       return initializer
-        ? flattenObjectExpression(initializer, nestedPrefix)
+        ? flattenObjectExpression(initializer, nestedPrefix, context)
         : [];
     }
 
@@ -40,7 +47,7 @@ export function flattenObjectExpression(
       return [
         {
           key: nestedPrefix,
-          value: resolveExpressionValue(property.getNameNode()),
+          value: resolveExpressionValue(property.getNameNode(), context),
         },
       ];
     }

@@ -1,4 +1,8 @@
-import { FUNCTION_VALUE_PREFIX } from "@/extraction/resolveExpressionValue";
+import type { CallSiteMap } from "@/extraction/callSiteCollector";
+import {
+  FUNCTION_VALUE_PREFIX,
+  type ResolveContext,
+} from "@/extraction/resolveExpressionValue";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type {
   AnalysisResult,
@@ -45,10 +49,34 @@ type GroupedMap = Map<string, Map<string, TargetInfo>>;
 export abstract class BaseAnalyzer {
   protected shouldExcludeFile: FileFilter;
   protected minUsages: number;
+  protected callSiteMap!: CallSiteMap;
+  protected maxDepth: number | undefined;
 
   constructor(options: AnalyzerOptions = {}) {
     this.shouldExcludeFile = options.shouldExcludeFile ?? isTestOrStorybookFile;
     this.minUsages = options.minUsages ?? 2;
+  }
+
+  /**
+   * 呼び出し情報を設定する
+   * パラメータ経由で渡された値を解決するために使用
+   *
+   * @param callSiteMap - 呼び出し情報マップ
+   * @param maxDepth - パラメータ参照の再帰解決の最大深さ
+   */
+  setCallSiteMap(callSiteMap: CallSiteMap, maxDepth?: number): void {
+    this.callSiteMap = callSiteMap;
+    this.maxDepth = maxDepth;
+  }
+
+  /**
+   * コンテキストを取得する
+   */
+  protected getResolveContext(): ResolveContext {
+    return {
+      callSiteMap: this.callSiteMap,
+      maxDepth: this.maxDepth,
+    };
   }
 
   /**
