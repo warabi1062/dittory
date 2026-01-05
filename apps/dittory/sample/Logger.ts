@@ -11,4 +11,8 @@ export class Logger {
   info(message: string, tag: string): void {
     console.log(`[INFO:${tag}] ${message}`);
   }
+
+  warn(message: string, tag: string): void {
+    console.warn(`[WARN:${tag}] ${message}`);
+  }
 }

@@ -83,6 +83,21 @@ export function parseTargetId(targetId: string): {
 }
 
 /**
+ * 式がthisキーワードへのプロパティアクセスかどうかを判定する
+ * ネストしたアクセス（例: this.logger.name）にも対応
+ */
+function isThisPropertyAccess(expression: Node): boolean {
+  if (Node.isPropertyAccessExpression(expression)) {
+    const baseExpr = expression.getExpression();
+    if (baseExpr.getKind() === SyntaxKind.ThisKeyword) {
+      return true;
+    }
+    return isThisPropertyAccess(baseExpr);
+  }
+  return false;
+}
+
+/**
  * 式から ArgValue を抽出する
  *
  * 式の値を型安全な ArgValue として返す。
@@ -128,6 +143,18 @@ export function extractArgValue(expression: Node): ArgValue {
     // パラメータのプロパティアクセスの場合
     if (isParameterReference(expression.getExpression())) {
       return createParamRefValue(expression);
+    }
+
+    // thisキーワードへのプロパティアクセスの場合
+    // クラスメンバーは実行時にインスタンスごとに異なる値を持つ可能性があるため、
+    // 使用箇所ごとにユニークな値として扱う
+    if (isThisPropertyAccess(expression)) {
+      const sourceFile = expression.getSourceFile();
+      const line = expression.getStartLineNumber();
+      return {
+        type: ArgValueType.Literal,
+        value: `[this]${sourceFile.getFilePath()}:${line}:${expression.getText()}`,
+      };
     }
   }
 

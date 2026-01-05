@@ -411,4 +411,72 @@ describe("resolveExpressionValue", () => {
     // ネストしたプロパティアクセスでもパラメータ参照として認識される
     expect(result).toContain("paramRef:");
   });
+
+  it("thisプロパティアクセスは使用箇所ごとにユニークな値を返すこと", () => {
+    // Arrange
+    const project = new Project({ useInMemoryFileSystem: true });
+    const sourceFile1 = project.createSourceFile(
+      "ClassA.ts",
+      `
+      class ClassA {
+        message: string;
+        log() { console.log(this.message); }
+      }
+    `,
+    );
+    const sourceFile2 = project.createSourceFile(
+      "ClassB.ts",
+      `
+      class ClassB {
+        message: string;
+        log() { console.log(this.message); }
+      }
+    `,
+    );
+    const thisAccess1 = sourceFile1
+      .getDescendantsOfKind(SyntaxKind.PropertyAccessExpression)
+      .find((node) => node.getText() === "this.message");
+    const thisAccess2 = sourceFile2
+      .getDescendantsOfKind(SyntaxKind.PropertyAccessExpression)
+      .find((node) => node.getText() === "this.message");
+    expect(thisAccess1).toBeDefined();
+    expect(thisAccess2).toBeDefined();
+    if (!thisAccess1 || !thisAccess2) return;
+
+    // Act
+    const result1 = resolveExpressionValue(thisAccess1, emptyContext);
+    const result2 = resolveExpressionValue(thisAccess2, emptyContext);
+
+    // Assert
+    // 同じ this.message でも、異なるファイルからの参照は異なる値として扱われる
+    expect(result1).not.toBe(result2);
+    expect(result1).toContain("[this]");
+    expect(result2).toContain("[this]");
+  });
+
+  it("ネストしたthisプロパティアクセスもユニークな値を返すこと", () => {
+    // Arrange
+    const project = new Project({ useInMemoryFileSystem: true });
+    const sourceFile = project.createSourceFile(
+      "test.ts",
+      `
+      class TestClass {
+        nested: { value: string };
+        log() { console.log(this.nested.value); }
+      }
+    `,
+    );
+    const thisAccess = sourceFile
+      .getDescendantsOfKind(SyntaxKind.PropertyAccessExpression)
+      .find((node) => node.getText() === "this.nested.value");
+    expect(thisAccess).toBeDefined();
+    if (!thisAccess) return;
+
+    // Act
+    const result = resolveExpressionValue(thisAccess, emptyContext);
+
+    // Assert
+    expect(result).toContain("[this]");
+    expect(result).toContain("this.nested.value");
+  });
 });
