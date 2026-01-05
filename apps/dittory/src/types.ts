@@ -6,6 +6,9 @@ import type {
   VariableDeclaration,
 } from "ts-morph";
 
+export type { ValueType } from "@/utils/valueTypeDetector";
+export { VALID_VALUE_TYPES } from "@/utils/valueTypeDetector";
+
 /**
  * ファイルパスを受け取り、除外すべきかどうかを判定する関数の型
  */
@@ -77,6 +80,8 @@ export interface AnalyzerOptions {
   shouldExcludeFile?: FileFilter;
   /** デフォルト: 2 */
   minUsages?: number;
+  /** 検出対象の値種別。デフォルト: "all" */
+  valueTypes?: import("@/utils/valueTypeDetector").ValueType[] | "all";
 }
 
 /**

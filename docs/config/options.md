@@ -9,6 +9,7 @@
 | `output` | `OutputMode` | `"simple"` | Output verbosity |
 | `tsconfig` | `string` | `"./tsconfig.json"` | Path to tsconfig.json |
 | `targetDir` | `string` | `"./src"` | Target directory to analyze |
+| `valueTypes` | `ValueType[] \| "all"` | `"all"` | Value types to detect |
 
 ## minUsages
 
@@ -107,6 +108,33 @@ dittory ./custom/path  # Uses ./custom/path, not config's targetDir
 ```
 :::
 
+## valueTypes
+
+Specifies which types of values to detect as constants.
+
+- **Type:** `("boolean" | "number" | "string" | "enum" | "undefined")[] | "all"`
+- **Default:** `"all"`
+- **CLI:** `--value-types=<types>`
+
+| Value | Description |
+|-------|-------------|
+| `"boolean"` | Boolean literals (`true`, `false`) |
+| `"number"` | Numeric literals (`42`, `3.14`, `-10`) |
+| `"string"` | String literals (`"hello"`) |
+| `"enum"` | Enum member values |
+| `"undefined"` | Undefined values |
+| `"all"` | Detect all types (default) |
+
+```js
+export default {
+  valueTypes: ["boolean", "string"], // Only detect boolean and string constants
+};
+```
+
+::: tip
+Use this option to focus on specific types of constants. For example, if you only want to find hardcoded string values, use `valueTypes: ["string"]`.
+:::
+
 ## Complete Example
 
 ```js
@@ -118,5 +146,6 @@ export default {
   output: "simple",
   tsconfig: "./tsconfig.json",
   targetDir: "./src",
+  valueTypes: ["boolean", "number", "string"],
 };
 ```

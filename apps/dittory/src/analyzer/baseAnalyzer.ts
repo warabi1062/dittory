@@ -19,8 +19,10 @@ import type {
   Exported,
   FileFilter,
   Usage,
+  ValueType,
 } from "@/types";
 import { getSingleValueFromSet } from "@/utils/getSingleValueFromSet";
+import { matchesValueTypes } from "@/utils/valueTypeDetector";
 
 /**
  * ts-morph の参照情報を表す型
@@ -63,11 +65,13 @@ type GroupedMap = Map<string, Map<string, TargetInfo>>;
 export abstract class BaseAnalyzer {
   protected shouldExcludeFile: FileFilter;
   protected minUsages: number;
+  protected valueTypes: ValueType[] | "all";
   protected callSiteMap!: CallSiteMap;
 
   constructor(options: AnalyzerOptions = {}) {
     this.shouldExcludeFile = options.shouldExcludeFile ?? isTestOrStorybookFile;
     this.minUsages = options.minUsages ?? 2;
+    this.valueTypes = options.valueTypes ?? "all";
   }
 
   /**
@@ -269,6 +273,11 @@ export abstract class BaseAnalyzer {
           // 関数型の値は定数として報告しない
           // （onClickに同じハンドラを渡している等は、デフォルト値化の候補ではない）
           if (value.startsWith(FUNCTION_VALUE_PREFIX)) {
+            continue;
+          }
+
+          // 値種別によるフィルタリング
+          if (!matchesValueTypes(value, this.valueTypes)) {
             continue;
           }
 

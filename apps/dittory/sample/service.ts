@@ -28,20 +28,19 @@ logger.info("Instance message 3", "APP");
 sendRequest({
   url: "/api/users",
   method: "GET",
-  config: { timeout: 5000, retries: 1 },
 });
 sendRequest({
   url: "/api/users",
   method: "GET",
-  config: { timeout: 5000, retries: 1 },
 });
 sendRequest({
   url: "/api/posts",
   method: "GET",
-  config: { timeout: 5000, retries: 2 },
+  config: {
+    retries: 3,
+  },
 });
 sendRequest({
   url: "/api/comments",
   method: "GET",
-  config: { timeout: 5000, retries: 3 },
 });

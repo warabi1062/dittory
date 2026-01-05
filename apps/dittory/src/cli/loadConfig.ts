@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { VALID_VALUE_TYPES, type ValueType } from "@/types";
 import type { AnalyzeMode, OutputMode } from "./parseCliOptions";
 
 /** コンフィグファイルの検索順序 */
@@ -19,6 +20,7 @@ export interface DittoryConfig {
   output?: OutputMode;
   tsconfig?: string;
   targetDir?: string;
+  valueTypes?: ValueType[] | "all";
 }
 
 /**
@@ -158,6 +160,27 @@ function validateConfig(config: Record<string, unknown>): DittoryConfig {
       );
     }
     result.targetDir = config.targetDir;
+  }
+
+  if ("valueTypes" in config) {
+    const value = config.valueTypes;
+
+    if (value === "all") {
+      result.valueTypes = "all";
+    } else if (Array.isArray(value)) {
+      for (const type of value) {
+        if (!VALID_VALUE_TYPES.includes(type as ValueType)) {
+          throw new Error(
+            `Invalid config: valueTypes contains invalid type "${type}" (valid values: ${VALID_VALUE_TYPES.join(", ")}, all)`,
+          );
+        }
+      }
+      result.valueTypes = value as ValueType[];
+    } else {
+      throw new Error(
+        `Invalid config: valueTypes must be "all" or an array of value types, got ${value}`,
+      );
+    }
   }
 
   return result;

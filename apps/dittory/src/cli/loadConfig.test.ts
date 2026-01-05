@@ -109,6 +109,84 @@ describe("loadConfig", () => {
       // Act & Assert
       await expect(loadConfig()).rejects.toThrow("output must be one of");
     });
+
+    it("valueTypes が無効な値の場合はエラーを投げること", async () => {
+      // Arrange
+      fs.writeFileSync(
+        path.join(testDir, "dittory.config.json"),
+        JSON.stringify({ valueTypes: "invalid" }),
+      );
+
+      // Act & Assert
+      await expect(loadConfig()).rejects.toThrow(
+        'valueTypes must be "all" or an array',
+      );
+    });
+
+    it("valueTypes 配列に無効な種別が含まれる場合はエラーを投げること", async () => {
+      // Arrange
+      fs.writeFileSync(
+        path.join(testDir, "dittory.config.json"),
+        JSON.stringify({ valueTypes: ["boolean", "invalid"] }),
+      );
+
+      // Act & Assert
+      await expect(loadConfig()).rejects.toThrow(
+        'valueTypes contains invalid type "invalid"',
+      );
+    });
+  });
+
+  describe("valueTypes オプション", () => {
+    it("valueTypes を配列として読み込むこと", async () => {
+      // Arrange
+      fs.writeFileSync(
+        path.join(testDir, "dittory.config.json"),
+        JSON.stringify({ valueTypes: ["boolean", "number"] }),
+      );
+
+      // Act
+      const result = await loadConfig();
+
+      // Assert
+      expect(result.valueTypes).toEqual(["boolean", "number"]);
+    });
+
+    it("valueTypes を all として読み込むこと", async () => {
+      // Arrange
+      fs.writeFileSync(
+        path.join(testDir, "dittory.config.json"),
+        JSON.stringify({ valueTypes: "all" }),
+      );
+
+      // Act
+      const result = await loadConfig();
+
+      // Assert
+      expect(result.valueTypes).toBe("all");
+    });
+
+    it("すべての有効な種別を読み込むこと", async () => {
+      // Arrange
+      fs.writeFileSync(
+        path.join(testDir, "dittory.config.json"),
+        JSON.stringify({
+          valueTypes: ["boolean", "number", "string", "enum", "undefined"],
+        }),
+      );
+
+      // Act
+      const result = await loadConfig();
+
+      // Assert
+      expect(result.valueTypes).toEqual([
+        "boolean",
+        "number",
+        "string",
+        "enum",
+        "undefined",
+      ]);
+    });
   });
 
   describe("優先順位", () => {

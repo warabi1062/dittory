@@ -10,6 +10,7 @@ type RequestOptions = {
   url: string;
   method: string;
   config?: {
+    hoge?: undefined;
     timeout?: number;
     retries: number;
   };

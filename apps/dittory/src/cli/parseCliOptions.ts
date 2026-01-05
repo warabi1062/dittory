@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { VALID_VALUE_TYPES, type ValueType } from "@/types";
 
 export type AnalyzeMode = "all" | "components" | "functions";
 export type OutputMode = "simple" | "verbose";
@@ -12,6 +13,7 @@ export interface RawCliOptions {
   target?: AnalyzeMode;
   output?: OutputMode;
   tsconfig?: string;
+  valueTypes?: ValueType[];
   showHelp: boolean;
 }
 
@@ -24,6 +26,7 @@ export interface ResolvedOptions {
   target: AnalyzeMode;
   output: OutputMode;
   tsconfig: string;
+  valueTypes: ValueType[] | "all";
 }
 
 /** デフォルトのオプション値 */
@@ -33,6 +36,7 @@ export const DEFAULT_OPTIONS: ResolvedOptions = {
   target: "all",
   output: "simple",
   tsconfig: "./tsconfig.json",
+  valueTypes: "all",
 };
 
 export class CliValidationError extends Error {
@@ -56,6 +60,7 @@ const VALID_OPTIONS: readonly string[] = [
   "--target",
   "--output",
   "--tsconfig",
+  "--value-types",
   "--help",
 ];
 
@@ -123,6 +128,30 @@ export function parseCliOptions(args: string[]): RawCliOptions {
       }
 
       result.tsconfig = value;
+    } else if (arg.startsWith("--value-types=")) {
+      const value = arg.slice(14);
+
+      if (value === "") {
+        throw new CliValidationError(
+          "Invalid value for --value-types: value cannot be empty",
+        );
+      }
+
+      // "all" の場合はデフォルト扱い（RawCliOptionsには含めない）
+      if (value === "all") {
+        continue;
+      }
+
+      const types = value.split(",").map((t) => t.trim());
+      for (const type of types) {
+        if (!VALID_VALUE_TYPES.includes(type as ValueType)) {
+          throw new CliValidationError(
+            `Invalid value type: "${type}" (valid values: ${VALID_VALUE_TYPES.join(", ")}, all)`,
+          );
+        }
+      }
+
+      result.valueTypes = types as ValueType[];
     } else if (arg.startsWith("--")) {
       const optionName = arg.split("=")[0];
 
@@ -176,6 +205,8 @@ Options:
   --target=<mode>      Analysis target: all, components, functions (default: all)
   --output=<mode>      Output mode: simple, verbose (default: simple)
   --tsconfig=<path>    Path to tsconfig.json (default: ./tsconfig.json)
+  --value-types=<types> Value types to detect: boolean, number, string, enum, undefined, all (default: all)
+                        Multiple types can be specified with comma: --value-types=boolean,string
   --help               Show this help message
 
 Arguments:
