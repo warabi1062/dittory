@@ -209,16 +209,17 @@ export function extractArgValue(expression: Node): ArgValue {
   }
 
   // CallExpression (例: this.method(), obj.method())
-  // thisを含むメソッド呼び出しは、実行時にインスタンスごとに異なる値を返す可能性があるため、
+  // プロパティアクセスを伴うメソッド呼び出しは、実行時に異なる値を返す可能性があるため、
   // 使用箇所ごとにユニークな値として扱う
+  // 例: declSourceFile.getFilePath() はループ内で異なる declSourceFile に対して呼ばれる可能性がある
   if (Node.isCallExpression(expression)) {
     const calleeExpr = expression.getExpression();
-    if (isThisPropertyAccess(calleeExpr)) {
+    if (Node.isPropertyAccessExpression(calleeExpr)) {
       const sourceFile = expression.getSourceFile();
       const line = expression.getStartLineNumber();
       return {
         type: ArgValueType.Literal,
-        value: `[this]${sourceFile.getFilePath()}:${line}:${expression.getText()}`,
+        value: `[methodCall]${sourceFile.getFilePath()}:${line}:${expression.getText()}`,
       };
     }
   }
