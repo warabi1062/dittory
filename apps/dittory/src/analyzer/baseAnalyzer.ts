@@ -42,6 +42,8 @@ interface UsageData {
 interface TargetInfo {
   line: number;
   params: Map<string, UsageData>;
+  /** 総呼び出し回数（ネストしたプロパティの存在チェックに使用） */
+  totalCallCount: number;
 }
 
 /**
@@ -220,7 +222,19 @@ export abstract class BaseAnalyzer {
         }
         paramMap.set(paramName, { values, usages });
       }
-      fileMap.set(item.name, { line: item.sourceLine, params: paramMap });
+
+      // 総呼び出し回数を計算（最大のUsage配列の長さを使用）
+      // すべての呼び出しで存在するパラメータのUsage数が基準となる
+      const totalCallCount = Math.max(
+        ...Object.values(item.usages).map((usages) => usages.length),
+        0,
+      );
+
+      fileMap.set(item.name, {
+        line: item.sourceLine,
+        params: paramMap,
+        totalCallCount,
+      });
     }
 
     return groupedMap;
@@ -235,9 +249,16 @@ export abstract class BaseAnalyzer {
     for (const [sourceFile, targetMap] of groupedMap) {
       for (const [targetName, targetInfo] of targetMap) {
         for (const [paramName, usageData] of targetInfo.params) {
+          // 定数として認識する条件:
+          // 1. 使用回数が最小使用回数以上
+          // 2. すべての使用箇所で同じ値
+          // 3. Usage数が総呼び出し回数と一致（すべての呼び出しで値が存在）
+          //    これにより、オプショナルなプロパティが一部の呼び出しでのみ
+          //    指定されている場合を定数として誤検出しない
           const isConstant =
             usageData.usages.length >= this.minUsages &&
-            usageData.values.size === 1;
+            usageData.values.size === 1 &&
+            usageData.usages.length === targetInfo.totalCallCount;
 
           if (!isConstant) {
             continue;

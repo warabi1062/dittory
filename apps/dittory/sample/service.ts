@@ -31,6 +31,11 @@ sendRequest({
   config: { timeout: 5000, retries: 1 },
 });
 sendRequest({
+  url: "/api/users",
+  method: "GET",
+  config: { timeout: 5000, retries: 1 },
+});
+sendRequest({
   url: "/api/posts",
   method: "GET",
   config: { timeout: 5000, retries: 2 },
