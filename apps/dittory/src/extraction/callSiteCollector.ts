@@ -208,6 +208,21 @@ export function extractArgValue(expression: Node): ArgValue {
     return { type: ArgValueType.Literal, value: type.getText() };
   }
 
+  // CallExpression (例: this.method(), obj.method())
+  // thisを含むメソッド呼び出しは、実行時にインスタンスごとに異なる値を返す可能性があるため、
+  // 使用箇所ごとにユニークな値として扱う
+  if (Node.isCallExpression(expression)) {
+    const calleeExpr = expression.getExpression();
+    if (isThisPropertyAccess(calleeExpr)) {
+      const sourceFile = expression.getSourceFile();
+      const line = expression.getStartLineNumber();
+      return {
+        type: ArgValueType.Literal,
+        value: `[this]${sourceFile.getFilePath()}:${line}:${expression.getText()}`,
+      };
+    }
+  }
+
   return { type: ArgValueType.Literal, value: expression.getText() };
 }
 
