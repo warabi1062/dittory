@@ -48,7 +48,20 @@ export function resolveExpressionValue(
   context: ResolveContext,
 ): string {
   const argValue = extractArgValue(expression);
-  return argValueToString(argValue, context);
+  const sourceFile = expression.getSourceFile();
+  const usageLocation = {
+    filePath: sourceFile.getFilePath(),
+    line: expression.getStartLineNumber(),
+  };
+  return argValueToString(argValue, context, usageLocation);
+}
+
+/**
+ * 使用箇所の位置情報
+ */
+interface UsageLocation {
+  filePath: string;
+  line: number;
 }
 
 /**
@@ -56,8 +69,13 @@ export function resolveExpressionValue(
  *
  * @param value - 変換対象の ArgValue
  * @param context - パラメータ参照解決用のコンテキスト
+ * @param usageLocation - 使用箇所の位置情報（解決できないParamRefのユニーク化に使用）
  */
-function argValueToString(value: ArgValue, context: ResolveContext): string {
+function argValueToString(
+  value: ArgValue,
+  context: ResolveContext,
+  usageLocation: UsageLocation,
+): string {
   switch (value.type) {
     case ArgValueType.Literal:
       return value.value;
@@ -73,7 +91,8 @@ function argValueToString(value: ArgValue, context: ResolveContext): string {
         return argValueToKey(resolved);
       }
       // 解決できない場合は使用箇所ごとにユニークな値として扱う
-      return argValueToKey(value);
+      // 使用箇所の位置情報を含めてユニークにする
+      return `[paramRef]${usageLocation.filePath}:${usageLocation.line}:${argValueToKey(value)}`;
     }
 
     case ArgValueType.Undefined:
