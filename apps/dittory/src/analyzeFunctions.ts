@@ -4,11 +4,13 @@ import { FunctionAnalyzer } from "@/analyzer/functionAnalyzer";
 import type { CallSiteMap } from "@/extraction/callSiteCollector";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
-import type { AnalysisResult, FileFilter } from "@/types";
+import type { AnalysisResult, FileFilter, ValueType } from "@/types";
 
 interface AnalyzeFunctionsOptions {
   shouldExcludeFile?: FileFilter;
   minUsages?: number;
+  /** 検出対象の値種別。デフォルト: "all" */
+  valueTypes?: ValueType[] | "all";
   /** 呼び出し情報（パラメータ経由で渡された値を解決するために使用） */
   callSiteMap: CallSiteMap;
 }
@@ -32,6 +34,7 @@ export function analyzeFunctionsCore(
   const {
     shouldExcludeFile = isTestOrStorybookFile,
     minUsages = 2,
+    valueTypes = "all",
     callSiteMap,
   } = options;
 
@@ -40,7 +43,7 @@ export function analyzeFunctionsCore(
   const functions = declarations.filter((decl) => decl.type === "function");
   const classes = declarations.filter((decl) => decl.type === "class");
 
-  const analyzerOptions = { shouldExcludeFile, minUsages };
+  const analyzerOptions = { shouldExcludeFile, minUsages, valueTypes };
 
   // 関数を分析
   const functionAnalyzer = new FunctionAnalyzer(analyzerOptions);

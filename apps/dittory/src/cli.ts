@@ -64,9 +64,14 @@ async function main(): Promise<void> {
     output: cliOptions.output ?? fileConfig.output ?? DEFAULT_OPTIONS.output,
     tsconfig:
       cliOptions.tsconfig ?? fileConfig.tsconfig ?? DEFAULT_OPTIONS.tsconfig,
+    valueTypes:
+      cliOptions.valueTypes ??
+      fileConfig.valueTypes ??
+      DEFAULT_OPTIONS.valueTypes,
   };
 
-  const { targetDir, minUsages, target, output, tsconfig } = options;
+  const { targetDir, minUsages, target, output, tsconfig, valueTypes } =
+    options;
 
   // 対象ディレクトリの存在を検証
   try {
@@ -108,6 +113,7 @@ async function main(): Promise<void> {
   if (target === "all" || target === "components") {
     const propsResult = analyzePropsCore(sourceFilesToAnalyze, {
       minUsages,
+      valueTypes,
       callSiteMap,
     });
     allExported.push(...propsResult.exported);
@@ -117,6 +123,7 @@ async function main(): Promise<void> {
   if (target === "all" || target === "functions") {
     const functionsResult = analyzeFunctionsCore(sourceFilesToAnalyze, {
       minUsages,
+      valueTypes,
       callSiteMap,
     });
     allExported.push(...functionsResult.exported);

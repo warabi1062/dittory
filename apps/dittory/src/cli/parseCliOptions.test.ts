@@ -23,6 +23,7 @@ describe("parseCliOptions", () => {
       expect(result.target).toBeUndefined();
       expect(result.output).toBeUndefined();
       expect(result.tsconfig).toBeUndefined();
+      expect(result.valueTypes).toBeUndefined();
       expect(result.showHelp).toBe(false);
     });
   });
@@ -213,6 +214,102 @@ describe("parseCliOptions", () => {
     });
   });
 
+  describe("--value-types オプション", () => {
+    it("単一の種別を指定した場合はその値を配列で使用すること", () => {
+      // Arrange
+      const args = ["--value-types=boolean"];
+
+      // Act
+      const result = parseCliOptions(args);
+
+      // Assert
+      expect(result.valueTypes).toEqual(["boolean"]);
+    });
+
+    it("複数の種別をカンマ区切りで指定した場合は配列として使用すること", () => {
+      // Arrange
+      const args = ["--value-types=boolean,number,string"];
+
+      // Act
+      const result = parseCliOptions(args);
+
+      // Assert
+      expect(result.valueTypes).toEqual(["boolean", "number", "string"]);
+    });
+
+    it("すべての有効な種別を指定できること", () => {
+      // Arrange
+      const args = ["--value-types=boolean,number,string,enum,undefined"];
+
+      // Act
+      const result = parseCliOptions(args);
+
+      // Assert
+      expect(result.valueTypes).toEqual([
+        "boolean",
+        "number",
+        "string",
+        "enum",
+        "undefined",
+      ]);
+    });
+
+    it("allを指定した場合はundefinedであること（デフォルト扱い）", () => {
+      // Arrange
+      const args = ["--value-types=all"];
+
+      // Act
+      const result = parseCliOptions(args);
+
+      // Assert
+      expect(result.valueTypes).toBeUndefined();
+    });
+
+    it("値が空の場合はエラーを投げること", () => {
+      // Arrange
+      const args = ["--value-types="];
+
+      // Act & Assert
+      expect(() => parseCliOptions(args)).toThrow(CliValidationError);
+      expect(() => parseCliOptions(args)).toThrow(
+        "Invalid value for --value-types: value cannot be empty",
+      );
+    });
+
+    it("無効な種別を指定した場合はエラーを投げること", () => {
+      // Arrange
+      const args = ["--value-types=invalid"];
+
+      // Act & Assert
+      expect(() => parseCliOptions(args)).toThrow(CliValidationError);
+      expect(() => parseCliOptions(args)).toThrow(
+        'Invalid value type: "invalid" (valid values: boolean, number, string, enum, undefined, all)',
+      );
+    });
+
+    it("有効な種別と無効な種別を混在して指定した場合はエラーを投げること", () => {
+      // Arrange
+      const args = ["--value-types=boolean,invalid"];
+
+      // Act & Assert
+      expect(() => parseCliOptions(args)).toThrow(CliValidationError);
+      expect(() => parseCliOptions(args)).toThrow(
+        'Invalid value type: "invalid"',
+      );
+    });
+
+    it("指定しない場合はundefinedであること", () => {
+      // Arrange
+      const args: string[] = [];
+
+      // Act
+      const result = parseCliOptions(args);
+
+      // Assert
+      expect(result.valueTypes).toBeUndefined();
+    });
+  });
+
   describe("不明なオプション", () => {
     it("不明なオプションを指定した場合はエラーを投げること", () => {
       // Arrange
@@ -355,6 +452,7 @@ describe("getHelpMessage", () => {
     expect(result).toContain("--min=<number>");
     expect(result).toContain("--target=<mode>");
     expect(result).toContain("--tsconfig=<path>");
+    expect(result).toContain("--value-types=<types>");
     expect(result).toContain("--help");
     expect(result).toContain("directory");
   });

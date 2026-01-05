@@ -14,7 +14,19 @@ dittory [options] [directory]
 | `--target=<mode>` | What to analyze: `all`, `components`, `functions` | `all` |
 | `--output=<mode>` | Output verbosity: `simple`, `verbose` | `simple` |
 | `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |
+| `--value-types=<types>` | Value types to detect (comma-separated) | `all` |
 | `--help` | Show help message | — |
+
+### Value Types
+
+The `--value-types` option accepts the following values:
+
+- `boolean` - Boolean literals (`true`, `false`)
+- `number` - Numeric literals (`42`, `3.14`, `-10`)
+- `string` - String literals (`"hello"`)
+- `enum` - Enum member values
+- `undefined` - Undefined values
+- `all` - All types (default)
 
 ## Arguments
 
@@ -62,10 +74,28 @@ Use a specific tsconfig.json file:
 dittory --tsconfig=./tsconfig.app.json
 ```
 
+### Value Types Filter
+
+Only detect boolean and string constants:
+
+```bash
+dittory --value-types=boolean,string
+```
+
+Only detect numeric constants:
+
+```bash
+dittory --value-types=number
+```
+
 ### Combining Options
 
 ```bash
 dittory --min=3 --target=components --output=verbose ./src/features
+```
+
+```bash
+dittory --min=2 --value-types=boolean,number,string ./src
 ```
 
 ## Output Formats

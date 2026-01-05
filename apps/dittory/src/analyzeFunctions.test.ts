@@ -179,4 +179,43 @@ describe("analyzeFunctionsCore", () => {
     );
     expect(callbackArg).toBeUndefined();
   });
+
+  it("一部の呼び出しでのみ存在するネストしたプロパティは定数として検出しないこと", () => {
+    // Arrange
+    const project = new Project();
+    project.addSourceFileAtPath(
+      path.join(fixturesDir, "testFunctionWithOptionalNested.ts"),
+    );
+    project.addSourceFileAtPath(
+      path.join(fixturesDir, "usageFunctionOptionalNested.ts"),
+    );
+
+    // Act
+    const sourceFiles = project.getSourceFiles();
+    const callSiteMap = collectCallSites(sourceFiles);
+    const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+      callSiteMap,
+    });
+
+    // Assert - methodはすべての呼び出しで同じ値("GET")なので定数として検出される
+    const methodArg = result.constants.find(
+      (a) => a.paramName === "options.method",
+    );
+    expect(methodArg).toBeDefined();
+    expect(methodArg?.value).toBe('"GET"');
+    expect(methodArg?.usages.length).toBe(4);
+
+    // config.timeoutは一部の呼び出しでしか存在しないため定数として検出されない
+    const timeoutArg = result.constants.find(
+      (a) => a.paramName === "options.config.timeout",
+    );
+    expect(timeoutArg).toBeUndefined();
+
+    // config.retriesも一部の呼び出しでしか存在しないため定数として検出されない
+    const retriesArg = result.constants.find(
+      (a) => a.paramName === "options.config.retries",
+    );
+    expect(retriesArg).toBeUndefined();
+  });
 });
