@@ -10,122 +10,295 @@ import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type { FileFilter } from "@/types";
 import { createParamRefValue, isParameterReference } from "./parameterUtils";
 
-/**
- * ArgValueのtype識別子
- */
-export const ArgValueType = {
-  Literal: "literal",
-  Function: "function",
-  ParamRef: "paramRef",
-  Undefined: "undefined",
-} as const;
+// ============================================================================
+// ArgValue クラス階層
+// ============================================================================
 
 /**
- * Literal型の詳細種別
+ * 引数の値を表す基底抽象クラス
  */
-export const LiteralKind = {
-  Enum: "enum",
-  This: "this",
-  MethodCall: "methodCall",
-  Variable: "variable",
-  Boolean: "boolean",
-  String: "string",
-  Number: "number",
-  JsxShorthand: "jsxShorthand",
-  Other: "other",
-} as const;
-
-export type LiteralKindType = (typeof LiteralKind)[keyof typeof LiteralKind];
+export abstract class ArgValue {
+  /**
+   * 比較用の文字列値を取得する
+   */
+  abstract getValue(): string;
+}
 
 /**
- * Literal型の詳細な値表現
- * 各literalKindに応じた構造化されたパラメータを持つ
+ * リテラル値の基底抽象クラス
  */
-export type LiteralArgValue =
-  | {
-      literalKind: typeof LiteralKind.Enum;
-      filePath: string;
-      enumName: string;
-      memberName: string;
-      enumValue: string | number | undefined;
-    }
-  | {
-      literalKind: typeof LiteralKind.This;
-      filePath: string;
-      line: number;
-      expression: string;
-    }
-  | {
-      literalKind: typeof LiteralKind.MethodCall;
-      filePath: string;
-      line: number;
-      expression: string;
-    }
-  | {
-      literalKind: typeof LiteralKind.Variable;
-      filePath: string;
-      identifier: string;
-    }
-  | {
-      literalKind: typeof LiteralKind.Boolean;
-      value: boolean;
-    }
-  | {
-      literalKind: typeof LiteralKind.String;
-      value: string;
-    }
-  | {
-      literalKind: typeof LiteralKind.Number;
-      value: number;
-    }
-  | {
-      literalKind: typeof LiteralKind.JsxShorthand;
-    }
-  | {
-      literalKind: typeof LiteralKind.Other;
-      expression: string;
-    };
+export abstract class LiteralArgValue extends ArgValue {}
 
 /**
- * LiteralArgValueから比較用の文字列値を生成する
+ * enum メンバーのリテラル値
  */
-export function getLiteralValue(literal: LiteralArgValue): string {
-  switch (literal.literalKind) {
-    case LiteralKind.Enum:
-      return `${literal.filePath}:${literal.enumName}.${literal.memberName}=${JSON.stringify(literal.enumValue)}`;
-    case LiteralKind.This:
-      return `[this]${literal.filePath}:${literal.line}:${literal.expression}`;
-    case LiteralKind.MethodCall:
-      return `[methodCall]${literal.filePath}:${literal.line}:${literal.expression}`;
-    case LiteralKind.Variable:
-      return `${literal.filePath}:${literal.identifier}`;
-    case LiteralKind.Boolean:
-      return String(literal.value);
-    case LiteralKind.String:
-      return JSON.stringify(literal.value);
-    case LiteralKind.Number:
-      return JSON.stringify(literal.value);
-    case LiteralKind.JsxShorthand:
-      return "true";
-    case LiteralKind.Other:
-      return literal.expression;
+export class EnumLiteralArgValue extends LiteralArgValue {
+  constructor(
+    readonly filePath: string,
+    readonly enumName: string,
+    readonly memberName: string,
+    readonly enumValue: string | number | undefined,
+  ) {
+    super();
+  }
+
+  getValue(): string {
+    return `${this.filePath}:${this.enumName}.${this.memberName}=${JSON.stringify(this.enumValue)}`;
   }
 }
 
 /**
- * 引数の値を表す union 型
- * 文字列エンコーディングの代わりに型安全な表現を使用
+ * this プロパティアクセスのリテラル値
  */
-export type ArgValue =
-  | ({ type: typeof ArgValueType.Literal } & LiteralArgValue)
-  | { type: typeof ArgValueType.Function; filePath: string; line: number }
-  | {
-      type: typeof ArgValueType.ParamRef;
-      filePath: string;
-      functionName: string;
-      path: string;
+export class ThisLiteralArgValue extends LiteralArgValue {
+  constructor(
+    readonly filePath: string,
+    readonly line: number,
+    readonly expression: string,
+  ) {
+    super();
+  }
+
+  getValue(): string {
+    return `[this]${this.filePath}:${this.line}:${this.expression}`;
+  }
+}
+
+/**
+ * メソッド呼び出しのリテラル値
+ */
+export class MethodCallLiteralArgValue extends LiteralArgValue {
+  constructor(
+    readonly filePath: string,
+    readonly line: number,
+    readonly expression: string,
+  ) {
+    super();
+  }
+
+  getValue(): string {
+    return `[methodCall]${this.filePath}:${this.line}:${this.expression}`;
+  }
+}
+
+/**
+ * 変数参照のリテラル値
+ */
+export class VariableLiteralArgValue extends LiteralArgValue {
+  constructor(
+    readonly filePath: string,
+    readonly identifier: string,
+  ) {
+    super();
+  }
+
+  getValue(): string {
+    return `${this.filePath}:${this.identifier}`;
+  }
+}
+
+/**
+ * boolean リテラル値
+ */
+export class BooleanLiteralArgValue extends LiteralArgValue {
+  constructor(readonly value: boolean) {
+    super();
+  }
+
+  getValue(): string {
+    return String(this.value);
+  }
+}
+
+/**
+ * 文字列リテラル値
+ */
+export class StringLiteralArgValue extends LiteralArgValue {
+  constructor(readonly value: string) {
+    super();
+  }
+
+  getValue(): string {
+    return JSON.stringify(this.value);
+  }
+}
+
+/**
+ * 数値リテラル値
+ */
+export class NumberLiteralArgValue extends LiteralArgValue {
+  constructor(readonly value: number) {
+    super();
+  }
+
+  getValue(): string {
+    return JSON.stringify(this.value);
+  }
+}
+
+/**
+ * JSX boolean shorthand のリテラル値
+ */
+export class JsxShorthandLiteralArgValue extends LiteralArgValue {
+  getValue(): string {
+    return "true";
+  }
+}
+
+/**
+ * その他のリテラル値（フォールバック）
+ */
+export class OtherLiteralArgValue extends LiteralArgValue {
+  constructor(readonly expression: string) {
+    super();
+  }
+
+  getValue(): string {
+    return this.expression;
+  }
+}
+
+/**
+ * 関数型の値
+ */
+export class FunctionArgValue extends ArgValue {
+  constructor(
+    readonly filePath: string,
+    readonly line: number,
+  ) {
+    super();
+  }
+
+  getValue(): string {
+    return `[function]${this.filePath}:${this.line}`;
+  }
+}
+
+/**
+ * パラメータ参照の値
+ */
+export class ParamRefArgValue extends ArgValue {
+  constructor(
+    readonly filePath: string,
+    readonly functionName: string,
+    readonly path: string,
+    readonly line: number,
+  ) {
+    super();
+  }
+
+  /**
+   * パラメータ参照を解決して文字列表現を返す
+   * callSiteMapを使ってパラメータに渡されたすべての値を取得し、
+   * すべて同じ値ならその値を返す。解決できない場合は使用箇所ごとにユニークな値を返す。
+   */
+  resolve(callSiteMap: CallSiteMap): string {
+    const resolved = resolveParameterValueInternal(this, callSiteMap);
+    if (resolved !== undefined) {
+      return argValueToKey(resolved);
     }
-  | { type: typeof ArgValueType.Undefined };
+    // 解決できない場合は使用箇所ごとにユニークな値として扱う
+    return `[paramRef]${this.filePath}:${this.line}:${this.getValue()}`;
+  }
+
+  getValue(): string {
+    return `paramRef:${this.filePath}:${this.functionName}:${this.path}`;
+  }
+}
+
+/**
+ * undefined の値
+ */
+export class UndefinedArgValue extends ArgValue {
+  getValue(): string {
+    return "[undefined]";
+  }
+}
+
+/**
+ * ArgValue を比較可能な文字列キーに変換
+ * 同じ値かどうかの判定に使用
+ */
+export function argValueToKey(value: ArgValue): string {
+  // リテラル値は literal: プレフィックスを付けて区別する
+  if (value instanceof LiteralArgValue) {
+    return `literal:${value.getValue()}`;
+  }
+  return value.getValue();
+}
+
+/**
+ * パラメータ参照を解決する（内部関数）
+ * callSiteMapを使って、パラメータに渡されたすべての値を取得し、
+ * すべて同じ値ならその値を返す。異なる値があればundefinedを返す。
+ */
+function resolveParameterValueInternal(
+  paramRef: ParamRefArgValue,
+  callSiteMap: CallSiteMap,
+  visited: Set<string> = new Set(),
+): ArgValue | undefined {
+  // 循環参照を防ぐ
+  const key = argValueToKey(paramRef);
+  if (visited.has(key)) {
+    return undefined;
+  }
+  visited.add(key);
+
+  const { filePath, functionName, path } = paramRef;
+  const targetId = `${filePath}:${functionName}`;
+  const callSiteInfo = callSiteMap.get(targetId);
+
+  if (!callSiteInfo) {
+    return undefined;
+  }
+
+  // パラメータパスからプロパティ名を抽出
+  // 例: "props.number" → "number", "a" → "a"
+  const paramParts = path.split(".");
+  // JSXの場合は props.xxx 形式なので最後のプロパティ名を使用
+  // 通常関数の場合は最初の名前がそのまま引数名
+  const propName =
+    paramParts.length > 1 ? paramParts[paramParts.length - 1] : paramParts[0];
+
+  const args = callSiteInfo.get(propName);
+  if (!args || args.length === 0) {
+    return undefined;
+  }
+
+  // すべての呼び出し箇所で渡された値を収集
+  const resolvedKeys = new Set<string>();
+  let resolvedValue: ArgValue | undefined;
+
+  for (const arg of args) {
+    // 再帰的にパラメータ参照を解決
+    let resolved: ArgValue | undefined;
+    if (arg.value instanceof ParamRefArgValue) {
+      resolved = resolveParameterValueInternal(
+        arg.value,
+        callSiteMap,
+        new Set(visited),
+      );
+    } else {
+      resolved = arg.value;
+    }
+
+    if (resolved === undefined) {
+      return undefined;
+    }
+
+    const resolvedKey = argValueToKey(resolved);
+    resolvedKeys.add(resolvedKey);
+    resolvedValue = resolved;
+  }
+
+  // すべて同じ値なら、その値を返す
+  if (resolvedKeys.size === 1) {
+    return resolvedValue;
+  }
+
+  // 異なる値がある場合は解決不可
+  return undefined;
+}
 
 /**
  * 呼び出し箇所での引数情報
@@ -205,11 +378,7 @@ export function extractArgValue(expression: Node): ArgValue {
   if (type.getCallSignatures().length > 0) {
     const sourceFile = expression.getSourceFile();
     const line = expression.getStartLineNumber();
-    return {
-      type: ArgValueType.Function,
-      filePath: sourceFile.getFilePath(),
-      line,
-    };
+    return new FunctionArgValue(sourceFile.getFilePath(), line);
   }
 
   // PropertyAccessExpression (例: Status.Active, props.number)
@@ -221,14 +390,12 @@ export function extractArgValue(expression: Node): ArgValue {
     if (decl && Node.isEnumMember(decl)) {
       const enumDecl = decl.getParent();
       if (Node.isEnumDeclaration(enumDecl)) {
-        return {
-          type: ArgValueType.Literal,
-          literalKind: LiteralKind.Enum,
-          filePath: enumDecl.getSourceFile().getFilePath(),
-          enumName: enumDecl.getName(),
-          memberName: decl.getName(),
-          enumValue: decl.getValue(),
-        };
+        return new EnumLiteralArgValue(
+          enumDecl.getSourceFile().getFilePath(),
+          enumDecl.getName(),
+          decl.getName(),
+          decl.getValue(),
+        );
       }
     }
 
@@ -241,20 +408,18 @@ export function extractArgValue(expression: Node): ArgValue {
     // クラスメンバーは実行時にインスタンスごとに異なる値を持つ可能性があるため、
     // 使用箇所ごとにユニークな値として扱う
     if (isThisPropertyAccess(expression)) {
-      return {
-        type: ArgValueType.Literal,
-        literalKind: LiteralKind.This,
-        filePath: expression.getSourceFile().getFilePath(),
-        line: expression.getStartLineNumber(),
-        expression: expression.getText(),
-      };
+      return new ThisLiteralArgValue(
+        expression.getSourceFile().getFilePath(),
+        expression.getStartLineNumber(),
+        expression.getText(),
+      );
     }
   }
 
   // Identifier (変数参照)
   if (Node.isIdentifier(expression)) {
     if (expression.getText() === "undefined") {
-      return { type: ArgValueType.Undefined };
+      return new UndefinedArgValue();
     }
 
     const symbol = expression.getSymbol();
@@ -274,49 +439,33 @@ export function extractArgValue(expression: Node): ArgValue {
         if (initializer) {
           return extractArgValue(initializer);
         }
-        return {
-          type: ArgValueType.Literal,
-          literalKind: LiteralKind.Variable,
-          filePath: decl.getSourceFile().getFilePath(),
-          identifier: expression.getText(),
-        };
+        return new VariableLiteralArgValue(
+          decl.getSourceFile().getFilePath(),
+          expression.getText(),
+        );
       }
 
       // その他の宣言タイプ（インポート宣言など）
       // ファイルパス + 変数名で識別する
-      return {
-        type: ArgValueType.Literal,
-        literalKind: LiteralKind.Variable,
-        filePath: decl.getSourceFile().getFilePath(),
-        identifier: expression.getText(),
-      };
+      return new VariableLiteralArgValue(
+        decl.getSourceFile().getFilePath(),
+        expression.getText(),
+      );
     }
   }
 
   // リテラル型
   const literalValue = type.getLiteralValue();
   if (type.isStringLiteral() && typeof literalValue === "string") {
-    return {
-      type: ArgValueType.Literal,
-      literalKind: LiteralKind.String,
-      value: literalValue,
-    };
+    return new StringLiteralArgValue(literalValue);
   }
 
   if (type.isNumberLiteral() && typeof literalValue === "number") {
-    return {
-      type: ArgValueType.Literal,
-      literalKind: LiteralKind.Number,
-      value: literalValue,
-    };
+    return new NumberLiteralArgValue(literalValue);
   }
 
   if (type.isBooleanLiteral()) {
-    return {
-      type: ArgValueType.Literal,
-      literalKind: LiteralKind.Boolean,
-      value: type.getText() === "true",
-    };
+    return new BooleanLiteralArgValue(type.getText() === "true");
   }
 
   // CallExpression (例: this.method(), obj.method())
@@ -326,21 +475,15 @@ export function extractArgValue(expression: Node): ArgValue {
   if (Node.isCallExpression(expression)) {
     const calleeExpr = expression.getExpression();
     if (Node.isPropertyAccessExpression(calleeExpr)) {
-      return {
-        type: ArgValueType.Literal,
-        literalKind: LiteralKind.MethodCall,
-        filePath: expression.getSourceFile().getFilePath(),
-        line: expression.getStartLineNumber(),
-        expression: expression.getText(),
-      };
+      return new MethodCallLiteralArgValue(
+        expression.getSourceFile().getFilePath(),
+        expression.getStartLineNumber(),
+        expression.getText(),
+      );
     }
   }
 
-  return {
-    type: ArgValueType.Literal,
-    literalKind: LiteralKind.Other,
-    expression: expression.getText(),
-  };
+  return new OtherLiteralArgValue(expression.getText());
 }
 
 /**
@@ -369,27 +512,16 @@ function extractFromJsxElement(
     let value: ArgValue;
     if (!initializer) {
       // boolean shorthand
-      value = {
-        type: ArgValueType.Literal,
-        literalKind: LiteralKind.JsxShorthand,
-      };
+      value = new JsxShorthandLiteralArgValue();
     } else if (Node.isJsxExpression(initializer)) {
       const expr = initializer.getExpression();
-      value = expr ? extractArgValue(expr) : { type: ArgValueType.Undefined };
+      value = expr ? extractArgValue(expr) : new UndefinedArgValue();
     } else if (Node.isStringLiteral(initializer)) {
       // JSX属性の文字列値 (例: value="hello")
       // getLiteralValue()で引用符なしの値を取得
-      value = {
-        type: ArgValueType.Literal,
-        literalKind: LiteralKind.String,
-        value: initializer.getLiteralValue(),
-      };
+      value = new StringLiteralArgValue(initializer.getLiteralValue());
     } else {
-      value = {
-        type: ArgValueType.Literal,
-        literalKind: LiteralKind.Other,
-        expression: initializer.getText(),
-      };
+      value = new OtherLiteralArgValue(initializer.getText());
     }
 
     const args = info.get(propName) ?? [];
@@ -427,7 +559,7 @@ function extractFromCallExpression(
     const arg = args[i];
     const value: ArgValue = arg
       ? extractArgValue(arg)
-      : { type: ArgValueType.Undefined };
+      : new UndefinedArgValue();
 
     const argList = info.get(paramName) ?? [];
     argList.push({

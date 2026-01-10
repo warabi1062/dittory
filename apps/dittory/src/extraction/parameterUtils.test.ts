@@ -1,19 +1,21 @@
 import { Project, SyntaxKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
-  type ArgValue,
-  ArgValueType,
+  argValueToKey,
   type CallSiteMap,
-  LiteralKind,
+  FunctionArgValue,
+  NumberLiteralArgValue,
+  OtherLiteralArgValue,
+  ParamRefArgValue,
+  StringLiteralArgValue,
+  UndefinedArgValue,
 } from "./callSiteCollector";
 import {
-  argValueToKey,
   buildParameterPath,
   createParamRefValue,
   findContainingFunction,
   getFunctionName,
   isParameterReference,
-  resolveParameterValue,
 } from "./parameterUtils";
 
 describe("isParameterReference", () => {
@@ -340,12 +342,12 @@ describe("createParamRefValue", () => {
     const result = createParamRefValue(expression);
 
     // Assert
-    expect(result.type).toBe("paramRef");
-    if (result.type === "paramRef") {
-      expect(result.filePath).toBe("/src/Component.tsx");
-      expect(result.functionName).toBe("Component");
-      expect(result.path).toBe("props.value");
+    if (!(result instanceof ParamRefArgValue)) {
+      expect.unreachable("result should be ParamRefArgValue");
     }
+    expect(result.filePath).toBe("/src/Component.tsx");
+    expect(result.functionName).toBe("Component");
+    expect(result.path).toBe("props.value");
   });
 
   it("関数スコープが見つからない場合はliteral型を返すこと", () => {
@@ -358,84 +360,51 @@ describe("createParamRefValue", () => {
     const identifier = sourceFile
       .getDescendantsOfKind(SyntaxKind.Identifier)
       .find((id) => id.getText() === "someValue");
-    expect(identifier).toBeDefined();
-    if (!identifier) return;
+    if (!identifier) {
+      expect.unreachable("identifier should be defined");
+    }
 
     // Act
     const result = createParamRefValue(identifier);
 
     // Assert
-    expect(result.type).toBe("literal");
-    if (result.type === "literal" && result.literalKind === "other") {
-      expect(result.expression).toBe("someValue");
+    if (!(result instanceof OtherLiteralArgValue)) {
+      expect.unreachable("result should be OtherLiteralArgValue");
     }
+    expect(result.expression).toBe("someValue");
   });
 });
 
 describe("argValueToKey", () => {
   it("literal型の値を文字列キーに変換すること", () => {
-    const value: ArgValue = {
-      type: ArgValueType.Literal,
-      literalKind: LiteralKind.String,
-      value: "hello",
-    };
+    const value = new StringLiteralArgValue("hello");
     expect(argValueToKey(value)).toBe('literal:"hello"');
   });
 
   it("function型の値を文字列キーに変換すること", () => {
-    const value: ArgValue = {
-      type: ArgValueType.Function,
-      filePath: "/src/file.ts",
-      line: 10,
-    };
-    expect(argValueToKey(value)).toBe("function:/src/file.ts:10");
+    const value = new FunctionArgValue("/src/file.ts", 10);
+    expect(argValueToKey(value)).toBe("[function]/src/file.ts:10");
   });
 
   it("paramRef型の値を文字列キーに変換すること", () => {
-    const value: ArgValue = {
-      type: ArgValueType.ParamRef,
-      filePath: "/src/file.ts",
-      functionName: "myFunc",
-      path: "props.value",
-    };
+    const value = new ParamRefArgValue(
+      "/src/file.ts",
+      "myFunc",
+      "props.value",
+      10,
+    );
     expect(argValueToKey(value)).toBe(
       "paramRef:/src/file.ts:myFunc:props.value",
     );
   });
 
   it("undefined型の値を文字列キーに変換すること", () => {
-    const value: ArgValue = { type: ArgValueType.Undefined };
-    expect(argValueToKey(value)).toBe("undefined");
+    const value = new UndefinedArgValue();
+    expect(argValueToKey(value)).toBe("[undefined]");
   });
 });
 
-describe("resolveParameterValue", () => {
-  it("literal型の値はそのまま返すこと", () => {
-    const callSiteMap: CallSiteMap = new Map();
-    const value: ArgValue = {
-      type: ArgValueType.Literal,
-      literalKind: LiteralKind.String,
-      value: "hello",
-    };
-    expect(resolveParameterValue(value, callSiteMap)).toEqual(value);
-  });
-
-  it("undefined型の値はそのまま返すこと", () => {
-    const callSiteMap: CallSiteMap = new Map();
-    const value: ArgValue = { type: ArgValueType.Undefined };
-    expect(resolveParameterValue(value, callSiteMap)).toEqual(value);
-  });
-
-  it("function型の値はそのまま返すこと", () => {
-    const callSiteMap: CallSiteMap = new Map();
-    const value: ArgValue = {
-      type: ArgValueType.Function,
-      filePath: "/src/file.ts",
-      line: 10,
-    };
-    expect(resolveParameterValue(value, callSiteMap)).toEqual(value);
-  });
-
+describe("ParamRefArgValue.resolve", () => {
   it("すべての呼び出しで同じ値の場合は解決された値を返すこと", () => {
     // Arrange
     const callSiteMap: CallSiteMap = new Map([
@@ -447,21 +416,13 @@ describe("resolveParameterValue", () => {
             [
               {
                 name: "number",
-                value: {
-                  type: ArgValueType.Literal,
-                  literalKind: LiteralKind.Number,
-                  value: 42,
-                },
+                value: new NumberLiteralArgValue(42),
                 filePath: "/src/App.tsx",
                 line: 5,
               },
               {
                 name: "number",
-                value: {
-                  type: ArgValueType.Literal,
-                  literalKind: LiteralKind.Number,
-                  value: 42,
-                },
+                value: new NumberLiteralArgValue(42),
                 filePath: "/src/Page.tsx",
                 line: 10,
               },
@@ -471,25 +432,21 @@ describe("resolveParameterValue", () => {
       ],
     ]);
 
-    const paramRef: ArgValue = {
-      type: ArgValueType.ParamRef,
-      filePath: "/src/Parent.tsx",
-      functionName: "ParentComponent",
-      path: "props.number",
-    };
+    const paramRef = new ParamRefArgValue(
+      "/src/Parent.tsx",
+      "ParentComponent",
+      "props.number",
+      3,
+    );
 
     // Act
-    const result = resolveParameterValue(paramRef, callSiteMap);
+    const result = paramRef.resolve(callSiteMap);
 
     // Assert
-    expect(result).toEqual({
-      type: ArgValueType.Literal,
-      literalKind: LiteralKind.Number,
-      value: 42,
-    });
+    expect(result).toBe("literal:42");
   });
 
-  it("異なる値がある場合はundefinedを返すこと", () => {
+  it("異なる値がある場合はユニークな値を返すこと", () => {
     // Arrange
     const callSiteMap: CallSiteMap = new Map([
       [
@@ -500,21 +457,13 @@ describe("resolveParameterValue", () => {
             [
               {
                 name: "number",
-                value: {
-                  type: ArgValueType.Literal,
-                  literalKind: LiteralKind.Number,
-                  value: 42,
-                },
+                value: new NumberLiteralArgValue(42),
                 filePath: "/src/App.tsx",
                 line: 5,
               },
               {
                 name: "number",
-                value: {
-                  type: ArgValueType.Literal,
-                  literalKind: LiteralKind.Number,
-                  value: 100,
-                },
+                value: new NumberLiteralArgValue(100),
                 filePath: "/src/Page.tsx",
                 line: 10,
               },
@@ -524,18 +473,20 @@ describe("resolveParameterValue", () => {
       ],
     ]);
 
-    const paramRef: ArgValue = {
-      type: ArgValueType.ParamRef,
-      filePath: "/src/Parent.tsx",
-      functionName: "ParentComponent",
-      path: "props.number",
-    };
+    const paramRef = new ParamRefArgValue(
+      "/src/Parent.tsx",
+      "ParentComponent",
+      "props.number",
+      3,
+    );
 
     // Act
-    const result = resolveParameterValue(paramRef, callSiteMap);
+    const result = paramRef.resolve(callSiteMap);
 
     // Assert
-    expect(result).toBeUndefined();
+    expect(result).toBe(
+      "[paramRef]/src/Parent.tsx:3:paramRef:/src/Parent.tsx:ParentComponent:props.number",
+    );
   });
 
   it("再帰的にパラメータ参照を解決すること", () => {
@@ -551,12 +502,12 @@ describe("resolveParameterValue", () => {
           [
             {
               name: "value",
-              value: {
-                type: ArgValueType.ParamRef,
-                filePath: "/src/Child.tsx",
-                functionName: "Child",
-                path: "props.innerValue",
-              } satisfies ArgValue,
+              value: new ParamRefArgValue(
+                "/src/Child.tsx",
+                "Child",
+                "props.innerValue",
+                5,
+              ),
               filePath: "/src/Child.tsx",
               line: 5,
             },
@@ -574,12 +525,12 @@ describe("resolveParameterValue", () => {
           [
             {
               name: "innerValue",
-              value: {
-                type: ArgValueType.ParamRef,
-                filePath: "/src/Parent.tsx",
-                functionName: "Parent",
-                path: "props.outerValue",
-              } satisfies ArgValue,
+              value: new ParamRefArgValue(
+                "/src/Parent.tsx",
+                "Parent",
+                "props.outerValue",
+                10,
+              ),
               filePath: "/src/Parent.tsx",
               line: 10,
             },
@@ -597,11 +548,7 @@ describe("resolveParameterValue", () => {
           [
             {
               name: "outerValue",
-              value: {
-                type: ArgValueType.Literal,
-                literalKind: LiteralKind.String,
-                value: "final",
-              } satisfies ArgValue,
+              value: new StringLiteralArgValue("final"),
               filePath: "/src/App.tsx",
               line: 15,
             },
@@ -610,25 +557,21 @@ describe("resolveParameterValue", () => {
       ]),
     );
 
-    const paramRef: ArgValue = {
-      type: ArgValueType.ParamRef,
-      filePath: "/src/GrandChild.tsx",
-      functionName: "GrandChild",
-      path: "props.value",
-    };
+    const paramRef = new ParamRefArgValue(
+      "/src/GrandChild.tsx",
+      "GrandChild",
+      "props.value",
+      3,
+    );
 
     // Act
-    const result = resolveParameterValue(paramRef, callSiteMap);
+    const result = paramRef.resolve(callSiteMap);
 
     // Assert
-    expect(result).toEqual({
-      type: ArgValueType.Literal,
-      literalKind: LiteralKind.String,
-      value: "final",
-    });
+    expect(result).toBe('literal:"final"');
   });
 
-  it("循環参照がある場合はundefinedを返すこと", () => {
+  it("循環参照がある場合はユニークな値を返すこと", () => {
     // Arrange: A -> B -> A (循環)
     const callSiteMap: CallSiteMap = new Map([
       [
@@ -639,12 +582,12 @@ describe("resolveParameterValue", () => {
             [
               {
                 name: "value",
-                value: {
-                  type: ArgValueType.ParamRef,
-                  filePath: "/src/B.tsx",
-                  functionName: "B",
-                  path: "props.value",
-                },
+                value: new ParamRefArgValue(
+                  "/src/B.tsx",
+                  "B",
+                  "props.value",
+                  5,
+                ),
                 filePath: "/src/B.tsx",
                 line: 5,
               },
@@ -660,12 +603,12 @@ describe("resolveParameterValue", () => {
             [
               {
                 name: "value",
-                value: {
-                  type: ArgValueType.ParamRef,
-                  filePath: "/src/A.tsx",
-                  functionName: "A",
-                  path: "props.value",
-                },
+                value: new ParamRefArgValue(
+                  "/src/A.tsx",
+                  "A",
+                  "props.value",
+                  10,
+                ),
                 filePath: "/src/A.tsx",
                 line: 10,
               },
@@ -675,36 +618,35 @@ describe("resolveParameterValue", () => {
       ],
     ]);
 
-    const paramRef: ArgValue = {
-      type: ArgValueType.ParamRef,
-      filePath: "/src/A.tsx",
-      functionName: "A",
-      path: "props.value",
-    };
+    const paramRef = new ParamRefArgValue("/src/A.tsx", "A", "props.value", 3);
 
     // Act
-    const result = resolveParameterValue(paramRef, callSiteMap);
+    const result = paramRef.resolve(callSiteMap);
 
     // Assert
-    expect(result).toBeUndefined();
+    expect(result).toBe(
+      "[paramRef]/src/A.tsx:3:paramRef:/src/A.tsx:A:props.value",
+    );
   });
 
-  it("呼び出し情報が見つからない場合はundefinedを返すこと", () => {
+  it("呼び出し情報が見つからない場合はユニークな値を返すこと", () => {
     // Arrange
     const callSiteMap: CallSiteMap = new Map();
 
-    const paramRef: ArgValue = {
-      type: ArgValueType.ParamRef,
-      filePath: "/src/Unknown.tsx",
-      functionName: "Unknown",
-      path: "props.value",
-    };
+    const paramRef = new ParamRefArgValue(
+      "/src/Unknown.tsx",
+      "Unknown",
+      "props.value",
+      3,
+    );
 
     // Act
-    const result = resolveParameterValue(paramRef, callSiteMap);
+    const result = paramRef.resolve(callSiteMap);
 
     // Assert
-    expect(result).toBeUndefined();
+    expect(result).toBe(
+      "[paramRef]/src/Unknown.tsx:3:paramRef:/src/Unknown.tsx:Unknown:props.value",
+    );
   });
 
   it("通常関数のパラメータ参照を解決すること", () => {
@@ -718,11 +660,7 @@ describe("resolveParameterValue", () => {
             [
               {
                 name: "arg",
-                value: {
-                  type: ArgValueType.Literal,
-                  literalKind: LiteralKind.String,
-                  value: "constant",
-                },
+                value: new StringLiteralArgValue("constant"),
                 filePath: "/src/App.ts",
                 line: 5,
               },
@@ -732,21 +670,17 @@ describe("resolveParameterValue", () => {
       ],
     ]);
 
-    const paramRef: ArgValue = {
-      type: ArgValueType.ParamRef,
-      filePath: "/src/utils.ts",
-      functionName: "myFunction",
-      path: "arg",
-    };
+    const paramRef = new ParamRefArgValue(
+      "/src/utils.ts",
+      "myFunction",
+      "arg",
+      3,
+    );
 
     // Act
-    const result = resolveParameterValue(paramRef, callSiteMap);
+    const result = paramRef.resolve(callSiteMap);
 
     // Assert
-    expect(result).toEqual({
-      type: ArgValueType.Literal,
-      literalKind: LiteralKind.String,
-      value: "constant",
-    });
+    expect(result).toBe('literal:"constant"');
   });
 });

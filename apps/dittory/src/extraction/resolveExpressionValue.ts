@@ -1,12 +1,9 @@
 import type { Node } from "ts-morph";
 import {
-  type ArgValue,
-  ArgValueType,
   type CallSiteMap,
   extractArgValue,
-  getLiteralValue,
+  ParamRefArgValue,
 } from "./callSiteCollector";
-import { argValueToKey, resolveParameterValue } from "./parameterUtils";
 
 /**
  * 引数が渡されなかった場合を表す特別な値
@@ -49,54 +46,12 @@ export function resolveExpressionValue(
   context: ResolveContext,
 ): string {
   const argValue = extractArgValue(expression);
-  const sourceFile = expression.getSourceFile();
-  const usageLocation = {
-    filePath: sourceFile.getFilePath(),
-    line: expression.getStartLineNumber(),
-  };
-  return argValueToString(argValue, context, usageLocation);
-}
 
-/**
- * 使用箇所の位置情報
- */
-interface UsageLocation {
-  filePath: string;
-  line: number;
-}
-
-/**
- * ArgValue を文字列表現に変換する
- *
- * @param value - 変換対象の ArgValue
- * @param context - パラメータ参照解決用のコンテキスト
- * @param usageLocation - 使用箇所の位置情報（解決できないParamRefのユニーク化に使用）
- */
-function argValueToString(
-  value: ArgValue,
-  context: ResolveContext,
-  usageLocation: UsageLocation,
-): string {
-  switch (value.type) {
-    case ArgValueType.Literal:
-      return getLiteralValue(value);
-
-    case ArgValueType.Function:
-      // 関数型は使用箇所ごとにユニークな値として扱う
-      return `${FUNCTION_VALUE_PREFIX}${value.filePath}:${value.line}`;
-
-    case ArgValueType.ParamRef: {
-      // パラメータ参照は callSiteMap を使って解決を試みる
-      const resolved = resolveParameterValue(value, context.callSiteMap);
-      if (resolved !== undefined) {
-        return argValueToKey(resolved);
-      }
-      // 解決できない場合は使用箇所ごとにユニークな値として扱う
-      // 使用箇所の位置情報を含めてユニークにする
-      return `[paramRef]${usageLocation.filePath}:${usageLocation.line}:${argValueToKey(value)}`;
-    }
-
-    case ArgValueType.Undefined:
-      return UNDEFINED_VALUE;
+  // パラメータ参照は callSiteMap を使って解決
+  if (argValue instanceof ParamRefArgValue) {
+    return argValue.resolve(context.callSiteMap);
   }
+
+  // その他（Literal, Function, Undefined）は getValue() で文字列表現を取得
+  return argValue.getValue();
 }

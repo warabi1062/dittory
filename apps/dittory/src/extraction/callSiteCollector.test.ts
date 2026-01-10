@@ -1,10 +1,10 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
-  ArgValueType,
   collectCallSites,
   createTargetId,
-  LiteralKind,
+  ParamRefArgValue,
+  StringLiteralArgValue,
 } from "./callSiteCollector";
 
 describe("collectCallSites", () => {
@@ -47,11 +47,10 @@ describe("collectCallSites", () => {
     expect(valueUsages.length).toBe(1);
 
     const value = valueUsages[0].value;
-    expect(value).toEqual({
-      type: ArgValueType.Literal,
-      literalKind: LiteralKind.String,
-      value: "hello",
-    });
+    if (!(value instanceof StringLiteralArgValue)) {
+      expect.unreachable("value should be StringLiteralArgValue");
+    }
+    expect(value.value).toBe("hello");
   });
 
   it("パラメータ参照を含む呼び出し情報を収集すること", () => {
@@ -96,12 +95,12 @@ describe("collectCallSites", () => {
     expect(numberUsages.length).toBe(1);
 
     const value = numberUsages[0].value;
-    expect(value).toEqual({
-      type: ArgValueType.ParamRef,
-      filePath: "/src/Parent.tsx",
-      functionName: "ParentComponent",
-      path: "props.number",
-    });
+    if (!(value instanceof ParamRefArgValue)) {
+      expect.unreachable("value should be ParamRefArgValue");
+    }
+    expect(value.filePath).toBe("/src/Parent.tsx");
+    expect(value.functionName).toBe("ParentComponent");
+    expect(value.path).toBe("props.number");
   });
 
   it("親コンポーネントへの呼び出し情報も収集すること", () => {
@@ -156,10 +155,9 @@ describe("collectCallSites", () => {
     expect(numberUsages.length).toBe(1);
 
     const value = numberUsages[0].value;
-    expect(value).toEqual({
-      type: ArgValueType.Literal,
-      literalKind: LiteralKind.String,
-      value: "42",
-    });
+    if (!(value instanceof StringLiteralArgValue)) {
+      expect.unreachable("value should be StringLiteralArgValue");
+    }
+    expect(value.value).toBe("42");
   });
 });

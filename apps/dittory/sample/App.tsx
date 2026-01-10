@@ -8,7 +8,7 @@ export const App = (): ReactElement => {
         variant={ButtonVariant.Primary}
         requiredEqualString="same"
         requiredEqualNumber={100}
-        requiredEqualBoolean={true}
+        requiredEqualBoolean
         requiredEqualObject={{
           nestedEqualString: "nested-same",
           nestedEqualNumber: 42,
