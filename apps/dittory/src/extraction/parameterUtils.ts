@@ -3,6 +3,7 @@ import {
   type ArgValue,
   ArgValueType,
   type CallSiteMap,
+  LiteralKind,
 } from "./callSiteCollector";
 
 /**
@@ -95,7 +96,11 @@ export function createParamRefValue(expression: Node): ArgValue {
   const functionScope = findContainingFunction(expression);
 
   if (!functionScope) {
-    return { type: ArgValueType.Literal, value: expression.getText() };
+    return {
+      type: ArgValueType.Literal,
+      value: expression.getText(),
+      literalKind: LiteralKind.Other,
+    };
   }
 
   const functionName = getFunctionName(functionScope);

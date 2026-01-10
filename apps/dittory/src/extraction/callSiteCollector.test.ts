@@ -1,6 +1,11 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { collectCallSites, createTargetId } from "./callSiteCollector";
+import {
+  ArgValueType,
+  collectCallSites,
+  createTargetId,
+  LiteralKind,
+} from "./callSiteCollector";
 
 describe("collectCallSites", () => {
   it("JSX要素からの呼び出し情報を収集すること", () => {
@@ -42,7 +47,11 @@ describe("collectCallSites", () => {
     expect(valueUsages.length).toBe(1);
 
     const value = valueUsages[0].value;
-    expect(value).toEqual({ type: "literal", value: '"hello"' });
+    expect(value).toEqual({
+      type: ArgValueType.Literal,
+      value: '"hello"',
+      literalKind: LiteralKind.String,
+    });
   });
 
   it("パラメータ参照を含む呼び出し情報を収集すること", () => {
@@ -88,7 +97,7 @@ describe("collectCallSites", () => {
 
     const value = numberUsages[0].value;
     expect(value).toEqual({
-      type: "paramRef",
+      type: ArgValueType.ParamRef,
       filePath: "/src/Parent.tsx",
       functionName: "ParentComponent",
       path: "props.number",
@@ -147,6 +156,10 @@ describe("collectCallSites", () => {
     expect(numberUsages.length).toBe(1);
 
     const value = numberUsages[0].value;
-    expect(value).toEqual({ type: "literal", value: '"42"' });
+    expect(value).toEqual({
+      type: ArgValueType.Literal,
+      value: '"42"',
+      literalKind: LiteralKind.String,
+    });
   });
 });

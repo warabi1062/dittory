@@ -21,11 +21,32 @@ export const ArgValueType = {
 } as const;
 
 /**
+ * Literal型の詳細種別
+ */
+export const LiteralKind = {
+  Enum: "enum",
+  This: "this",
+  MethodCall: "methodCall",
+  Variable: "variable",
+  Boolean: "boolean",
+  String: "string",
+  Number: "number",
+  JsxShorthand: "jsxShorthand",
+  Other: "other",
+} as const;
+
+export type LiteralKindType = (typeof LiteralKind)[keyof typeof LiteralKind];
+
+/**
  * 引数の値を表す union 型
  * 文字列エンコーディングの代わりに型安全な表現を使用
  */
 export type ArgValue =
-  | { type: typeof ArgValueType.Literal; value: string }
+  | {
+      type: typeof ArgValueType.Literal;
+      value: string;
+      literalKind: LiteralKindType;
+    }
   | { type: typeof ArgValueType.Function; filePath: string; line: number }
   | {
       type: typeof ArgValueType.ParamRef;
@@ -135,7 +156,10 @@ export function extractArgValue(expression: Node): ArgValue {
         const value = decl.getValue();
         return {
           type: ArgValueType.Literal,
-          value: `${filePath}:${enumName}.${memberName}=${JSON.stringify(value)}`,
+          value: `${filePath}:${enumName}.${memberName}=${JSON.stringify(
+            value,
+          )}`,
+          literalKind: LiteralKind.Enum,
         };
       }
     }
@@ -154,6 +178,7 @@ export function extractArgValue(expression: Node): ArgValue {
       return {
         type: ArgValueType.Literal,
         value: `[this]${sourceFile.getFilePath()}:${line}:${expression.getText()}`,
+        literalKind: LiteralKind.This,
       };
     }
   }
@@ -183,7 +208,10 @@ export function extractArgValue(expression: Node): ArgValue {
         }
         return {
           type: ArgValueType.Literal,
-          value: `${decl.getSourceFile().getFilePath()}:${expression.getText()}`,
+          value: `${decl
+            .getSourceFile()
+            .getFilePath()}:${expression.getText()}`,
+          literalKind: LiteralKind.Variable,
         };
       }
 
@@ -192,20 +220,34 @@ export function extractArgValue(expression: Node): ArgValue {
       return {
         type: ArgValueType.Literal,
         value: `${decl.getSourceFile().getFilePath()}:${expression.getText()}`,
+        literalKind: LiteralKind.Variable,
       };
     }
   }
 
   // リテラル型
-  if (type.isStringLiteral() || type.isNumberLiteral()) {
+  if (type.isStringLiteral()) {
     return {
       type: ArgValueType.Literal,
       value: JSON.stringify(type.getLiteralValue()),
+      literalKind: LiteralKind.String,
+    };
+  }
+
+  if (type.isNumberLiteral()) {
+    return {
+      type: ArgValueType.Literal,
+      value: JSON.stringify(type.getLiteralValue()),
+      literalKind: LiteralKind.Number,
     };
   }
 
   if (type.isBooleanLiteral()) {
-    return { type: ArgValueType.Literal, value: type.getText() };
+    return {
+      type: ArgValueType.Literal,
+      value: type.getText(),
+      literalKind: LiteralKind.Boolean,
+    };
   }
 
   // CallExpression (例: this.method(), obj.method())
@@ -220,11 +262,16 @@ export function extractArgValue(expression: Node): ArgValue {
       return {
         type: ArgValueType.Literal,
         value: `[methodCall]${sourceFile.getFilePath()}:${line}:${expression.getText()}`,
+        literalKind: LiteralKind.MethodCall,
       };
     }
   }
 
-  return { type: ArgValueType.Literal, value: expression.getText() };
+  return {
+    type: ArgValueType.Literal,
+    value: expression.getText(),
+    literalKind: LiteralKind.Other,
+  };
 }
 
 /**
@@ -253,12 +300,27 @@ function extractFromJsxElement(
     let value: ArgValue;
     if (!initializer) {
       // boolean shorthand
-      value = { type: ArgValueType.Literal, value: "true" };
+      value = {
+        type: ArgValueType.Literal,
+        value: "true",
+        literalKind: LiteralKind.JsxShorthand,
+      };
     } else if (Node.isJsxExpression(initializer)) {
       const expr = initializer.getExpression();
       value = expr ? extractArgValue(expr) : { type: ArgValueType.Undefined };
+    } else if (Node.isStringLiteral(initializer)) {
+      // JSX属性の文字列値 (例: value="hello")
+      value = {
+        type: ArgValueType.Literal,
+        value: initializer.getText(),
+        literalKind: LiteralKind.String,
+      };
     } else {
-      value = { type: ArgValueType.Literal, value: initializer.getText() };
+      value = {
+        type: ArgValueType.Literal,
+        value: initializer.getText(),
+        literalKind: LiteralKind.Other,
+      };
     }
 
     const args = info.get(propName) ?? [];
