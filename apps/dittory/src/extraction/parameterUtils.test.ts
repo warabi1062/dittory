@@ -9,7 +9,7 @@ import {
   ParamRefArgValue,
   StringLiteralArgValue,
   UndefinedArgValue,
-} from "./callSiteCollector";
+} from "./argValue";
 import {
   buildParameterPath,
   createParamRefValue,

@@ -8,9 +8,6 @@ import type {
 
 import type { ValueType } from "@/utils/valueTypeDetector";
 
-export type { ValueType };
-export { VALID_VALUE_TYPES } from "@/utils/valueTypeDetector";
-
 /**
  * ファイルパスを受け取り、除外すべきかどうかを判定する関数の型
  */

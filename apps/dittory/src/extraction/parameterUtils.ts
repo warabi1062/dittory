@@ -3,7 +3,7 @@ import {
   type ArgValue,
   OtherLiteralArgValue,
   ParamRefArgValue,
-} from "./callSiteCollector";
+} from "./argValue";
 
 /**
  * 式がパラメータ（関数の引数）を参照しているかどうかを判定する

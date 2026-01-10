@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { VALID_VALUE_TYPES, type ValueType } from "@/types";
+import { VALID_VALUE_TYPES, type ValueType } from "@/utils/valueTypeDetector";
 
 export type AnalyzeMode = "all" | "components" | "functions";
 export type OutputMode = "simple" | "verbose";

@@ -1,11 +1,7 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import {
-  collectCallSites,
-  createTargetId,
-  ParamRefArgValue,
-  StringLiteralArgValue,
-} from "./callSiteCollector";
+import { ParamRefArgValue, StringLiteralArgValue } from "./argValue";
+import { collectCallSites, createTargetId } from "./callSiteCollector";
 
 describe("collectCallSites", () => {
   it("JSX要素からの呼び出し情報を収集すること", () => {

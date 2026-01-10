@@ -4,7 +4,7 @@ import {
   type ParameterDeclaration,
   type ReferencedSymbol,
 } from "ts-morph";
-import type { CallSiteMap } from "@/extraction/callSiteCollector";
+import type { CallSiteMap } from "@/extraction/argValue";
 import {
   FUNCTION_VALUE_PREFIX,
   type ResolveContext,
@@ -19,10 +19,13 @@ import type {
   Exported,
   FileFilter,
   Usage,
-  ValueType,
 } from "@/types";
 import { getSingleValueFromSet } from "@/utils/getSingleValueFromSet";
-import { detectValueType, matchesValueTypes } from "@/utils/valueTypeDetector";
+import {
+  detectValueType,
+  matchesValueTypes,
+  type ValueType,
+} from "@/utils/valueTypeDetector";
 
 /**
  * ts-morph の参照情報を表す型
