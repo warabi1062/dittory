@@ -1,6 +1,7 @@
 import type { Node } from "ts-morph";
-import { type CallSiteMap, ParamRefArgValue } from "./argValue";
-import { extractArgValue } from "./callSiteCollector";
+import { ParamRefArgValue } from "./argValue";
+import type { CallSiteMap } from "./callSiteMap";
+import { extractArgValue } from "./extractArgValue";
 
 /**
  * 引数が渡されなかった場合を表す特別な値
@@ -46,7 +47,7 @@ export function resolveExpressionValue(
 
   // パラメータ参照は callSiteMap を使って解決
   if (argValue instanceof ParamRefArgValue) {
-    return argValue.resolve(context.callSiteMap);
+    return context.callSiteMap.resolveParamRef(argValue);
   }
 
   // その他（Literal, Function, Undefined）は getValue() で文字列表現を取得

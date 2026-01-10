@@ -1,12 +1,13 @@
 import { Project, SyntaxKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { CallSiteMap } from "@/extraction/callSiteMap";
 import { flattenObjectExpression } from "@/extraction/flattenObjectExpression";
 import {
   type ResolveContext,
   UNDEFINED_VALUE,
 } from "@/extraction/resolveExpressionValue";
 
-const emptyContext: ResolveContext = { callSiteMap: new Map() };
+const emptyContext: ResolveContext = { callSiteMap: new CallSiteMap() };
 
 describe("flattenObjectExpression", () => {
   it("オブジェクトリテラルをフラット化すること", () => {

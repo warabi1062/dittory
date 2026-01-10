@@ -1,7 +1,7 @@
 import type { SourceFile } from "ts-morph";
 import { ClassMethodAnalyzer } from "@/analyzer/classMethodAnalyzer";
 import { FunctionAnalyzer } from "@/analyzer/functionAnalyzer";
-import type { CallSiteMap } from "@/extraction/argValue";
+import type { CallSiteMap } from "@/extraction/callSiteMap";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type { AnalysisResult, FileFilter } from "@/types";

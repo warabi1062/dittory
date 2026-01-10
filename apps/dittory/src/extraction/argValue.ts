@@ -175,20 +175,6 @@ export class ParamRefArgValue extends ArgValue {
     super();
   }
 
-  /**
-   * パラメータ参照を解決して文字列表現を返す
-   * callSiteMapを使ってパラメータに渡されたすべての値を取得し、
-   * すべて同じ値ならその値を返す。解決できない場合は使用箇所ごとにユニークな値を返す。
-   */
-  resolve(callSiteMap: CallSiteMap): string {
-    const resolved = resolveParameterValueInternal(this, callSiteMap);
-    if (resolved !== undefined) {
-      return argValueToKey(resolved);
-    }
-    // 解決できない場合は使用箇所ごとにユニークな値として扱う
-    return `[paramRef]${this.filePath}:${this.line}:${this.getValue()}`;
-  }
-
   getValue(): string {
     return `paramRef:${this.filePath}:${this.functionName}:${this.path}`;
   }
@@ -227,12 +213,6 @@ export interface CallSiteArg {
  */
 export type CallSiteInfo = Map<string, CallSiteArg[]>;
 
-/**
- * すべての関数/コンポーネントの呼び出し情報
- * key: "ファイルパス:関数名" 形式の識別子
- */
-export type CallSiteMap = Map<string, CallSiteInfo>;
-
 // ============================================================================
 // ユーティリティ関数
 // ============================================================================
@@ -247,77 +227,4 @@ export function argValueToKey(value: ArgValue): string {
     return `literal:${value.getValue()}`;
   }
   return value.getValue();
-}
-
-/**
- * パラメータ参照を解決する（内部関数）
- * callSiteMapを使って、パラメータに渡されたすべての値を取得し、
- * すべて同じ値ならその値を返す。異なる値があればundefinedを返す。
- */
-function resolveParameterValueInternal(
-  paramRef: ParamRefArgValue,
-  callSiteMap: CallSiteMap,
-  visited: Set<string> = new Set(),
-): ArgValue | undefined {
-  // 循環参照を防ぐ
-  const key = argValueToKey(paramRef);
-  if (visited.has(key)) {
-    return undefined;
-  }
-  visited.add(key);
-
-  const { filePath, functionName, path } = paramRef;
-  const targetId = `${filePath}:${functionName}`;
-  const callSiteInfo = callSiteMap.get(targetId);
-
-  if (!callSiteInfo) {
-    return undefined;
-  }
-
-  // パラメータパスからプロパティ名を抽出
-  // 例: "props.number" → "number", "a" → "a"
-  const paramParts = path.split(".");
-  // JSXの場合は props.xxx 形式なので最後のプロパティ名を使用
-  // 通常関数の場合は最初の名前がそのまま引数名
-  const propName =
-    paramParts.length > 1 ? paramParts[paramParts.length - 1] : paramParts[0];
-
-  const args = callSiteInfo.get(propName);
-  if (!args || args.length === 0) {
-    return undefined;
-  }
-
-  // すべての呼び出し箇所で渡された値を収集
-  const resolvedKeys = new Set<string>();
-  let resolvedValue: ArgValue | undefined;
-
-  for (const arg of args) {
-    // 再帰的にパラメータ参照を解決
-    let resolved: ArgValue | undefined;
-    if (arg.value instanceof ParamRefArgValue) {
-      resolved = resolveParameterValueInternal(
-        arg.value,
-        callSiteMap,
-        new Set(visited),
-      );
-    } else {
-      resolved = arg.value;
-    }
-
-    if (resolved === undefined) {
-      return undefined;
-    }
-
-    const resolvedKey = argValueToKey(resolved);
-    resolvedKeys.add(resolvedKey);
-    resolvedValue = resolved;
-  }
-
-  // すべて同じ値なら、その値を返す
-  if (resolvedKeys.size === 1) {
-    return resolvedValue;
-  }
-
-  // 異なる値がある場合は解決不可
-  return undefined;
 }

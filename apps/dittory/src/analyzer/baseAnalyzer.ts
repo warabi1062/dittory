@@ -4,7 +4,7 @@ import {
   type ParameterDeclaration,
   type ReferencedSymbol,
 } from "ts-morph";
-import type { CallSiteMap } from "@/extraction/argValue";
+import type { CallSiteMap } from "@/extraction/callSiteMap";
 import {
   FUNCTION_VALUE_PREFIX,
   type ResolveContext,

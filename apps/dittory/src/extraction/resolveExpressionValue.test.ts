@@ -1,12 +1,13 @@
 import { Project, SyntaxKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { CallSiteMap } from "@/extraction/callSiteMap";
 import {
   type ResolveContext,
   resolveExpressionValue,
   UNDEFINED_VALUE,
 } from "@/extraction/resolveExpressionValue";
 
-const emptyContext: ResolveContext = { callSiteMap: new Map() };
+const emptyContext: ResolveContext = { callSiteMap: new CallSiteMap() };
 
 describe("resolveExpressionValue", () => {
   it("文字列リテラルを解決すること", () => {

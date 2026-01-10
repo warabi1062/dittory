@@ -2,7 +2,7 @@ import { Project, SyntaxKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
   argValueToKey,
-  type CallSiteMap,
+  type CallSiteInfo,
   FunctionArgValue,
   NumberLiteralArgValue,
   OtherLiteralArgValue,
@@ -10,6 +10,7 @@ import {
   StringLiteralArgValue,
   UndefinedArgValue,
 } from "./argValue";
+import { CallSiteMap } from "./callSiteMap";
 import {
   buildParameterPath,
   createParamRefValue,
@@ -407,7 +408,7 @@ describe("argValueToKey", () => {
 describe("ParamRefArgValue.resolve", () => {
   it("すべての呼び出しで同じ値の場合は解決された値を返すこと", () => {
     // Arrange
-    const callSiteMap: CallSiteMap = new Map([
+    const callSiteMap: Map<string, CallSiteInfo> = new Map([
       [
         "/src/Parent.tsx:ParentComponent",
         new Map([
@@ -440,7 +441,7 @@ describe("ParamRefArgValue.resolve", () => {
     );
 
     // Act
-    const result = paramRef.resolve(callSiteMap);
+    const result = new CallSiteMap(callSiteMap).resolveParamRef(paramRef);
 
     // Assert
     expect(result).toBe("literal:42");
@@ -448,7 +449,7 @@ describe("ParamRefArgValue.resolve", () => {
 
   it("異なる値がある場合はユニークな値を返すこと", () => {
     // Arrange
-    const callSiteMap: CallSiteMap = new Map([
+    const callSiteMap: Map<string, CallSiteInfo> = new Map([
       [
         "/src/Parent.tsx:ParentComponent",
         new Map([
@@ -481,7 +482,7 @@ describe("ParamRefArgValue.resolve", () => {
     );
 
     // Act
-    const result = paramRef.resolve(callSiteMap);
+    const result = new CallSiteMap(callSiteMap).resolveParamRef(paramRef);
 
     // Assert
     expect(result).toBe(
@@ -491,7 +492,7 @@ describe("ParamRefArgValue.resolve", () => {
 
   it("再帰的にパラメータ参照を解決すること", () => {
     // Arrange: GrandChild -> Child -> Parent -> 最終値
-    const callSiteMap: CallSiteMap = new Map();
+    const callSiteMap: Map<string, CallSiteInfo> = new Map();
 
     // GrandChildへの呼び出し: props.valueを渡している
     callSiteMap.set(
@@ -565,7 +566,7 @@ describe("ParamRefArgValue.resolve", () => {
     );
 
     // Act
-    const result = paramRef.resolve(callSiteMap);
+    const result = new CallSiteMap(callSiteMap).resolveParamRef(paramRef);
 
     // Assert
     expect(result).toBe('literal:"final"');
@@ -573,7 +574,7 @@ describe("ParamRefArgValue.resolve", () => {
 
   it("循環参照がある場合はユニークな値を返すこと", () => {
     // Arrange: A -> B -> A (循環)
-    const callSiteMap: CallSiteMap = new Map([
+    const callSiteMap: Map<string, CallSiteInfo> = new Map([
       [
         "/src/A.tsx:A",
         new Map([
@@ -621,7 +622,7 @@ describe("ParamRefArgValue.resolve", () => {
     const paramRef = new ParamRefArgValue("/src/A.tsx", "A", "props.value", 3);
 
     // Act
-    const result = paramRef.resolve(callSiteMap);
+    const result = new CallSiteMap(callSiteMap).resolveParamRef(paramRef);
 
     // Assert
     expect(result).toBe(
@@ -631,7 +632,7 @@ describe("ParamRefArgValue.resolve", () => {
 
   it("呼び出し情報が見つからない場合はユニークな値を返すこと", () => {
     // Arrange
-    const callSiteMap: CallSiteMap = new Map();
+    const callSiteMap: Map<string, CallSiteInfo> = new Map();
 
     const paramRef = new ParamRefArgValue(
       "/src/Unknown.tsx",
@@ -641,7 +642,7 @@ describe("ParamRefArgValue.resolve", () => {
     );
 
     // Act
-    const result = paramRef.resolve(callSiteMap);
+    const result = new CallSiteMap(callSiteMap).resolveParamRef(paramRef);
 
     // Assert
     expect(result).toBe(
@@ -651,7 +652,7 @@ describe("ParamRefArgValue.resolve", () => {
 
   it("通常関数のパラメータ参照を解決すること", () => {
     // Arrange
-    const callSiteMap: CallSiteMap = new Map([
+    const callSiteMap: Map<string, CallSiteInfo> = new Map([
       [
         "/src/utils.ts:myFunction",
         new Map([
@@ -678,7 +679,7 @@ describe("ParamRefArgValue.resolve", () => {
     );
 
     // Act
-    const result = paramRef.resolve(callSiteMap);
+    const result = new CallSiteMap(callSiteMap).resolveParamRef(paramRef);
 
     // Assert
     expect(result).toBe('literal:"constant"');
