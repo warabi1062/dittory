@@ -1,7 +1,7 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { ComponentAnalyzer } from "@/analyzer/componentAnalyzer";
-import { UNDEFINED_VALUE } from "@/extraction/resolveExpressionValue";
+import { UNDEFINED_VALUE } from "@/extraction/expressionResolver";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 
 /**

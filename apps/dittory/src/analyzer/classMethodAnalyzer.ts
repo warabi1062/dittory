@@ -96,7 +96,7 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
           const usages = ExtractUsages.fromCall(
             callExpression,
             callable,
-            this.getResolveContext(),
+            this.getExpressionResolver(),
           );
           this.addUsagesToGroup(groupedUsages, usages);
         }

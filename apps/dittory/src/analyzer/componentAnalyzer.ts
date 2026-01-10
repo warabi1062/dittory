@@ -96,7 +96,7 @@ export class ComponentAnalyzer extends BaseAnalyzer {
         const usages = ExtractUsages.fromJsxElement(
           jsxElement,
           component.definitions,
-          this.getResolveContext(),
+          this.getExpressionResolver(),
         );
         this.addUsagesToGroup(groupedUsages, usages);
       }

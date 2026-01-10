@@ -7,9 +7,8 @@ import {
 } from "ts-morph";
 import type { Definition, Exported, Usage } from "@/types";
 import { detectValueType } from "@/utils/valueTypeDetector";
-import { flattenObjectExpression } from "./flattenObjectExpression";
+import { type ExpressionResolver, UNDEFINED_VALUE } from "./expressionResolver";
 import { hasDisableComment } from "./hasDisableComment";
-import { type ResolveContext, UNDEFINED_VALUE } from "./resolveExpressionValue";
 
 /**
  * 使用状況を抽出するユーティリティクラス
@@ -23,13 +22,13 @@ export class ExtractUsages {
    *
    * @param callExpression - 関数呼び出しノード
    * @param callable - 対象の関数情報
-   * @param context - 呼び出し情報などのコンテキスト
+   * @param resolver - 式を解決するためのリゾルバ
    * @returns 引数使用状況の配列
    */
   static fromCall(
     callExpression: CallExpression,
     callable: Exported,
-    context: ResolveContext,
+    resolver: ExpressionResolver,
   ): Usage[] {
     // dittory-disable-next-line コメントがある場合は除外
     if (hasDisableComment(callExpression)) {
@@ -56,11 +55,7 @@ export class ExtractUsages {
       }
 
       // オブジェクトリテラルの場合は再帰的にフラット化
-      for (const { key, value } of flattenObjectExpression(
-        arg,
-        param.name,
-        context,
-      )) {
+      for (const { key, value } of resolver.flattenObject(arg, param.name)) {
         usages.push({
           name: key,
           value,
@@ -79,13 +74,13 @@ export class ExtractUsages {
    *
    * @param element - JSX要素ノード
    * @param definitions - props定義の配列
-   * @param context - 呼び出し情報などのコンテキスト
+   * @param resolver - 式を解決するためのリゾルバ
    * @returns props使用状況の配列
    */
   static fromJsxElement(
     element: JsxOpeningElement | JsxSelfClosingElement,
     definitions: Definition[],
-    context: ResolveContext,
+    resolver: ExpressionResolver,
   ): Usage[] {
     // dittory-disable-next-line コメントがある場合は除外
     if (hasDisableComment(element)) {
@@ -137,10 +132,9 @@ export class ExtractUsages {
         if (!expression) {
           continue;
         }
-        for (const { key, value } of flattenObjectExpression(
+        for (const { key, value } of resolver.flattenObject(
           expression,
           prop.name,
-          context,
         )) {
           usages.push({
             name: key,

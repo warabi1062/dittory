@@ -1,4 +1,4 @@
-import { UNDEFINED_VALUE } from "@/extraction/resolveExpressionValue";
+import { UNDEFINED_VALUE } from "@/extraction/expressionResolver";
 
 /**
  * フィルタリング対象の値種別

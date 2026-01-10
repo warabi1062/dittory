@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { UNDEFINED_VALUE } from "@/extraction/resolveExpressionValue";
+import { UNDEFINED_VALUE } from "@/extraction/expressionResolver";
 import {
   detectValueType,
   matchesValueTypes,

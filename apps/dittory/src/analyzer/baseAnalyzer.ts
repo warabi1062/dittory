@@ -6,9 +6,9 @@ import {
 } from "ts-morph";
 import type { CallSiteMap } from "@/extraction/callSiteMap";
 import {
+  ExpressionResolver,
   FUNCTION_VALUE_PREFIX,
-  type ResolveContext,
-} from "@/extraction/resolveExpressionValue";
+} from "@/extraction/expressionResolver";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type {
   AnalysisResult,
@@ -88,12 +88,10 @@ export abstract class BaseAnalyzer {
   }
 
   /**
-   * コンテキストを取得する
+   * 式のリゾルバを取得する
    */
-  protected getResolveContext(): ResolveContext {
-    return {
-      callSiteMap: this.callSiteMap,
-    };
+  protected getExpressionResolver(): ExpressionResolver {
+    return new ExpressionResolver(this.callSiteMap);
   }
 
   /**
