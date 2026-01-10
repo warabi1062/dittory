@@ -4,11 +4,13 @@ import {
   type ParameterDeclaration,
   type ReferencedSymbol,
 } from "ts-morph";
-import type { CallSiteMap } from "@/extraction/callSiteMap";
 import {
-  ExpressionResolver,
-  FUNCTION_VALUE_PREFIX,
-} from "@/extraction/expressionResolver";
+  type ArgValue,
+  FunctionArgValue,
+  UndefinedArgValue,
+} from "@/extraction/argValue";
+import type { CallSiteMap } from "@/extraction/callSiteMap";
+import { ExpressionResolver } from "@/extraction/expressionResolver";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type {
   AnalysisResult,
@@ -20,12 +22,7 @@ import type {
   FileFilter,
   Usage,
 } from "@/types";
-import { getSingleValueFromSet } from "@/utils/getSingleValueFromSet";
-import {
-  detectValueType,
-  matchesValueTypes,
-  type ValueType,
-} from "@/utils/valueTypeDetector";
+import { matchesValueTypes, type ValueType } from "@/utils/valueTypeDetector";
 
 /**
  * ts-morph の参照情報を表す型
@@ -34,10 +31,13 @@ type ReferenceEntry = ReturnType<ReferencedSymbol["getReferences"]>[number];
 
 /**
  * 使用データのグループ
- * values.size === 1 の場合、そのパラメータは「定数」として検出される
+ * valueKeys.size === 1 の場合、そのパラメータは「定数」として検出される
  */
 interface UsageData {
-  values: Set<string>;
+  /** 値の比較キー（toKey()の結果）のセット */
+  valueKeys: Set<string>;
+  /** 代表的な値（定数検出時に使用） */
+  representativeValue: ArgValue;
   usages: Usage[];
 }
 
@@ -221,11 +221,13 @@ export abstract class BaseAnalyzer {
 
       const paramMap = new Map<string, UsageData>();
       for (const [paramName, usages] of Object.entries(item.usages)) {
-        const values = new Set<string>();
+        const valueKeys = new Set<string>();
+        let representativeValue: ArgValue = new UndefinedArgValue();
         for (const usage of usages) {
-          values.add(usage.value);
+          valueKeys.add(usage.value.toKey());
+          representativeValue = usage.value;
         }
-        paramMap.set(paramName, { values, usages });
+        paramMap.set(paramName, { valueKeys, representativeValue, usages });
       }
 
       // 総呼び出し回数を計算（最大のUsage配列の長さを使用）
@@ -262,18 +264,18 @@ export abstract class BaseAnalyzer {
           //    指定されている場合を定数として誤検出しない
           const isConstant =
             usageData.usages.length >= this.minUsages &&
-            usageData.values.size === 1 &&
+            usageData.valueKeys.size === 1 &&
             usageData.usages.length === targetInfo.totalCallCount;
 
           if (!isConstant) {
             continue;
           }
 
-          const value = getSingleValueFromSet(usageData.values);
+          const value = usageData.representativeValue;
 
           // 関数型の値は定数として報告しない
           // （onClickに同じハンドラを渡している等は、デフォルト値化の候補ではない）
-          if (value.startsWith(FUNCTION_VALUE_PREFIX)) {
+          if (value instanceof FunctionArgValue) {
             continue;
           }
 
@@ -288,7 +290,6 @@ export abstract class BaseAnalyzer {
             targetLine: targetInfo.line,
             paramName,
             value,
-            valueType: detectValueType(value),
             usages: usageData.usages,
           });
         }

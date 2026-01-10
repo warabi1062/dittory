@@ -6,7 +6,7 @@ import type {
   VariableDeclaration,
 } from "ts-morph";
 
-import type { ValueType } from "@/utils/valueTypeDetector";
+import type { ArgValue } from "@/extraction/argValue";
 
 /**
  * ファイルパスを受け取り、除外すべきかどうかを判定する関数の型
@@ -23,9 +23,7 @@ export interface Usage {
   /** ネストしたプロパティの場合は "param.nested.key" 形式 */
   name: string;
   /** リテラル値、enum参照、変数参照などを解決した結果 */
-  value: string;
-  /** 値の種別（boolean, number, string, enum, undefined）。判定不能な場合は null */
-  valueType: ValueType | null;
+  value: ArgValue;
   usageFilePath: string;
   usageLine: number;
 }
@@ -62,9 +60,7 @@ export interface Constant {
   targetSourceFile: string;
   targetLine: number;
   paramName: string;
-  value: string;
-  /** 値の種別（boolean, number, string, enum, undefined）。判定不能な場合は null */
-  valueType: ValueType | null;
+  value: ArgValue;
   usages: Usage[];
 }
 

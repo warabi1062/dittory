@@ -2,7 +2,7 @@ import path from "node:path";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { analyzeFunctionsCore } from "@/analyzeFunctions";
-import { collectCallSites } from "@/extraction/callSiteCollector";
+import { CallSiteCollector } from "@/extraction/callSiteCollector";
 import type { AnalysisResult } from "@/types";
 
 const fixturesDir: string = path.join(__dirname, "__tests__", "fixtures");
@@ -26,7 +26,7 @@ describe("analyzeFunctionsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -37,20 +37,8 @@ describe("analyzeFunctionsCore", () => {
     if (!prefixArg) {
       expect.unreachable("prefixArg should be defined");
     }
-    expect(prefixArg.value).toBe('"[INFO] "');
-    expect(prefixArg.valueType).toBe("string");
+    expect(prefixArg.value.outputString()).toBe('"[INFO] "');
     expect(prefixArg.usages.length).toBe(3);
-
-    // exported.usages の valueType もチェック
-    const formatValue = result.exported.find((e) => e.name === "formatValue");
-    if (!formatValue) {
-      expect.unreachable("formatValue should be defined");
-    }
-    const prefixUsages = formatValue.usages.prefix;
-    if (!prefixUsages) {
-      expect.unreachable("prefixUsages should be defined");
-    }
-    expect(prefixUsages.every((u) => u.valueType === "string")).toBe(true);
   });
 
   it("異なる値が渡されている引数は検出しないこと", () => {
@@ -63,7 +51,7 @@ describe("analyzeFunctionsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -84,7 +72,7 @@ describe("analyzeFunctionsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -99,7 +87,7 @@ describe("analyzeFunctionsCore", () => {
     if (!prefixArg) {
       expect.unreachable("prefixArg should be defined");
     }
-    expect(prefixArg.value).toBe('"[INFO] "');
+    expect(prefixArg.value.outputString()).toBe('"[INFO] "');
   });
 
   it("numberの引数を検出すること", () => {
@@ -112,7 +100,7 @@ describe("analyzeFunctionsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -123,20 +111,8 @@ describe("analyzeFunctionsCore", () => {
     if (!bArg) {
       expect.unreachable("bArg should be defined");
     }
-    expect(bArg.value).toBe("100");
-    expect(bArg.valueType).toBe("number");
+    expect(bArg.value.outputString()).toBe("100");
     expect(bArg.usages.length).toBe(3);
-
-    // exported.usages の valueType もチェック
-    const calculateSum = result.exported.find((e) => e.name === "calculateSum");
-    if (!calculateSum) {
-      expect.unreachable("calculateSum should be defined");
-    }
-    const bUsages = calculateSum.usages.b;
-    if (!bUsages) {
-      expect.unreachable("bUsages should be defined");
-    }
-    expect(bUsages.every((u) => u.valueType === "number")).toBe(true);
   });
 
   it("Reactコンポーネントは除外すること", () => {
@@ -147,7 +123,7 @@ describe("analyzeFunctionsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -166,7 +142,7 @@ describe("analyzeFunctionsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -185,8 +161,7 @@ describe("analyzeFunctionsCore", () => {
     if (!levelArg) {
       expect.unreachable("levelArg should be defined");
     }
-    expect(levelArg.value).toBe('"DEBUG"');
-    expect(levelArg.valueType).toBe("string");
+    expect(levelArg.value.outputString()).toBe('"DEBUG"');
     expect(levelArg.usages.length).toBe(3);
   });
 
@@ -202,7 +177,7 @@ describe("analyzeFunctionsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -227,7 +202,7 @@ describe("analyzeFunctionsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzeFunctionsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -240,7 +215,7 @@ describe("analyzeFunctionsCore", () => {
     if (!methodArg) {
       expect.unreachable("methodArg should be defined");
     }
-    expect(methodArg.value).toBe('"GET"');
+    expect(methodArg.value.outputString()).toBe('"GET"');
     expect(methodArg.usages.length).toBe(4);
 
     // config.timeoutは一部の呼び出しでしか存在しないため定数として検出されない

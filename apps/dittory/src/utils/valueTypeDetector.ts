@@ -1,4 +1,11 @@
-import { UNDEFINED_VALUE } from "@/extraction/expressionResolver";
+import {
+  type ArgValue,
+  BooleanLiteralArgValue,
+  EnumLiteralArgValue,
+  NumberLiteralArgValue,
+  StringLiteralArgValue,
+  UndefinedArgValue,
+} from "@/extraction/argValue";
 
 /**
  * フィルタリング対象の値種別
@@ -17,41 +24,29 @@ export const VALID_VALUE_TYPES: readonly ValueType[] = [
 ];
 
 /**
- * enum値の文字列表現パターン
- * 形式: "filePath:EnumName.MemberName=value"
- */
-const ENUM_PATTERN = /^.+:\w+\.\w+=.+$/;
-
-/**
- * 値の文字列表現から種別を判定する
+ * ArgValueから種別を判定する
  *
- * @param value - resolveExpressionValue で得られた値の文字列表現
+ * @param value - ArgValue インスタンス
  * @returns 検出された種別、または判定不能な場合は null
  */
-export function detectValueType(value: string): ValueType | null {
-  // boolean: "true" または "false"
-  if (value === "true" || value === "false") {
+export function detectValueType(value: ArgValue): ValueType | null {
+  if (value instanceof BooleanLiteralArgValue) {
     return "boolean";
   }
 
-  // undefined: "[undefined]"
-  if (value === UNDEFINED_VALUE) {
+  if (value instanceof UndefinedArgValue) {
     return "undefined";
   }
 
-  // enum: "filePath:EnumName.MemberName=value" 形式
-  if (ENUM_PATTERN.test(value)) {
+  if (value instanceof EnumLiteralArgValue) {
     return "enum";
   }
 
-  // string: ダブルクォート囲み（JSON.stringify形式）
-  if (value.startsWith('"') && value.endsWith('"')) {
+  if (value instanceof StringLiteralArgValue) {
     return "string";
   }
 
-  // number: 数値として解釈可能
-  // 空文字列は Number("") === 0 となるため除外
-  if (value !== "" && !Number.isNaN(Number(value))) {
+  if (value instanceof NumberLiteralArgValue) {
     return "number";
   }
 
@@ -62,12 +57,12 @@ export function detectValueType(value: string): ValueType | null {
 /**
  * 値が指定された種別に含まれるか判定する
  *
- * @param value - resolveExpressionValue で得られた値の文字列表現
+ * @param value - ArgValue インスタンス
  * @param allowedTypes - 許可する種別の配列、または "all"
  * @returns 指定種別に含まれる場合は true
  */
 export function matchesValueTypes(
-  value: string,
+  value: ArgValue,
   allowedTypes: ValueType[] | "all",
 ): boolean {
   if (allowedTypes === "all") {

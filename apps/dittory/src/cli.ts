@@ -12,7 +12,7 @@ import {
   validateTargetDir,
   validateTsConfig,
 } from "@/cli/parseCliOptions";
-import { collectCallSites } from "@/extraction/callSiteCollector";
+import { CallSiteCollector } from "@/extraction/callSiteCollector";
 import { printAnalysisResult } from "@/output/printAnalysisResult";
 import { createFilteredSourceFiles } from "@/source/createFilteredSourceFiles";
 import type { AnalysisResult } from "@/types";
@@ -104,7 +104,7 @@ async function main(): Promise<void> {
   });
 
   // 呼び出し情報を事前収集（パラメータ経由で渡された値を解決するために使用）
-  const callSiteMap = collectCallSites(sourceFilesToAnalyze);
+  const callSiteMap = new CallSiteCollector().collect(sourceFilesToAnalyze);
 
   // 各解析結果を収集
   const allExported: AnalysisResult["exported"] = [];

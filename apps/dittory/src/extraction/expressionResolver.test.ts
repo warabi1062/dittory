@@ -1,10 +1,8 @@
 import { Project, SyntaxKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
+import { UndefinedArgValue } from "@/extraction/argValue";
 import { CallSiteMap } from "@/extraction/callSiteMap";
-import {
-  ExpressionResolver,
-  UNDEFINED_VALUE,
-} from "@/extraction/expressionResolver";
+import { ExpressionResolver } from "@/extraction/expressionResolver";
 
 const emptyResolver: ExpressionResolver = new ExpressionResolver(
   new CallSiteMap(),
@@ -30,7 +28,7 @@ describe("ExpressionResolver", () => {
       const result = emptyResolver.resolve(stringLiteral);
 
       // Assert
-      expect(result).toBe('"hello"');
+      expect(result.outputString()).toBe('"hello"');
     });
 
     it("数値リテラルを解決すること", () => {
@@ -51,7 +49,7 @@ describe("ExpressionResolver", () => {
       const result = emptyResolver.resolve(numericLiteral);
 
       // Assert
-      expect(result).toBe("42");
+      expect(result.outputString()).toBe("42");
     });
 
     it("真偽値リテラルを解決すること", () => {
@@ -73,7 +71,7 @@ describe("ExpressionResolver", () => {
       const result = emptyResolver.resolve(expression);
 
       // Assert
-      expect(result).toBe("true");
+      expect(result.outputString()).toBe("true");
     });
 
     it("真偽値の変数参照を解決すること", () => {
@@ -98,7 +96,7 @@ describe("ExpressionResolver", () => {
       const result = emptyResolver.resolve(identifier);
 
       // Assert
-      expect(result).toBe("true");
+      expect(result.outputString()).toBe("true");
     });
 
     it("enumメンバーを解決すること", () => {
@@ -125,8 +123,7 @@ describe("ExpressionResolver", () => {
       const result = emptyResolver.resolve(propertyAccess);
 
       // Assert
-      expect(result).toContain("Status.Active");
-      expect(result).toContain('"active"');
+      expect(result.outputString()).toBe("Status.Active");
     });
 
     it("変数参照を解決すること", () => {
@@ -151,7 +148,7 @@ describe("ExpressionResolver", () => {
       const result = emptyResolver.resolve(identifier);
 
       // Assert
-      expect(result).toBe('"hello"');
+      expect(result.outputString()).toBe('"hello"');
     });
 
     it("初期化されていない変数参照を解決すること", () => {
@@ -175,8 +172,8 @@ describe("ExpressionResolver", () => {
       const result = emptyResolver.resolve(identifier);
 
       // Assert
-      expect(result).toContain("message");
-      expect(result).toContain(sourceFile.getFilePath());
+      expect(result.outputString()).toContain("message");
+      expect(result.outputString()).toContain(sourceFile.getFilePath());
     });
 
     it("undefinedを解決すること", () => {
@@ -198,7 +195,7 @@ describe("ExpressionResolver", () => {
       const result = emptyResolver.resolve(expression);
 
       // Assert
-      expect(result).toBe(UNDEFINED_VALUE);
+      expect(result).toBeInstanceOf(UndefinedArgValue);
     });
 
     it("その他の式はテキストをそのまま返すこと", () => {
@@ -220,7 +217,7 @@ describe("ExpressionResolver", () => {
       const result = emptyResolver.resolve(binaryExpression);
 
       // Assert
-      expect(result).toBe("1 + 2");
+      expect(result.outputString()).toBe("1 + 2");
     });
 
     it("インポートされた変数を元の定義で解決すること", () => {
@@ -249,7 +246,7 @@ describe("ExpressionResolver", () => {
 
       // Assert
       // インポート元の初期化子の値が解決される
-      expect(result).toBe("42");
+      expect(result.outputString()).toBe("42");
     });
 
     it("異なるファイルから同じ定数をインポートした場合に同じ値として解決されること", () => {
@@ -291,9 +288,9 @@ describe("ExpressionResolver", () => {
 
       // Assert
       // 両方とも同じ値として解決される
-      expect(result1).toBe("42");
-      expect(result2).toBe("42");
-      expect(result1).toBe(result2);
+      expect(result1.outputString()).toBe("42");
+      expect(result2.outputString()).toBe("42");
+      expect(result1.outputString()).toBe(result2.outputString());
     });
 
     it("変数チェーンを再帰的に解決すること", () => {
@@ -321,7 +318,7 @@ describe("ExpressionResolver", () => {
 
       // Assert
       // alias2 -> alias1 -> original -> 100 と辿って最終的な値が解決される
-      expect(result).toBe("100");
+      expect(result.outputString()).toBe("100");
     });
 
     it("インポートされた変数チェーンを解決すること", () => {
@@ -357,7 +354,7 @@ describe("ExpressionResolver", () => {
 
       // Assert
       // value -> derived -> base -> 42 と辿って最終的な値が解決される
-      expect(result).toBe("42");
+      expect(result.outputString()).toBe("42");
     });
 
     it("パラメータのプロパティアクセスは使用箇所ごとにユニークな値を返すこと", () => {
@@ -397,9 +394,9 @@ describe("ExpressionResolver", () => {
 
       // Assert
       // 同じ props.number でも、異なるファイルからの参照は異なる値として扱われる
-      expect(result1).not.toBe(result2);
-      expect(result1).toContain("paramRef:");
-      expect(result2).toContain("paramRef:");
+      expect(result1.outputString()).not.toBe(result2.outputString());
+      expect(result1.outputString()).toContain("[paramRef]");
+      expect(result2.outputString()).toContain("[paramRef]");
     });
 
     it("ネストしたパラメータプロパティアクセスも使用箇所ごとにユニークな値を返すこと", () => {
@@ -425,7 +422,7 @@ describe("ExpressionResolver", () => {
 
       // Assert
       // ネストしたプロパティアクセスでもパラメータ参照として認識される
-      expect(result).toContain("paramRef:");
+      expect(result.outputString()).toContain("[paramRef]");
     });
 
     it("thisプロパティアクセスは使用箇所ごとにユニークな値を返すこと", () => {
@@ -465,9 +462,9 @@ describe("ExpressionResolver", () => {
 
       // Assert
       // 同じ this.message でも、異なるファイルからの参照は異なる値として扱われる
-      expect(result1).not.toBe(result2);
-      expect(result1).toContain("[this]");
-      expect(result2).toContain("[this]");
+      expect(result1.outputString()).not.toBe(result2.outputString());
+      expect(result1.outputString()).toContain("[this]");
+      expect(result2.outputString()).toContain("[this]");
     });
 
     it("ネストしたthisプロパティアクセスもユニークな値を返すこと", () => {
@@ -493,8 +490,8 @@ describe("ExpressionResolver", () => {
       const result = emptyResolver.resolve(thisAccess);
 
       // Assert
-      expect(result).toContain("[this]");
-      expect(result).toContain("this.nested.value");
+      expect(result.outputString()).toContain("[this]");
+      expect(result.outputString()).toContain("this.nested.value");
     });
   });
 
@@ -518,12 +515,13 @@ describe("ExpressionResolver", () => {
 
       // Assert
       expect(result).toHaveLength(2);
-      expect(result).toEqual(
-        expect.arrayContaining([
-          { key: "style.color", value: '"red"' },
-          { key: "style.fontSize", value: "16" },
-        ]),
-      );
+      const colorItem = result.find((r) => r.key === "style.color");
+      const fontSizeItem = result.find((r) => r.key === "style.fontSize");
+      if (!colorItem || !fontSizeItem) {
+        expect.unreachable("colorItem and fontSizeItem should be defined");
+      }
+      expect(colorItem.value.outputString()).toBe('"red"');
+      expect(fontSizeItem.value.outputString()).toBe("16");
     });
 
     it("ネストしたオブジェクトリテラルを再帰的にフラット化すること", () => {
@@ -545,12 +543,15 @@ describe("ExpressionResolver", () => {
 
       // Assert
       expect(result).toHaveLength(2);
-      expect(result).toEqual(
-        expect.arrayContaining([
-          { key: "config.theme.primary", value: '"blue"' },
-          { key: "config.theme.secondary", value: '"green"' },
-        ]),
+      const primaryItem = result.find((r) => r.key === "config.theme.primary");
+      const secondaryItem = result.find(
+        (r) => r.key === "config.theme.secondary",
       );
+      if (!primaryItem || !secondaryItem) {
+        expect.unreachable("primaryItem and secondaryItem should be defined");
+      }
+      expect(primaryItem.value.outputString()).toBe('"blue"');
+      expect(secondaryItem.value.outputString()).toBe('"green"');
     });
 
     it("省略形プロパティを正しく処理すること", () => {
@@ -578,8 +579,10 @@ describe("ExpressionResolver", () => {
       expect(result).toHaveLength(1);
       expect(result[0].key).toBe("style.color");
       // パラメータの場合はファイルパスと変数名で識別される
-      expect(result[0].value).toContain("color");
-      expect(result[0].value).toContain(sourceFile.getFilePath());
+      expect(result[0].value.outputString()).toContain("color");
+      expect(result[0].value.outputString()).toContain(
+        sourceFile.getFilePath(),
+      );
     });
 
     it("オブジェクトリテラル以外は単一の値として返すこと", () => {
@@ -601,7 +604,8 @@ describe("ExpressionResolver", () => {
 
       // Assert
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({ key: "prop", value: '"value"' });
+      expect(result[0].key).toBe("prop");
+      expect(result[0].value.outputString()).toBe('"value"');
     });
 
     it("プレフィックスが空の場合も正しく動作すること", () => {
@@ -623,12 +627,13 @@ describe("ExpressionResolver", () => {
 
       // Assert
       expect(result).toHaveLength(2);
-      expect(result).toEqual(
-        expect.arrayContaining([
-          { key: "color", value: '"red"' },
-          { key: "fontSize", value: "16" },
-        ]),
-      );
+      const colorItem = result.find((r) => r.key === "color");
+      const fontSizeItem = result.find((r) => r.key === "fontSize");
+      if (!colorItem || !fontSizeItem) {
+        expect.unreachable("colorItem and fontSizeItem should be defined");
+      }
+      expect(colorItem.value.outputString()).toBe('"red"');
+      expect(fontSizeItem.value.outputString()).toBe("16");
     });
 
     describe("省略されたプロパティの検出", () => {
@@ -667,13 +672,17 @@ describe("ExpressionResolver", () => {
         const result = emptyResolver.flattenObject(objectLiteral, "options");
 
         // Assert
-        expect(result).toEqual(
-          expect.arrayContaining([
-            { key: "options.url", value: '"/api"' },
-            { key: "options.method", value: '"GET"' },
-            { key: "options.config", value: UNDEFINED_VALUE },
-          ]),
-        );
+        const urlItem = result.find((r) => r.key === "options.url");
+        const methodItem = result.find((r) => r.key === "options.method");
+        const configItem = result.find((r) => r.key === "options.config");
+        if (!urlItem || !methodItem || !configItem) {
+          expect.unreachable(
+            "urlItem, methodItem and configItem should be defined",
+          );
+        }
+        expect(urlItem.value.outputString()).toBe('"/api"');
+        expect(methodItem.value.outputString()).toBe('"GET"');
+        expect(configItem.value).toBeInstanceOf(UndefinedArgValue);
       });
 
       it("省略された親プロパティのネストプロパティも検出すること", () => {
@@ -714,16 +723,32 @@ describe("ExpressionResolver", () => {
 
         // Assert
         // config が省略されているので、config 自体と config.* のすべてのプロパティが [undefined] として検出される
-        expect(result).toEqual(
-          expect.arrayContaining([
-            { key: "options.url", value: '"/api/users"' },
-            { key: "options.method", value: '"GET"' },
-            { key: "options.config", value: UNDEFINED_VALUE },
-            { key: "options.config.dummy", value: UNDEFINED_VALUE },
-            { key: "options.config.timeout", value: UNDEFINED_VALUE },
-            { key: "options.config.retries", value: UNDEFINED_VALUE },
-          ]),
+        const urlItem = result.find((r) => r.key === "options.url");
+        const methodItem = result.find((r) => r.key === "options.method");
+        const configItem = result.find((r) => r.key === "options.config");
+        const dummyItem = result.find((r) => r.key === "options.config.dummy");
+        const timeoutItem = result.find(
+          (r) => r.key === "options.config.timeout",
         );
+        const retriesItem = result.find(
+          (r) => r.key === "options.config.retries",
+        );
+        if (
+          !urlItem ||
+          !methodItem ||
+          !configItem ||
+          !dummyItem ||
+          !timeoutItem ||
+          !retriesItem
+        ) {
+          expect.unreachable("all items should be defined");
+        }
+        expect(urlItem.value.outputString()).toBe('"/api/users"');
+        expect(methodItem.value.outputString()).toBe('"GET"');
+        expect(configItem.value).toBeInstanceOf(UndefinedArgValue);
+        expect(dummyItem.value).toBeInstanceOf(UndefinedArgValue);
+        expect(timeoutItem.value).toBeInstanceOf(UndefinedArgValue);
+        expect(retriesItem.value).toBeInstanceOf(UndefinedArgValue);
       });
 
       it("複数の省略されたプロパティを検出すること", () => {
@@ -760,13 +785,15 @@ describe("ExpressionResolver", () => {
 
         // Assert
         expect(result).toHaveLength(3);
-        expect(result).toEqual(
-          expect.arrayContaining([
-            { key: "config.a", value: '"value"' },
-            { key: "config.b", value: UNDEFINED_VALUE },
-            { key: "config.c", value: UNDEFINED_VALUE },
-          ]),
-        );
+        const aItem = result.find((r) => r.key === "config.a");
+        const bItem = result.find((r) => r.key === "config.b");
+        const cItem = result.find((r) => r.key === "config.c");
+        if (!aItem || !bItem || !cItem) {
+          expect.unreachable("aItem, bItem and cItem should be defined");
+        }
+        expect(aItem.value.outputString()).toBe('"value"');
+        expect(bItem.value).toBeInstanceOf(UndefinedArgValue);
+        expect(cItem.value).toBeInstanceOf(UndefinedArgValue);
       });
 
       it("ネストしたオブジェクトの省略プロパティを検出すること", () => {
@@ -807,15 +834,29 @@ describe("ExpressionResolver", () => {
 
         // Assert
         // config が渡されているが、config.dummy と config.timeout は省略されている
-        expect(result).toEqual(
-          expect.arrayContaining([
-            { key: "options.url", value: '"/api/posts"' },
-            { key: "options.method", value: '"GET"' },
-            { key: "options.config.retries", value: "3" },
-            { key: "options.config.dummy", value: UNDEFINED_VALUE },
-            { key: "options.config.timeout", value: UNDEFINED_VALUE },
-          ]),
+        const urlItem = result.find((r) => r.key === "options.url");
+        const methodItem = result.find((r) => r.key === "options.method");
+        const retriesItem = result.find(
+          (r) => r.key === "options.config.retries",
         );
+        const dummyItem = result.find((r) => r.key === "options.config.dummy");
+        const timeoutItem = result.find(
+          (r) => r.key === "options.config.timeout",
+        );
+        if (
+          !urlItem ||
+          !methodItem ||
+          !retriesItem ||
+          !dummyItem ||
+          !timeoutItem
+        ) {
+          expect.unreachable("all items should be defined");
+        }
+        expect(urlItem.value.outputString()).toBe('"/api/posts"');
+        expect(methodItem.value.outputString()).toBe('"GET"');
+        expect(retriesItem.value.outputString()).toBe("3");
+        expect(dummyItem.value).toBeInstanceOf(UndefinedArgValue);
+        expect(timeoutItem.value).toBeInstanceOf(UndefinedArgValue);
       });
 
       it("すべてのプロパティが渡されている場合は省略プロパティがないこと", () => {
@@ -851,12 +892,13 @@ describe("ExpressionResolver", () => {
 
         // Assert
         expect(result).toHaveLength(2);
-        expect(result).toEqual(
-          expect.arrayContaining([
-            { key: "point.x", value: "10" },
-            { key: "point.y", value: "20" },
-          ]),
-        );
+        const xItem = result.find((r) => r.key === "point.x");
+        const yItem = result.find((r) => r.key === "point.y");
+        if (!xItem || !yItem) {
+          expect.unreachable("xItem and yItem should be defined");
+        }
+        expect(xItem.value.outputString()).toBe("10");
+        expect(yItem.value.outputString()).toBe("20");
       });
     });
   });

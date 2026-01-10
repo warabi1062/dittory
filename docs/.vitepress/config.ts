@@ -38,6 +38,7 @@ export default defineConfig({
           items: [
             { text: "CLI Options", link: "/guide/cli-options" },
             { text: "Disabling Detection", link: "/guide/disabling-detection" },
+            { text: "Limitations", link: "/guide/limitations" },
           ],
         },
       ],

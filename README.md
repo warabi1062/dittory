@@ -189,6 +189,18 @@ const Enhanced = withAuth(Component);
 <Enhanced role="admin" />
 ```
 
+### Function Overloads
+
+```ts
+// ❌ Overloaded functions may not correctly map arguments
+function process(a: string): void;
+function process(a: string, b: number): void;
+function process(a: string, b?: number): void { ... }
+
+// Only parameters from the first overload signature are recognized
+process("hello", 42);  // "b" argument is not tracked
+```
+
 ## CLI Options
 
 | Option | Description | Default |

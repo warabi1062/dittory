@@ -1,33 +1,17 @@
 import { Node, type ObjectLiteralExpression, type Type } from "ts-morph";
-import { ParamRefArgValue } from "./argValue";
+import { type ArgValue, ParamRefArgValue, UndefinedArgValue } from "./argValue";
 import type { CallSiteMap } from "./callSiteMap";
 import { extractArgValue } from "./extractArgValue";
-
-/**
- * 引数が渡されなかった場合を表す特別な値
- * 必須/任意を問わず、引数未指定の使用箇所を統一的に扱うために使用
- *
- * 注意: この値は文字列 "[undefined]" であり、JavaScriptの undefined とは異なる。
- * 解決関数が undefined を返す場合は「値を解決できなかった」ことを意味し、
- * この文字列を返す場合は「実際に undefined が渡された」ことを意味する。
- */
-export const UNDEFINED_VALUE = "[undefined]";
-
-/**
- * 関数型の値を表すプレフィックス
- * コールバック関数など、関数が渡された場合は使用箇所ごとにユニークな値として扱う
- * これにより、同じコールバック関数を渡していても「定数」として検出されない
- */
-export const FUNCTION_VALUE_PREFIX = "[function]";
+import { extractObjectType } from "./extractObjectType";
 
 /**
  * フラット化された値
  */
-export type FlattenedValue = { key: string; value: string };
+export type FlattenedValue = { key: string; value: ArgValue };
 
 /**
  * 式の値を解決するクラス
- * CallSiteMap を使ってパラメータ参照を解決し、式の値を文字列表現に変換する
+ * CallSiteMap を使ってパラメータ参照を解決し、ArgValueを返す
  */
 export class ExpressionResolver {
   constructor(private callSiteMap: CallSiteMap) {}
@@ -36,11 +20,10 @@ export class ExpressionResolver {
    * 式の実際の値を解決する
    *
    * 異なるファイルで同じenum値やリテラル値を使用している場合でも、
-   * 同一の値として認識できるよう、値を正規化して文字列表現で返す。
-   * 同名だが異なる定義（別ファイルの同名enum等）を区別するため、
-   * 必要に応じてファイルパスを含めた識別子を返す。
+   * 同一の値として認識できるよう、ArgValueとして返す。
+   * パラメータ参照の場合はcallSiteMapを使って解決を試みる。
    */
-  resolve(expression: Node): string {
+  resolve(expression: Node): ArgValue {
     const argValue = extractArgValue(expression);
 
     // パラメータ参照は callSiteMap を使って解決
@@ -48,8 +31,7 @@ export class ExpressionResolver {
       return this.callSiteMap.resolveParamRef(argValue);
     }
 
-    // その他（Literal, Function, Undefined）は getValue() で文字列表現を取得
-    return argValue.getValue();
+    return argValue;
   }
 
   /**
@@ -128,7 +110,7 @@ export class ExpressionResolver {
  * 期待される型と比較して、省略されたプロパティを検出する
  *
  * 省略されたプロパティがオブジェクト型の場合、そのネストプロパティも
- * 再帰的に [undefined] として出力する。これにより、親プロパティが
+ * 再帰的に UndefinedArgValue として出力する。これにより、親プロパティが
  * 省略された場合でも、ネストプロパティが他の呼び出しと比較可能になる。
  */
 function getMissingProperties(
@@ -159,10 +141,10 @@ function getMissingProperties(
 
     const nestedPrefix = prefix ? `${prefix}.${propName}` : propName;
 
-    // 省略されたプロパティを [undefined] として記録
+    // 省略されたプロパティを UndefinedArgValue として記録
     missingValues.push({
       key: nestedPrefix,
-      value: UNDEFINED_VALUE,
+      value: new UndefinedArgValue(),
     });
 
     // 省略されたプロパティがオブジェクト型の場合、ネストプロパティも再帰的に出力
@@ -181,7 +163,7 @@ function getMissingProperties(
 }
 
 /**
- * 省略された親プロパティのネストプロパティを再帰的に [undefined] として出力
+ * 省略された親プロパティのネストプロパティを再帰的に UndefinedArgValue として出力
  */
 function getNestedMissingProperties(
   parentType: Type,
@@ -195,7 +177,7 @@ function getNestedMissingProperties(
 
     result.push({
       key: nestedPrefix,
-      value: UNDEFINED_VALUE,
+      value: new UndefinedArgValue(),
     });
 
     // さらにネストされたオブジェクト型があれば再帰
@@ -209,49 +191,4 @@ function getNestedMissingProperties(
   }
 
   return result;
-}
-
-/**
- * 型からオブジェクト部分を抽出する
- * ユニオン型（例: `{ a: number } | undefined`）から `undefined` を除外して
- * オブジェクト型部分を返す。オブジェクト型でない場合は null を返す。
- */
-function extractObjectType(type: Type): Type | null {
-  // ユニオン型の場合、undefined/null を除外したオブジェクト型を探す
-  if (type.isUnion()) {
-    for (const unionType of type.getUnionTypes()) {
-      if (unionType.isUndefined() || unionType.isNull()) {
-        continue;
-      }
-      const objType = extractObjectType(unionType);
-      if (objType) {
-        return objType;
-      }
-    }
-    return null;
-  }
-
-  // プリミティブ型は除外
-  if (
-    type.isString() ||
-    type.isNumber() ||
-    type.isBoolean() ||
-    type.isUndefined() ||
-    type.isNull() ||
-    type.isLiteral()
-  ) {
-    return null;
-  }
-
-  // 配列型は除外
-  if (type.isArray()) {
-    return null;
-  }
-
-  // オブジェクト型かつプロパティを持つ場合
-  if (type.isObject() && type.getProperties().length > 0) {
-    return type;
-  }
-
-  return null;
 }

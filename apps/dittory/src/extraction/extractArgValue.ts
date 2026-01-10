@@ -4,6 +4,7 @@ import {
   BooleanLiteralArgValue,
   EnumLiteralArgValue,
   FunctionArgValue,
+  JsxShorthandLiteralArgValue,
   MethodCallLiteralArgValue,
   NumberLiteralArgValue,
   OtherLiteralArgValue,
@@ -35,10 +36,32 @@ function isThisPropertyAccess(expression: Node): boolean {
  * 式の値を型安全な ArgValue として返す。
  * 呼び出し情報収集時および式の値解決時に使用する。
  *
- * @param expression - 解析対象の式ノード
+ * @param expression - 解析対象の式ノード（undefinedの場合はUndefinedArgValueを返す）
  * @returns 式の値を表す ArgValue
  */
-export function extractArgValue(expression: Node): ArgValue {
+export function extractArgValue(expression: Node | undefined): ArgValue {
+  if (!expression) {
+    return new UndefinedArgValue();
+  }
+
+  // JsxAttribute の場合（例: <Button disabled /> や <Button label="hello" />）
+  if (Node.isJsxAttribute(expression)) {
+    const initializer = expression.getInitializer();
+    if (!initializer) {
+      // boolean shorthand（例: <Button disabled />）
+      return new JsxShorthandLiteralArgValue();
+    }
+    if (Node.isJsxExpression(initializer)) {
+      // JSX式（例: <Button onClick={handleClick} />）
+      return extractArgValue(initializer.getExpression());
+    }
+    if (Node.isStringLiteral(initializer)) {
+      // 文字列値（例: <Button label="hello" />）
+      return new StringLiteralArgValue(initializer.getLiteralValue());
+    }
+    return new OtherLiteralArgValue(initializer.getText());
+  }
+
   const type = expression.getType();
 
   // 関数型の場合

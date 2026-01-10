@@ -1,29 +1,5 @@
-import {
-  type CallExpression,
-  type JsxOpeningElement,
-  type JsxSelfClosingElement,
-  Node,
-} from "ts-morph";
-
-/**
- * パラメータ名と対応する引数のペア
- */
-export type ParamWithArg = {
-  name: string;
-  arg: Node | undefined;
-};
-
-import {
-  type ArgValue,
-  argValueToKey,
-  type CallSiteInfo,
-  JsxShorthandLiteralArgValue,
-  OtherLiteralArgValue,
-  ParamRefArgValue,
-  StringLiteralArgValue,
-  UndefinedArgValue,
-} from "./argValue";
-import { extractArgValue } from "./extractArgValue";
+import { type ArgValue, ParamRefArgValue } from "./argValue";
+import { type CallSiteArg, CallSiteInfo } from "./callSiteInfo";
 
 /**
  * すべての関数/コンポーネントの呼び出し情報を管理するクラス
@@ -43,98 +19,25 @@ export class CallSiteMap {
   }
 
   /**
-   * JSX要素から呼び出し情報を抽出して登録する
+   * 引数情報をCallSiteInfoに追加する
    */
-  extractFromJsxElement(
-    element: JsxOpeningElement | JsxSelfClosingElement,
-    targetId: string,
-  ): void {
-    const sourceFile = element.getSourceFile();
-    const filePath = sourceFile.getFilePath();
-
-    let info = this.map.get(targetId);
-    if (!info) {
-      info = new Map();
-      this.map.set(targetId, info);
-    }
-
-    for (const attr of element.getAttributes()) {
-      if (!Node.isJsxAttribute(attr)) continue;
-
-      const propName = attr.getNameNode().getText();
-      const initializer = attr.getInitializer();
-
-      let value: ArgValue;
-      if (!initializer) {
-        // boolean shorthand
-        value = new JsxShorthandLiteralArgValue();
-      } else if (Node.isJsxExpression(initializer)) {
-        const expr = initializer.getExpression();
-        value = expr ? extractArgValue(expr) : new UndefinedArgValue();
-      } else if (Node.isStringLiteral(initializer)) {
-        // JSX属性の文字列値 (例: value="hello")
-        // getLiteralValue()で引用符なしの値を取得
-        value = new StringLiteralArgValue(initializer.getLiteralValue());
-      } else {
-        value = new OtherLiteralArgValue(initializer.getText());
-      }
-
-      const args = info.get(propName) ?? [];
-      args.push({
-        name: propName,
-        value,
-        filePath,
-        line: element.getStartLineNumber(),
-      });
-      info.set(propName, args);
-    }
+  addArg(targetId: string, arg: CallSiteArg): void {
+    const info = this.getOrCreateInfo(targetId);
+    info.addArg(arg.name, arg);
   }
 
   /**
-   * 関数呼び出しから呼び出し情報を抽出して登録する
-   */
-  extractFromCallExpression(
-    callExpr: CallExpression,
-    targetId: string,
-    params: ParamWithArg[],
-  ): void {
-    const sourceFile = callExpr.getSourceFile();
-    const filePath = sourceFile.getFilePath();
-
-    let info = this.map.get(targetId);
-    if (!info) {
-      info = new Map();
-      this.map.set(targetId, info);
-    }
-
-    for (const { name, arg } of params) {
-      const value: ArgValue = arg
-        ? extractArgValue(arg)
-        : new UndefinedArgValue();
-
-      const argList = info.get(name) ?? [];
-      argList.push({
-        name,
-        value,
-        filePath,
-        line: callExpr.getStartLineNumber(),
-      });
-      info.set(name, argList);
-    }
-  }
-
-  /**
-   * パラメータ参照を解決して文字列表現を返す
+   * パラメータ参照を解決してArgValueを返す
    * callSiteMapを使ってパラメータに渡されたすべての値を取得し、
-   * すべて同じ値ならその値を返す。解決できない場合は使用箇所ごとにユニークな値を返す。
+   * すべて同じ値ならその値を返す。解決できない場合は元のParamRefArgValueを返す。
    */
-  resolveParamRef(paramRef: ParamRefArgValue): string {
+  resolveParamRef(paramRef: ParamRefArgValue): ArgValue {
     const resolved = this.resolveParameterValueInternal(paramRef);
     if (resolved !== undefined) {
-      return argValueToKey(resolved);
+      return resolved;
     }
-    // 解決できない場合は使用箇所ごとにユニークな値として扱う
-    return `[paramRef]${paramRef.filePath}:${paramRef.line}:${paramRef.getValue()}`;
+    // 解決できない場合は元のParamRefArgValueを返す
+    return paramRef;
   }
 
   /**
@@ -147,7 +50,7 @@ export class CallSiteMap {
     visited: Set<string> = new Set(),
   ): ArgValue | undefined {
     // 循環参照を防ぐ
-    const key = argValueToKey(paramRef);
+    const key = paramRef.toKey();
     if (visited.has(key)) {
       return undefined;
     }
@@ -194,7 +97,7 @@ export class CallSiteMap {
         return undefined;
       }
 
-      const resolvedKey = argValueToKey(resolved);
+      const resolvedKey = resolved.toKey();
       resolvedKeys.add(resolvedKey);
       resolvedValue = resolved;
     }
@@ -206,5 +109,18 @@ export class CallSiteMap {
 
     // 異なる値がある場合は解決不可
     return undefined;
+  }
+
+  /**
+   * targetIdに対応する呼び出し情報を取得する
+   * 存在しない場合は新規作成して登録する
+   */
+  private getOrCreateInfo(targetId: string): CallSiteInfo {
+    let info = this.map.get(targetId);
+    if (!info) {
+      info = new CallSiteInfo();
+      this.map.set(targetId, info);
+    }
+    return info;
   }
 }

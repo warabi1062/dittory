@@ -1,9 +1,9 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { ParamRefArgValue, StringLiteralArgValue } from "./argValue";
-import { collectCallSites, createTargetId } from "./callSiteCollector";
+import { CallSiteCollector } from "./callSiteCollector";
 
-describe("collectCallSites", () => {
+describe("CallSiteCollector", () => {
   it("JSX要素からの呼び出し情報を収集すること", () => {
     // Arrange
     const project = new Project({ useInMemoryFileSystem: true });
@@ -27,10 +27,10 @@ describe("collectCallSites", () => {
     const sourceFiles = project.getSourceFiles();
 
     // Act
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
 
     // Assert
-    const childTargetId = createTargetId("/src/Child.tsx", "Child");
+    const childTargetId = "/src/Child.tsx:Child";
     const childInfo = callSiteMap.get(childTargetId);
 
     if (!childInfo) {
@@ -75,10 +75,10 @@ describe("collectCallSites", () => {
     const sourceFiles = project.getSourceFiles();
 
     // Act
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
 
     // Assert
-    const childTargetId = createTargetId("/src/Child.tsx", "ChildComponent");
+    const childTargetId = "/src/Child.tsx:ChildComponent";
     const childInfo = callSiteMap.get(childTargetId);
 
     if (!childInfo) {
@@ -135,10 +135,10 @@ describe("collectCallSites", () => {
     const sourceFiles = project.getSourceFiles();
 
     // Act
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
 
     // Assert
-    const parentTargetId = createTargetId("/src/Parent.tsx", "ParentComponent");
+    const parentTargetId = "/src/Parent.tsx:ParentComponent";
     const parentInfo = callSiteMap.get(parentTargetId);
 
     if (!parentInfo) {

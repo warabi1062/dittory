@@ -2,7 +2,7 @@ export { analyzeFunctionsCore } from "@/analyzeFunctions";
 export { analyzePropsCore } from "@/analyzeProps";
 export type { DittoryConfig } from "@/cli/loadConfig";
 export type { AnalyzeMode, OutputMode } from "@/cli/parseCliOptions";
-export { collectCallSites } from "@/extraction/callSiteCollector";
+export { CallSiteCollector } from "@/extraction/callSiteCollector";
 export { CallSiteMap } from "@/extraction/callSiteMap";
 export type {
   AnalysisResult,

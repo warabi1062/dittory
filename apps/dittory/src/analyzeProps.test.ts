@@ -2,7 +2,7 @@ import path from "node:path";
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { analyzePropsCore } from "@/analyzeProps";
-import { collectCallSites } from "@/extraction/callSiteCollector";
+import { CallSiteCollector } from "@/extraction/callSiteCollector";
 import type { AnalysisResult } from "@/types";
 
 const fixturesDir: string = path.join(__dirname, "__tests__", "fixtures");
@@ -24,7 +24,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -35,20 +35,8 @@ describe("analyzePropsCore", () => {
     if (!colorProp) {
       expect.unreachable("colorProp should be defined");
     }
-    expect(colorProp.value).toBe('"blue"');
-    expect(colorProp.valueType).toBe("string");
+    expect(colorProp.value.outputString()).toBe('"blue"');
     expect(colorProp.usages.length).toBe(3);
-
-    // exported.usages の valueType もチェック
-    const testComp = result.exported.find((e) => e.name === "TestComp");
-    if (!testComp) {
-      expect.unreachable("testComp should be defined");
-    }
-    const colorUsages = testComp.usages.color;
-    if (!colorUsages) {
-      expect.unreachable("colorUsages should be defined");
-    }
-    expect(colorUsages.every((u) => u.valueType === "string")).toBe(true);
   });
 
   it("異なる値が渡されているpropsは検出しないこと", () => {
@@ -59,7 +47,7 @@ describe("analyzePropsCore", () => {
 
     // Act - Differentコンポーネントを使用
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -78,7 +66,7 @@ describe("analyzePropsCore", () => {
 
     // Act - Optionalコンポーネントを使用（disabledが2箇所でtrue、1箇所でundefined）
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -104,7 +92,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -127,7 +115,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -140,7 +128,7 @@ describe("analyzePropsCore", () => {
     if (!configTheme) {
       expect.unreachable("configTheme should be defined");
     }
-    expect(configTheme.value).toBe('"dark"');
+    expect(configTheme.value.outputString()).toBe('"dark"');
   });
 
   it("異なるファイルで同名enumを使用した場合も別の値として扱うこと", () => {
@@ -153,7 +141,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -174,7 +162,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -194,7 +182,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -205,21 +193,8 @@ describe("analyzePropsCore", () => {
     if (!variantProp) {
       expect.unreachable("variantProp should be defined");
     }
-    expect(variantProp.value).toContain("ButtonVariant.Primary");
-    expect(variantProp.value).toContain('"primary"');
-    expect(variantProp.valueType).toBe("enum");
+    expect(variantProp.value.outputString()).toBe("ButtonVariant.Primary");
     expect(variantProp.usages.length).toBe(3);
-
-    // exported.usages の valueType もチェック
-    const testComp = result.exported.find((e) => e.name === "TestComp");
-    if (!testComp) {
-      expect.unreachable("testComp should be defined");
-    }
-    const variantUsages = testComp.usages.variant;
-    if (!variantUsages) {
-      expect.unreachable("variantUsages should be defined");
-    }
-    expect(variantUsages.every((u) => u.valueType === "enum")).toBe(true);
   });
 
   it("numberのpropsを検出すること", () => {
@@ -230,7 +205,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -243,20 +218,8 @@ describe("analyzePropsCore", () => {
     if (!priorityProp) {
       expect.unreachable("priorityProp should be defined");
     }
-    expect(priorityProp.value).toBe("10");
-    expect(priorityProp.valueType).toBe("number");
+    expect(priorityProp.value.outputString()).toBe("10");
     expect(priorityProp.usages.length).toBe(2);
-
-    // exported.usages の valueType もチェック
-    const testComp = result.exported.find((e) => e.name === "TestComp");
-    if (!testComp) {
-      expect.unreachable("testComp should be defined");
-    }
-    const priorityUsages = testComp.usages.priority;
-    if (!priorityUsages) {
-      expect.unreachable("priorityUsages should be defined");
-    }
-    expect(priorityUsages.every((u) => u.valueType === "number")).toBe(true);
   });
 
   it("オブジェクトリテラルpropsのネストしたプロパティを検出すること", () => {
@@ -269,7 +232,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -282,8 +245,7 @@ describe("analyzePropsCore", () => {
     if (!themeProp) {
       expect.unreachable("themeProp should be defined");
     }
-    expect(themeProp.value).toBe('"dark"');
-    expect(themeProp.valueType).toBe("string");
+    expect(themeProp.value.outputString()).toBe('"dark"');
     expect(themeProp.usages.length).toBe(2);
 
     const sizeProp = result.constants.find(
@@ -292,8 +254,7 @@ describe("analyzePropsCore", () => {
     if (!sizeProp) {
       expect.unreachable("sizeProp should be defined");
     }
-    expect(sizeProp.value).toBe("10");
-    expect(sizeProp.valueType).toBe("number");
+    expect(sizeProp.value.outputString()).toBe("10");
     expect(sizeProp.usages.length).toBe(2);
 
     // exported.usages にネストしたキーが "param.nested.key" 形式で存在することを確認
@@ -317,7 +278,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -343,7 +304,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -356,7 +317,7 @@ describe("analyzePropsCore", () => {
     if (!primaryProp) {
       expect.unreachable("primaryProp should be defined");
     }
-    expect(primaryProp.value).toBe('"blue"');
+    expect(primaryProp.value.outputString()).toBe('"blue"');
 
     const secondaryProp = result.constants.find(
       (p) => p.paramName === "style.colors.secondary",
@@ -364,7 +325,7 @@ describe("analyzePropsCore", () => {
     if (!secondaryProp) {
       expect.unreachable("secondaryProp should be defined");
     }
-    expect(secondaryProp.value).toBe('"gray"');
+    expect(secondaryProp.value.outputString()).toBe('"gray"');
   });
 
   it("オブジェクト内のoptionalプロパティを考慮すること", () => {
@@ -377,7 +338,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,
@@ -390,7 +351,7 @@ describe("analyzePropsCore", () => {
     if (!themeProp) {
       expect.unreachable("themeProp should be defined");
     }
-    expect(themeProp.value).toBe('"dark"');
+    expect(themeProp.value.outputString()).toBe('"dark"');
 
     const sizeProp = result.constants.find(
       (p) => p.paramName === "config.size",
@@ -409,7 +370,7 @@ describe("analyzePropsCore", () => {
 
     // Act
     const sourceFiles = project.getSourceFiles();
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
     const result: AnalysisResult = analyzePropsCore(sourceFiles, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
       callSiteMap,

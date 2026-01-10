@@ -1,7 +1,7 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { ComponentAnalyzer } from "@/analyzer/componentAnalyzer";
-import { UNDEFINED_VALUE } from "@/extraction/expressionResolver";
+import { UndefinedArgValue } from "@/extraction/argValue";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 
 /**
@@ -136,11 +136,11 @@ describe("ComponentAnalyzer", () => {
       expect.unreachable("button should be defined");
     }
     expect(button.usages.color).toHaveLength(1);
-    expect(button.usages.color[0].value).toBe('"blue"');
+    expect(button.usages.color[0].value.outputString()).toBe('"blue"');
     expect(button.usages.size).toHaveLength(1);
-    expect(button.usages.size[0].value).toBe('"large"');
+    expect(button.usages.size[0].value.outputString()).toBe('"large"');
     expect(button.usages.disabled).toHaveLength(1);
-    expect(button.usages.disabled[0].value).toBe("true");
+    expect(button.usages.disabled[0].value.outputString()).toBe("true");
   });
 
   it("オブジェクトリテラルのpropsをネストして抽出すること", () => {
@@ -176,9 +176,9 @@ describe("ComponentAnalyzer", () => {
       expect.unreachable("box should be defined");
     }
     expect(box.usages["style.color"]).toHaveLength(1);
-    expect(box.usages["style.color"][0].value).toBe('"red"');
+    expect(box.usages["style.color"][0].value.outputString()).toBe('"red"');
     expect(box.usages["style.fontSize"]).toHaveLength(1);
-    expect(box.usages["style.fontSize"][0].value).toBe("16");
+    expect(box.usages["style.fontSize"][0].value.outputString()).toBe("16");
   });
 
   it("渡されていないpropsをundefinedとして記録すること", () => {
@@ -215,8 +215,8 @@ describe("ComponentAnalyzer", () => {
       expect.unreachable("button should be defined");
     }
     expect(button.usages.color).toHaveLength(1);
-    expect(button.usages.color[0].value).toBe('"blue"');
+    expect(button.usages.color[0].value.outputString()).toBe('"blue"');
     expect(button.usages.size).toHaveLength(1);
-    expect(button.usages.size[0].value).toBe(UNDEFINED_VALUE);
+    expect(button.usages.size[0].value).toBeInstanceOf(UndefinedArgValue);
   });
 });

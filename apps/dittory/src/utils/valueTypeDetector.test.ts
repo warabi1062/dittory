@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { UNDEFINED_VALUE } from "@/extraction/expressionResolver";
+import {
+  BooleanLiteralArgValue,
+  EnumLiteralArgValue,
+  FunctionArgValue,
+  NumberLiteralArgValue,
+  ParamRefArgValue,
+  StringLiteralArgValue,
+  ThisLiteralArgValue,
+  UndefinedArgValue,
+  VariableLiteralArgValue,
+} from "@/extraction/argValue";
 import {
   detectValueType,
   matchesValueTypes,
@@ -11,7 +21,7 @@ describe("detectValueType", () => {
   describe("boolean", () => {
     it("trueをbooleanとして検出すること", () => {
       // Act
-      const result = detectValueType("true");
+      const result = detectValueType(new BooleanLiteralArgValue(true));
 
       // Assert
       expect(result).toBe("boolean");
@@ -19,7 +29,7 @@ describe("detectValueType", () => {
 
     it("falseをbooleanとして検出すること", () => {
       // Act
-      const result = detectValueType("false");
+      const result = detectValueType(new BooleanLiteralArgValue(false));
 
       // Assert
       expect(result).toBe("boolean");
@@ -29,7 +39,7 @@ describe("detectValueType", () => {
   describe("number", () => {
     it("正の整数をnumberとして検出すること", () => {
       // Act
-      const result = detectValueType("42");
+      const result = detectValueType(new NumberLiteralArgValue(42));
 
       // Assert
       expect(result).toBe("number");
@@ -37,7 +47,7 @@ describe("detectValueType", () => {
 
     it("負の整数をnumberとして検出すること", () => {
       // Act
-      const result = detectValueType("-10");
+      const result = detectValueType(new NumberLiteralArgValue(-10));
 
       // Assert
       expect(result).toBe("number");
@@ -45,7 +55,7 @@ describe("detectValueType", () => {
 
     it("小数をnumberとして検出すること", () => {
       // Act
-      const result = detectValueType("3.14");
+      const result = detectValueType(new NumberLiteralArgValue(3.14));
 
       // Assert
       expect(result).toBe("number");
@@ -53,7 +63,7 @@ describe("detectValueType", () => {
 
     it("0をnumberとして検出すること", () => {
       // Act
-      const result = detectValueType("0");
+      const result = detectValueType(new NumberLiteralArgValue(0));
 
       // Assert
       expect(result).toBe("number");
@@ -61,9 +71,9 @@ describe("detectValueType", () => {
   });
 
   describe("string", () => {
-    it("ダブルクォート囲みの文字列をstringとして検出すること", () => {
+    it("文字列をstringとして検出すること", () => {
       // Act
-      const result = detectValueType('"hello"');
+      const result = detectValueType(new StringLiteralArgValue("hello"));
 
       // Assert
       expect(result).toBe("string");
@@ -71,15 +81,7 @@ describe("detectValueType", () => {
 
     it("空文字列をstringとして検出すること", () => {
       // Act
-      const result = detectValueType('""');
-
-      // Assert
-      expect(result).toBe("string");
-    });
-
-    it("エスケープを含む文字列をstringとして検出すること", () => {
-      // Act
-      const result = detectValueType('"hello\\"world"');
+      const result = detectValueType(new StringLiteralArgValue(""));
 
       // Assert
       expect(result).toBe("string");
@@ -89,7 +91,14 @@ describe("detectValueType", () => {
   describe("enum", () => {
     it("enum値をenumとして検出すること", () => {
       // Act
-      const result = detectValueType('/path/to/file.ts:Status.Active="active"');
+      const result = detectValueType(
+        new EnumLiteralArgValue(
+          "/path/to/file.ts",
+          "Status",
+          "Active",
+          "active",
+        ),
+      );
 
       // Assert
       expect(result).toBe("enum");
@@ -97,7 +106,9 @@ describe("detectValueType", () => {
 
     it("数値enumをenumとして検出すること", () => {
       // Act
-      const result = detectValueType("/path/to/file.ts:Priority.High=1");
+      const result = detectValueType(
+        new EnumLiteralArgValue("/path/to/file.ts", "Priority", "High", 1),
+      );
 
       // Assert
       expect(result).toBe("enum");
@@ -105,9 +116,9 @@ describe("detectValueType", () => {
   });
 
   describe("undefined", () => {
-    it("UNDEFINED_VALUEをundefinedとして検出すること", () => {
+    it("UndefinedArgValueをundefinedとして検出すること", () => {
       // Act
-      const result = detectValueType(UNDEFINED_VALUE);
+      const result = detectValueType(new UndefinedArgValue());
 
       // Assert
       expect(result).toBe("undefined");
@@ -117,7 +128,9 @@ describe("detectValueType", () => {
   describe("判定不能なケース", () => {
     it("関数値はnullを返すこと", () => {
       // Act
-      const result = detectValueType("[function]/path/to/file.ts:42");
+      const result = detectValueType(
+        new FunctionArgValue("/path/to/file.ts", 42),
+      );
 
       // Assert
       expect(result).toBeNull();
@@ -126,7 +139,12 @@ describe("detectValueType", () => {
     it("パラメータ参照はnullを返すこと", () => {
       // Act
       const result = detectValueType(
-        "paramRef:/path/to/file.ts:Component:props.value",
+        new ParamRefArgValue(
+          "/path/to/file.ts",
+          "Component",
+          "props.value",
+          10,
+        ),
       );
 
       // Assert
@@ -135,7 +153,9 @@ describe("detectValueType", () => {
 
     it("this参照はnullを返すこと", () => {
       // Act
-      const result = detectValueType("[this]/path/to/file.ts:42:this.prop");
+      const result = detectValueType(
+        new ThisLiteralArgValue("/path/to/file.ts", 42, "this.prop"),
+      );
 
       // Assert
       expect(result).toBeNull();
@@ -143,15 +163,9 @@ describe("detectValueType", () => {
 
     it("変数参照はnullを返すこと", () => {
       // Act
-      const result = detectValueType("/path/to/constants.ts:VALUE");
-
-      // Assert
-      expect(result).toBeNull();
-    });
-
-    it("空文字列はnullを返すこと", () => {
-      // Act
-      const result = detectValueType("");
+      const result = detectValueType(
+        new VariableLiteralArgValue("/path/to/constants.ts", "VALUE"),
+      );
 
       // Assert
       expect(result).toBeNull();
@@ -163,10 +177,18 @@ describe("matchesValueTypes", () => {
   describe("allが指定された場合", () => {
     it("任意の値に対してtrueを返すこと", () => {
       // Act & Assert
-      expect(matchesValueTypes("true", "all")).toBe(true);
-      expect(matchesValueTypes("42", "all")).toBe(true);
-      expect(matchesValueTypes('"hello"', "all")).toBe(true);
-      expect(matchesValueTypes("[function]/path:42", "all")).toBe(true);
+      expect(matchesValueTypes(new BooleanLiteralArgValue(true), "all")).toBe(
+        true,
+      );
+      expect(matchesValueTypes(new NumberLiteralArgValue(42), "all")).toBe(
+        true,
+      );
+      expect(matchesValueTypes(new StringLiteralArgValue("hello"), "all")).toBe(
+        true,
+      );
+      expect(matchesValueTypes(new FunctionArgValue("/path", 42), "all")).toBe(
+        true,
+      );
     });
   });
 
@@ -176,8 +198,12 @@ describe("matchesValueTypes", () => {
       const allowedTypes: ValueType[] = ["boolean", "number"];
 
       // Act & Assert
-      expect(matchesValueTypes("true", allowedTypes)).toBe(true);
-      expect(matchesValueTypes("42", allowedTypes)).toBe(true);
+      expect(
+        matchesValueTypes(new BooleanLiteralArgValue(true), allowedTypes),
+      ).toBe(true);
+      expect(
+        matchesValueTypes(new NumberLiteralArgValue(42), allowedTypes),
+      ).toBe(true);
     });
 
     it("指定された種別に一致しない値はfalseを返すこと", () => {
@@ -185,8 +211,12 @@ describe("matchesValueTypes", () => {
       const allowedTypes: ValueType[] = ["boolean", "number"];
 
       // Act & Assert
-      expect(matchesValueTypes('"hello"', allowedTypes)).toBe(false);
-      expect(matchesValueTypes(UNDEFINED_VALUE, allowedTypes)).toBe(false);
+      expect(
+        matchesValueTypes(new StringLiteralArgValue("hello"), allowedTypes),
+      ).toBe(false);
+      expect(matchesValueTypes(new UndefinedArgValue(), allowedTypes)).toBe(
+        false,
+      );
     });
 
     it("判定不能な値はfalseを返すこと", () => {
@@ -194,9 +224,14 @@ describe("matchesValueTypes", () => {
       const allowedTypes: ValueType[] = ["boolean", "number", "string"];
 
       // Act & Assert
-      expect(matchesValueTypes("[function]/path:42", allowedTypes)).toBe(false);
       expect(
-        matchesValueTypes("paramRef:/path:Comp:props.x", allowedTypes),
+        matchesValueTypes(new FunctionArgValue("/path", 42), allowedTypes),
+      ).toBe(false);
+      expect(
+        matchesValueTypes(
+          new ParamRefArgValue("/path", "Comp", "props.x", 10),
+          allowedTypes,
+        ),
       ).toBe(false);
     });
 
@@ -205,9 +240,15 @@ describe("matchesValueTypes", () => {
       const allowedTypes: ValueType[] = [];
 
       // Act & Assert
-      expect(matchesValueTypes("true", allowedTypes)).toBe(false);
-      expect(matchesValueTypes("42", allowedTypes)).toBe(false);
-      expect(matchesValueTypes('"hello"', allowedTypes)).toBe(false);
+      expect(
+        matchesValueTypes(new BooleanLiteralArgValue(true), allowedTypes),
+      ).toBe(false);
+      expect(
+        matchesValueTypes(new NumberLiteralArgValue(42), allowedTypes),
+      ).toBe(false);
+      expect(
+        matchesValueTypes(new StringLiteralArgValue("hello"), allowedTypes),
+      ).toBe(false);
     });
   });
 });

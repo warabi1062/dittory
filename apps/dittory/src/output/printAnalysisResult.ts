@@ -11,21 +11,6 @@ function green(text: string): string {
 }
 
 /**
- * 値を表示用にフォーマットする
- *
- * 内部的にはenum区別のためにファイルパスを含むが、表示時は不要なので除去する
- * 例: "/path/to/file.ts:ButtonVariant.Primary=\"primary\"" → "ButtonVariant.Primary"
- */
-function formatValueForDisplay(value: string): string {
-  // enum形式: "ファイルパス:EnumName.MemberName=値" のパターンをチェック
-  const enumMatch = value.match(/^.+:(\w+\.\w+)=.+$/);
-  if (enumMatch) {
-    return enumMatch[1];
-  }
-  return value;
-}
-
-/**
  * グループ化された定数情報
  */
 interface GroupedConstant {
@@ -34,7 +19,7 @@ interface GroupedConstant {
   targetLine: number;
   params: Array<{
     paramName: string;
-    value: string;
+    value: Constant["value"];
     usageCount: number;
     usages: Constant["usages"];
   }>;
@@ -112,9 +97,7 @@ function printConstantArguments(constants: Constant[]): void {
     console.log("Constant Arguments:");
 
     for (const param of group.params) {
-      console.log(
-        `  - ${param.paramName} = ${formatValueForDisplay(param.value)}`,
-      );
+      console.log(`  - ${param.paramName} = ${param.value.outputString()}`);
     }
 
     console.log(`Usages (${usageCount}):`);

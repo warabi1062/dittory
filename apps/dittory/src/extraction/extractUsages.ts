@@ -6,8 +6,8 @@ import {
   Node,
 } from "ts-morph";
 import type { Definition, Exported, Usage } from "@/types";
-import { detectValueType } from "@/utils/valueTypeDetector";
-import { type ExpressionResolver, UNDEFINED_VALUE } from "./expressionResolver";
+import { JsxShorthandLiteralArgValue, UndefinedArgValue } from "./argValue";
+import type { ExpressionResolver } from "./expressionResolver";
 import { hasDisableComment } from "./hasDisableComment";
 
 /**
@@ -46,8 +46,7 @@ export class ExtractUsages {
         // 引数が渡されていない場合はundefinedとして記録
         usages.push({
           name: param.name,
-          value: UNDEFINED_VALUE,
-          valueType: detectValueType(UNDEFINED_VALUE),
+          value: new UndefinedArgValue(),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: callExpression.getStartLineNumber(),
         });
@@ -59,7 +58,6 @@ export class ExtractUsages {
         usages.push({
           name: key,
           value,
-          valueType: detectValueType(value),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: arg.getStartLineNumber(),
         });
@@ -106,8 +104,7 @@ export class ExtractUsages {
         // 渡されていない場合（required/optional問わず記録）
         usages.push({
           name: prop.name,
-          value: UNDEFINED_VALUE,
-          valueType: detectValueType(UNDEFINED_VALUE),
+          value: new UndefinedArgValue(),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: element.getStartLineNumber(),
         });
@@ -121,8 +118,7 @@ export class ExtractUsages {
         // boolean shorthand (例: <Component disabled />)
         usages.push({
           name: prop.name,
-          value: "true",
-          valueType: "boolean",
+          value: new JsxShorthandLiteralArgValue(),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: attr.getStartLineNumber(),
         });
@@ -139,18 +135,15 @@ export class ExtractUsages {
           usages.push({
             name: key,
             value,
-            valueType: detectValueType(value),
             usageFilePath: sourceFile.getFilePath(),
             usageLine: attr.getStartLineNumber(),
           });
         }
       } else {
-        // "string" 形式
-        const value = initializer.getText();
+        // "string" 形式 - resolverを通して解決
         usages.push({
           name: prop.name,
-          value,
-          valueType: detectValueType(value),
+          value: resolver.resolve(initializer),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: attr.getStartLineNumber(),
         });

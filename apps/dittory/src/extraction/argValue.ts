@@ -7,15 +7,49 @@
  */
 export abstract class ArgValue {
   /**
-   * 比較用の文字列値を取得する
+   * 生の値を取得する（プレフィックスなし）
    */
   abstract getValue(): string;
+
+  /**
+   * 値のプレフィックス（空文字の場合はプレフィックスなし）
+   */
+  protected abstract readonly prefix: string;
+
+  /**
+   * outputString() でプレフィックスを含めるかどうか
+   * - true: プレフィックスを含める（関数、パラメータ参照など）
+   * - false: 値のみ（リテラル値）
+   */
+  protected abstract readonly includePrefixInOutput: boolean;
+
+  /**
+   * 比較可能な文字列キーに変換する
+   * 同じ値かどうかの判定に使用
+   */
+  toKey(): string {
+    return `[${this.prefix}]${this.getValue()}`;
+  }
+
+  /**
+   * 出力用の文字列表現を取得する
+   */
+  outputString(): string {
+    if (this.includePrefixInOutput) {
+      return `[${this.prefix}]${this.getValue()}`;
+    }
+    return this.getValue();
+  }
 }
 
 /**
  * リテラル値の基底抽象クラス
+ * 出力時はプレフィックスなし、比較キーには [literal] プレフィックスを付ける
  */
-export abstract class LiteralArgValue extends ArgValue {}
+export abstract class LiteralArgValue extends ArgValue {
+  protected override readonly prefix: string = "literal";
+  protected override readonly includePrefixInOutput: boolean = false;
+}
 
 /**
  * enum メンバーのリテラル値
@@ -31,7 +65,13 @@ export class EnumLiteralArgValue extends LiteralArgValue {
   }
 
   getValue(): string {
-    return `${this.filePath}:${this.enumName}.${this.memberName}=${JSON.stringify(this.enumValue)}`;
+    return `${this.filePath}:${this.enumName}.${
+      this.memberName
+    }=${JSON.stringify(this.enumValue)}`;
+  }
+
+  override outputString(): string {
+    return `${this.enumName}.${this.memberName}`;
   }
 }
 
@@ -47,8 +87,11 @@ export class ThisLiteralArgValue extends LiteralArgValue {
     super();
   }
 
+  protected override readonly prefix = "this";
+  protected override readonly includePrefixInOutput = true;
+
   getValue(): string {
-    return `[this]${this.filePath}:${this.line}:${this.expression}`;
+    return `${this.filePath}:${this.line}:${this.expression}`;
   }
 }
 
@@ -64,8 +107,11 @@ export class MethodCallLiteralArgValue extends LiteralArgValue {
     super();
   }
 
+  protected override readonly prefix = "methodCall";
+  protected override readonly includePrefixInOutput = true;
+
   getValue(): string {
-    return `[methodCall]${this.filePath}:${this.line}:${this.expression}`;
+    return `${this.filePath}:${this.line}:${this.expression}`;
   }
 }
 
@@ -157,8 +203,11 @@ export class FunctionArgValue extends ArgValue {
     super();
   }
 
+  protected override readonly prefix = "function";
+  protected override readonly includePrefixInOutput = true;
+
   getValue(): string {
-    return `[function]${this.filePath}:${this.line}`;
+    return `${this.filePath}:${this.line}`;
   }
 }
 
@@ -175,8 +224,11 @@ export class ParamRefArgValue extends ArgValue {
     super();
   }
 
+  protected override readonly prefix = "paramRef";
+  protected override readonly includePrefixInOutput = true;
+
   getValue(): string {
-    return `paramRef:${this.filePath}:${this.functionName}:${this.path}`;
+    return `${this.filePath}:${this.functionName}:${this.path}`;
   }
 }
 
@@ -184,47 +236,10 @@ export class ParamRefArgValue extends ArgValue {
  * undefined の値
  */
 export class UndefinedArgValue extends ArgValue {
+  protected override readonly prefix = "undefined";
+  protected override readonly includePrefixInOutput = true;
+
   getValue(): string {
-    return "[undefined]";
+    return "";
   }
-}
-
-// ============================================================================
-// 呼び出し情報の型定義
-// ============================================================================
-
-/**
- * 呼び出し箇所での引数情報
- */
-export interface CallSiteArg {
-  /** 引数のインデックス（0始まり）またはプロパティ名 */
-  name: string;
-  /** 引数の値 */
-  value: ArgValue;
-  /** 呼び出し元ファイルパス */
-  filePath: string;
-  /** 呼び出し元行番号 */
-  line: number;
-}
-
-/**
- * 関数/コンポーネントへの呼び出し情報
- * key: パラメータ名, value: 渡された値の配列
- */
-export type CallSiteInfo = Map<string, CallSiteArg[]>;
-
-// ============================================================================
-// ユーティリティ関数
-// ============================================================================
-
-/**
- * ArgValue を比較可能な文字列キーに変換
- * 同じ値かどうかの判定に使用
- */
-export function argValueToKey(value: ArgValue): string {
-  // リテラル値は literal: プレフィックスを付けて区別する
-  if (value instanceof LiteralArgValue) {
-    return `literal:${value.getValue()}`;
-  }
-  return value.getValue();
 }
