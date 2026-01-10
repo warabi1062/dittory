@@ -4,6 +4,15 @@ import {
   type JsxSelfClosingElement,
   Node,
 } from "ts-morph";
+
+/**
+ * パラメータ名と対応する引数のペア
+ */
+export type ParamWithArg = {
+  name: string;
+  arg: Node | undefined;
+};
+
 import {
   type ArgValue,
   argValueToKey,
@@ -87,7 +96,7 @@ export class CallSiteMap {
   extractFromCallExpression(
     callExpr: CallExpression,
     targetId: string,
-    paramNames: string[],
+    params: ParamWithArg[],
   ): void {
     const sourceFile = callExpr.getSourceFile();
     const filePath = sourceFile.getFilePath();
@@ -98,22 +107,19 @@ export class CallSiteMap {
       this.map.set(targetId, info);
     }
 
-    const args = callExpr.getArguments();
-    for (let i = 0; i < paramNames.length; i++) {
-      const paramName = paramNames[i];
-      const arg = args[i];
+    for (const { name, arg } of params) {
       const value: ArgValue = arg
         ? extractArgValue(arg)
         : new UndefinedArgValue();
 
-      const argList = info.get(paramName) ?? [];
+      const argList = info.get(name) ?? [];
       argList.push({
-        name: paramName,
+        name,
         value,
         filePath,
         line: callExpr.getStartLineNumber(),
       });
-      info.set(paramName, argList);
+      info.set(name, argList);
     }
   }
 

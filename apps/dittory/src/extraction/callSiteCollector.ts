@@ -1,7 +1,7 @@
 import { type Identifier, Node, type SourceFile, SyntaxKind } from "ts-morph";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type { FileFilter } from "@/types";
-import { CallSiteMap } from "./callSiteMap";
+import { CallSiteMap, type ParamWithArg } from "./callSiteMap";
 
 /**
  * 関数/コンポーネントの識別子を生成する
@@ -25,20 +25,17 @@ export function parseTargetId(targetId: string): {
 }
 
 /**
- * 識別子から定義元のファイルパスを取得する
- * インポートを通じて実際の定義を解決し、そのファイルパスを返す
+ * 識別子から定義元の宣言ノードを取得する
+ * インポートを通じて実際の定義を解決し、宣言ノードを返す
+ *
+ * オーバーロードや interface マージで複数宣言がある場合があるが、
+ * 関数/コンポーネントは通常1つなので最初の宣言を使用
  */
-function getDefinitionFilePath(identifier: Identifier): string | undefined {
+function getDeclaration(identifier: Identifier): Node | undefined {
   const symbol = identifier.getSymbol();
   // インポートを通じて実際の定義を解決する
   const resolvedSymbol = symbol?.getAliasedSymbol() ?? symbol;
-  // シンボルから宣言ノード（関数宣言など）を取得し、定義元ファイルパスを特定する
-  // オーバーロードや interface マージで複数宣言がある場合があるが、
-  // コンポーネントは通常1つなので最初の宣言を使用
-  const decl = resolvedSymbol?.getDeclarations()[0];
-  if (!decl) return undefined;
-
-  return decl.getSourceFile().getFilePath();
+  return resolvedSymbol?.getDeclarations()[0];
 }
 
 /**
@@ -66,10 +63,13 @@ export function collectCallSites(
       // ここでは単純な識別子のみを対象とし、名前空間付きはスキップする
       if (!Node.isIdentifier(tagName)) continue;
 
-      const filePath = getDefinitionFilePath(tagName);
-      if (!filePath) continue;
+      const decl = getDeclaration(tagName);
+      if (!decl) continue;
 
-      const targetId = createTargetId(filePath, tagName.getText());
+      const targetId = createTargetId(
+        decl.getSourceFile().getFilePath(),
+        tagName.getText(),
+      );
 
       callSiteMap.extractFromJsxElement(jsxElement, targetId);
     }
@@ -83,37 +83,41 @@ export function collectCallSites(
       const expr = callExpr.getExpression();
       if (!Node.isIdentifier(expr)) continue;
 
-      const symbol = expr.getSymbol();
-      const resolvedSymbol = symbol?.getAliasedSymbol() ?? symbol;
-      const decl = resolvedSymbol?.getDeclarations()[0];
+      const decl = getDeclaration(expr);
       if (!decl) continue;
 
-      // 関数宣言またはアロー関数を含む変数宣言のみ
-      // パラメータを取得
-      let paramNames: string[] = [];
-
-      if (Node.isFunctionDeclaration(decl)) {
-        paramNames = decl.getParameters().map((p) => p.getName());
-      } else if (Node.isVariableDeclaration(decl)) {
-        const init = decl.getInitializer();
-        if (init && Node.isArrowFunction(init)) {
-          paramNames = init.getParameters().map((p) => p.getName());
-        } else if (init && Node.isFunctionExpression(init)) {
-          paramNames = init.getParameters().map((p) => p.getName());
-        } else {
-          continue;
-        }
-      } else {
-        continue;
-      }
-
-      const declSourceFile = decl.getSourceFile();
       const targetId = createTargetId(
-        declSourceFile.getFilePath(),
+        decl.getSourceFile().getFilePath(),
         expr.getText(),
       );
 
-      callSiteMap.extractFromCallExpression(callExpr, targetId, paramNames);
+      // 宣言形式に応じてパラメータ名を取得し、呼び出し情報を登録
+      const args = callExpr.getArguments();
+
+      const buildParams = (
+        parameters: { getName(): string }[],
+      ): ParamWithArg[] =>
+        parameters.map((p, i) => ({ name: p.getName(), arg: args[i] }));
+
+      if (Node.isFunctionDeclaration(decl)) {
+        // function foo(a, b) {} 形式
+        const params = buildParams(decl.getParameters());
+        callSiteMap.extractFromCallExpression(callExpr, targetId, params);
+      } else if (Node.isVariableDeclaration(decl)) {
+        // 変数宣言の場合、初期化子が関数かどうかを確認
+        const init = decl.getInitializer();
+        if (init && Node.isArrowFunction(init)) {
+          // const foo = (a, b) => {} 形式
+          const params = buildParams(init.getParameters());
+          callSiteMap.extractFromCallExpression(callExpr, targetId, params);
+        } else if (init && Node.isFunctionExpression(init)) {
+          // const foo = function(a, b) {} 形式
+          const params = buildParams(init.getParameters());
+          callSiteMap.extractFromCallExpression(callExpr, targetId, params);
+        }
+        // 関数以外の変数宣言（定数など）はスキップ
+      }
+      // クラス宣言など、関数以外の宣言はスキップ
     }
   }
 
