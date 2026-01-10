@@ -38,15 +38,86 @@ export const LiteralKind = {
 export type LiteralKindType = (typeof LiteralKind)[keyof typeof LiteralKind];
 
 /**
+ * Literal型の詳細な値表現
+ * 各literalKindに応じた構造化されたパラメータを持つ
+ */
+export type LiteralArgValue =
+  | {
+      literalKind: typeof LiteralKind.Enum;
+      filePath: string;
+      enumName: string;
+      memberName: string;
+      enumValue: string | number | undefined;
+    }
+  | {
+      literalKind: typeof LiteralKind.This;
+      filePath: string;
+      line: number;
+      expression: string;
+    }
+  | {
+      literalKind: typeof LiteralKind.MethodCall;
+      filePath: string;
+      line: number;
+      expression: string;
+    }
+  | {
+      literalKind: typeof LiteralKind.Variable;
+      filePath: string;
+      identifier: string;
+    }
+  | {
+      literalKind: typeof LiteralKind.Boolean;
+      value: boolean;
+    }
+  | {
+      literalKind: typeof LiteralKind.String;
+      value: string;
+    }
+  | {
+      literalKind: typeof LiteralKind.Number;
+      value: number;
+    }
+  | {
+      literalKind: typeof LiteralKind.JsxShorthand;
+    }
+  | {
+      literalKind: typeof LiteralKind.Other;
+      expression: string;
+    };
+
+/**
+ * LiteralArgValueから比較用の文字列値を生成する
+ */
+export function getLiteralValue(literal: LiteralArgValue): string {
+  switch (literal.literalKind) {
+    case LiteralKind.Enum:
+      return `${literal.filePath}:${literal.enumName}.${literal.memberName}=${JSON.stringify(literal.enumValue)}`;
+    case LiteralKind.This:
+      return `[this]${literal.filePath}:${literal.line}:${literal.expression}`;
+    case LiteralKind.MethodCall:
+      return `[methodCall]${literal.filePath}:${literal.line}:${literal.expression}`;
+    case LiteralKind.Variable:
+      return `${literal.filePath}:${literal.identifier}`;
+    case LiteralKind.Boolean:
+      return String(literal.value);
+    case LiteralKind.String:
+      return JSON.stringify(literal.value);
+    case LiteralKind.Number:
+      return JSON.stringify(literal.value);
+    case LiteralKind.JsxShorthand:
+      return "true";
+    case LiteralKind.Other:
+      return literal.expression;
+  }
+}
+
+/**
  * 引数の値を表す union 型
  * 文字列エンコーディングの代わりに型安全な表現を使用
  */
 export type ArgValue =
-  | {
-      type: typeof ArgValueType.Literal;
-      value: string;
-      literalKind: LiteralKindType;
-    }
+  | ({ type: typeof ArgValueType.Literal } & LiteralArgValue)
   | { type: typeof ArgValueType.Function; filePath: string; line: number }
   | {
       type: typeof ArgValueType.ParamRef;
@@ -150,16 +221,13 @@ export function extractArgValue(expression: Node): ArgValue {
     if (decl && Node.isEnumMember(decl)) {
       const enumDecl = decl.getParent();
       if (Node.isEnumDeclaration(enumDecl)) {
-        const filePath = enumDecl.getSourceFile().getFilePath();
-        const enumName = enumDecl.getName();
-        const memberName = decl.getName();
-        const value = decl.getValue();
         return {
           type: ArgValueType.Literal,
-          value: `${filePath}:${enumName}.${memberName}=${JSON.stringify(
-            value,
-          )}`,
           literalKind: LiteralKind.Enum,
+          filePath: enumDecl.getSourceFile().getFilePath(),
+          enumName: enumDecl.getName(),
+          memberName: decl.getName(),
+          enumValue: decl.getValue(),
         };
       }
     }
@@ -173,12 +241,12 @@ export function extractArgValue(expression: Node): ArgValue {
     // クラスメンバーは実行時にインスタンスごとに異なる値を持つ可能性があるため、
     // 使用箇所ごとにユニークな値として扱う
     if (isThisPropertyAccess(expression)) {
-      const sourceFile = expression.getSourceFile();
-      const line = expression.getStartLineNumber();
       return {
         type: ArgValueType.Literal,
-        value: `[this]${sourceFile.getFilePath()}:${line}:${expression.getText()}`,
         literalKind: LiteralKind.This,
+        filePath: expression.getSourceFile().getFilePath(),
+        line: expression.getStartLineNumber(),
+        expression: expression.getText(),
       };
     }
   }
@@ -208,10 +276,9 @@ export function extractArgValue(expression: Node): ArgValue {
         }
         return {
           type: ArgValueType.Literal,
-          value: `${decl
-            .getSourceFile()
-            .getFilePath()}:${expression.getText()}`,
           literalKind: LiteralKind.Variable,
+          filePath: decl.getSourceFile().getFilePath(),
+          identifier: expression.getText(),
         };
       }
 
@@ -219,34 +286,36 @@ export function extractArgValue(expression: Node): ArgValue {
       // ファイルパス + 変数名で識別する
       return {
         type: ArgValueType.Literal,
-        value: `${decl.getSourceFile().getFilePath()}:${expression.getText()}`,
         literalKind: LiteralKind.Variable,
+        filePath: decl.getSourceFile().getFilePath(),
+        identifier: expression.getText(),
       };
     }
   }
 
   // リテラル型
-  if (type.isStringLiteral()) {
+  const literalValue = type.getLiteralValue();
+  if (type.isStringLiteral() && typeof literalValue === "string") {
     return {
       type: ArgValueType.Literal,
-      value: JSON.stringify(type.getLiteralValue()),
       literalKind: LiteralKind.String,
+      value: literalValue,
     };
   }
 
-  if (type.isNumberLiteral()) {
+  if (type.isNumberLiteral() && typeof literalValue === "number") {
     return {
       type: ArgValueType.Literal,
-      value: JSON.stringify(type.getLiteralValue()),
       literalKind: LiteralKind.Number,
+      value: literalValue,
     };
   }
 
   if (type.isBooleanLiteral()) {
     return {
       type: ArgValueType.Literal,
-      value: type.getText(),
       literalKind: LiteralKind.Boolean,
+      value: type.getText() === "true",
     };
   }
 
@@ -257,20 +326,20 @@ export function extractArgValue(expression: Node): ArgValue {
   if (Node.isCallExpression(expression)) {
     const calleeExpr = expression.getExpression();
     if (Node.isPropertyAccessExpression(calleeExpr)) {
-      const sourceFile = expression.getSourceFile();
-      const line = expression.getStartLineNumber();
       return {
         type: ArgValueType.Literal,
-        value: `[methodCall]${sourceFile.getFilePath()}:${line}:${expression.getText()}`,
         literalKind: LiteralKind.MethodCall,
+        filePath: expression.getSourceFile().getFilePath(),
+        line: expression.getStartLineNumber(),
+        expression: expression.getText(),
       };
     }
   }
 
   return {
     type: ArgValueType.Literal,
-    value: expression.getText(),
     literalKind: LiteralKind.Other,
+    expression: expression.getText(),
   };
 }
 
@@ -302,7 +371,6 @@ function extractFromJsxElement(
       // boolean shorthand
       value = {
         type: ArgValueType.Literal,
-        value: "true",
         literalKind: LiteralKind.JsxShorthand,
       };
     } else if (Node.isJsxExpression(initializer)) {
@@ -310,16 +378,17 @@ function extractFromJsxElement(
       value = expr ? extractArgValue(expr) : { type: ArgValueType.Undefined };
     } else if (Node.isStringLiteral(initializer)) {
       // JSX属性の文字列値 (例: value="hello")
+      // getLiteralValue()で引用符なしの値を取得
       value = {
         type: ArgValueType.Literal,
-        value: initializer.getText(),
         literalKind: LiteralKind.String,
+        value: initializer.getLiteralValue(),
       };
     } else {
       value = {
         type: ArgValueType.Literal,
-        value: initializer.getText(),
         literalKind: LiteralKind.Other,
+        expression: initializer.getText(),
       };
     }
 

@@ -3,6 +3,7 @@ import {
   type ArgValue,
   ArgValueType,
   type CallSiteMap,
+  getLiteralValue,
   LiteralKind,
 } from "./callSiteCollector";
 
@@ -98,8 +99,8 @@ export function createParamRefValue(expression: Node): ArgValue {
   if (!functionScope) {
     return {
       type: ArgValueType.Literal,
-      value: expression.getText(),
       literalKind: LiteralKind.Other,
+      expression: expression.getText(),
     };
   }
 
@@ -116,7 +117,7 @@ export function createParamRefValue(expression: Node): ArgValue {
 export function argValueToKey(value: ArgValue): string {
   switch (value.type) {
     case ArgValueType.Literal:
-      return `literal:${value.value}`;
+      return `literal:${getLiteralValue(value)}`;
     case ArgValueType.Function:
       return `function:${value.filePath}:${value.line}`;
     case ArgValueType.ParamRef:

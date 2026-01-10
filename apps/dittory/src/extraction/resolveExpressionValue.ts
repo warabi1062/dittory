@@ -4,6 +4,7 @@ import {
   ArgValueType,
   type CallSiteMap,
   extractArgValue,
+  getLiteralValue,
 } from "./callSiteCollector";
 import { argValueToKey, resolveParameterValue } from "./parameterUtils";
 
@@ -78,7 +79,7 @@ function argValueToString(
 ): string {
   switch (value.type) {
     case ArgValueType.Literal:
-      return value.value;
+      return getLiteralValue(value);
 
     case ArgValueType.Function:
       // 関数型は使用箇所ごとにユニークな値として扱う

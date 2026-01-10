@@ -366,8 +366,8 @@ describe("createParamRefValue", () => {
 
     // Assert
     expect(result.type).toBe("literal");
-    if (result.type === "literal") {
-      expect(result.value).toBe("someValue");
+    if (result.type === "literal" && result.literalKind === "other") {
+      expect(result.expression).toBe("someValue");
     }
   });
 });
@@ -376,8 +376,8 @@ describe("argValueToKey", () => {
   it("literal型の値を文字列キーに変換すること", () => {
     const value: ArgValue = {
       type: ArgValueType.Literal,
-      value: '"hello"',
       literalKind: LiteralKind.String,
+      value: "hello",
     };
     expect(argValueToKey(value)).toBe('literal:"hello"');
   });
@@ -414,8 +414,8 @@ describe("resolveParameterValue", () => {
     const callSiteMap: CallSiteMap = new Map();
     const value: ArgValue = {
       type: ArgValueType.Literal,
-      value: '"hello"',
       literalKind: LiteralKind.String,
+      value: "hello",
     };
     expect(resolveParameterValue(value, callSiteMap)).toEqual(value);
   });
@@ -449,8 +449,8 @@ describe("resolveParameterValue", () => {
                 name: "number",
                 value: {
                   type: ArgValueType.Literal,
-                  value: "42",
                   literalKind: LiteralKind.Number,
+                  value: 42,
                 },
                 filePath: "/src/App.tsx",
                 line: 5,
@@ -459,8 +459,8 @@ describe("resolveParameterValue", () => {
                 name: "number",
                 value: {
                   type: ArgValueType.Literal,
-                  value: "42",
                   literalKind: LiteralKind.Number,
+                  value: 42,
                 },
                 filePath: "/src/Page.tsx",
                 line: 10,
@@ -484,8 +484,8 @@ describe("resolveParameterValue", () => {
     // Assert
     expect(result).toEqual({
       type: ArgValueType.Literal,
-      value: "42",
       literalKind: LiteralKind.Number,
+      value: 42,
     });
   });
 
@@ -502,8 +502,8 @@ describe("resolveParameterValue", () => {
                 name: "number",
                 value: {
                   type: ArgValueType.Literal,
-                  value: "42",
                   literalKind: LiteralKind.Number,
+                  value: 42,
                 },
                 filePath: "/src/App.tsx",
                 line: 5,
@@ -512,8 +512,8 @@ describe("resolveParameterValue", () => {
                 name: "number",
                 value: {
                   type: ArgValueType.Literal,
-                  value: "100",
                   literalKind: LiteralKind.Number,
+                  value: 100,
                 },
                 filePath: "/src/Page.tsx",
                 line: 10,
@@ -599,8 +599,8 @@ describe("resolveParameterValue", () => {
               name: "outerValue",
               value: {
                 type: ArgValueType.Literal,
-                value: '"final"',
                 literalKind: LiteralKind.String,
+                value: "final",
               } satisfies ArgValue,
               filePath: "/src/App.tsx",
               line: 15,
@@ -623,8 +623,8 @@ describe("resolveParameterValue", () => {
     // Assert
     expect(result).toEqual({
       type: ArgValueType.Literal,
-      value: '"final"',
       literalKind: LiteralKind.String,
+      value: "final",
     });
   });
 
@@ -720,8 +720,8 @@ describe("resolveParameterValue", () => {
                 name: "arg",
                 value: {
                   type: ArgValueType.Literal,
-                  value: '"constant"',
                   literalKind: LiteralKind.String,
+                  value: "constant",
                 },
                 filePath: "/src/App.ts",
                 line: 5,
@@ -745,8 +745,8 @@ describe("resolveParameterValue", () => {
     // Assert
     expect(result).toEqual({
       type: ArgValueType.Literal,
-      value: '"constant"',
       literalKind: LiteralKind.String,
+      value: "constant",
     });
   });
 });

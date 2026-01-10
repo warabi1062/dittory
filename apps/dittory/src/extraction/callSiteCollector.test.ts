@@ -49,8 +49,8 @@ describe("collectCallSites", () => {
     const value = valueUsages[0].value;
     expect(value).toEqual({
       type: ArgValueType.Literal,
-      value: '"hello"',
       literalKind: LiteralKind.String,
+      value: "hello",
     });
   });
 
@@ -158,8 +158,8 @@ describe("collectCallSites", () => {
     const value = numberUsages[0].value;
     expect(value).toEqual({
       type: ArgValueType.Literal,
-      value: '"42"',
       literalKind: LiteralKind.String,
+      value: "42",
     });
   });
 });
