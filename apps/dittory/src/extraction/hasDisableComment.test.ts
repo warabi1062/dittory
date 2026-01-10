@@ -16,8 +16,9 @@ const a = 1;
     const statement = sourceFile.getFirstDescendantByKind(
       SyntaxKind.VariableStatement,
     );
-    expect(statement).toBeDefined();
-    if (!statement) return;
+    if (!statement) {
+      expect.unreachable("statement should be defined");
+    }
 
     // Act
     const result = hasDisableComment(statement);
@@ -39,8 +40,9 @@ const a = 1;
     const statement = sourceFile.getFirstDescendantByKind(
       SyntaxKind.VariableStatement,
     );
-    expect(statement).toBeDefined();
-    if (!statement) return;
+    if (!statement) {
+      expect.unreachable("statement should be defined");
+    }
 
     // Act
     const result = hasDisableComment(statement);
@@ -61,8 +63,9 @@ const a = 1;
     const statement = sourceFile.getFirstDescendantByKind(
       SyntaxKind.VariableStatement,
     );
-    expect(statement).toBeDefined();
-    if (!statement) return;
+    if (!statement) {
+      expect.unreachable("statement should be defined");
+    }
 
     // Act
     const result = hasDisableComment(statement);
@@ -84,8 +87,9 @@ const a = 1;
     const statement = sourceFile.getFirstDescendantByKind(
       SyntaxKind.VariableStatement,
     );
-    expect(statement).toBeDefined();
-    if (!statement) return;
+    if (!statement) {
+      expect.unreachable("statement should be defined");
+    }
 
     // Act
     const result = hasDisableComment(statement);
@@ -108,8 +112,9 @@ const a = doSomething();
     const callExpression = sourceFile.getFirstDescendantByKind(
       SyntaxKind.CallExpression,
     );
-    expect(callExpression).toBeDefined();
-    if (!callExpression) return;
+    if (!callExpression) {
+      expect.unreachable("callExpression should be defined");
+    }
 
     // Act
     const result = hasDisableComment(callExpression);
@@ -132,8 +137,9 @@ const a = 1;
     const statement = sourceFile.getFirstDescendantByKind(
       SyntaxKind.VariableStatement,
     );
-    expect(statement).toBeDefined();
-    if (!statement) return;
+    if (!statement) {
+      expect.unreachable("statement should be defined");
+    }
 
     // Act
     const result = hasDisableComment(statement);
@@ -156,8 +162,9 @@ const a = 1;
     const statement = sourceFile.getFirstDescendantByKind(
       SyntaxKind.VariableStatement,
     );
-    expect(statement).toBeDefined();
-    if (!statement) return;
+    if (!statement) {
+      expect.unreachable("statement should be defined");
+    }
 
     // Act
     const result = hasDisableComment(statement);
@@ -180,8 +187,9 @@ const a = 1;
     const statement = sourceFile.getFirstDescendantByKind(
       SyntaxKind.VariableStatement,
     );
-    expect(statement).toBeDefined();
-    if (!statement) return;
+    if (!statement) {
+      expect.unreachable("statement should be defined");
+    }
 
     // Act
     const result = hasDisableComment(statement);
@@ -200,8 +208,9 @@ const a = 1;
     const statement = sourceFile.getFirstDescendantByKind(
       SyntaxKind.VariableStatement,
     );
-    expect(statement).toBeDefined();
-    if (!statement) return;
+    if (!statement) {
+      expect.unreachable("statement should be defined");
+    }
 
     // Act
     const result = hasDisableComment(statement);
@@ -220,8 +229,9 @@ const a = 1;
     const callExpression = sourceFile.getFirstDescendantByKind(
       SyntaxKind.CallExpression,
     );
-    expect(callExpression).toBeDefined();
-    if (!callExpression) return;
+    if (!callExpression) {
+      expect.unreachable("callExpression should be defined");
+    }
 
     // Act
     const result = hasDisableComment(callExpression);
@@ -240,8 +250,9 @@ const a = 1;
     const statement = sourceFile.getFirstDescendantByKind(
       SyntaxKind.VariableStatement,
     );
-    expect(statement).toBeDefined();
-    if (!statement) return;
+    if (!statement) {
+      expect.unreachable("statement should be defined");
+    }
 
     // Act
     const result = hasDisableComment(statement);

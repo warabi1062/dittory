@@ -32,11 +32,16 @@ describe("collectCallSites", () => {
     const childTargetId = createTargetId("/src/Child.tsx", "Child");
     const childInfo = callSiteMap.get(childTargetId);
 
-    expect(childInfo).toBeDefined();
-    expect(childInfo?.get("value")).toBeDefined();
-    expect(childInfo?.get("value")?.length).toBe(1);
+    if (!childInfo) {
+      expect.unreachable("childInfo should be defined");
+    }
+    const valueUsages = childInfo.get("value");
+    if (!valueUsages) {
+      expect.unreachable("valueUsages should be defined");
+    }
+    expect(valueUsages.length).toBe(1);
 
-    const value = childInfo?.get("value")?.[0].value;
+    const value = valueUsages[0].value;
     expect(value).toEqual({ type: "literal", value: '"hello"' });
   });
 
@@ -72,11 +77,16 @@ describe("collectCallSites", () => {
     const childTargetId = createTargetId("/src/Child.tsx", "ChildComponent");
     const childInfo = callSiteMap.get(childTargetId);
 
-    expect(childInfo).toBeDefined();
-    expect(childInfo?.get("number")).toBeDefined();
-    expect(childInfo?.get("number")?.length).toBe(1);
+    if (!childInfo) {
+      expect.unreachable("childInfo should be defined");
+    }
+    const numberUsages = childInfo.get("number");
+    if (!numberUsages) {
+      expect.unreachable("numberUsages should be defined");
+    }
+    expect(numberUsages.length).toBe(1);
 
-    const value = childInfo?.get("number")?.[0].value;
+    const value = numberUsages[0].value;
     expect(value).toEqual({
       type: "paramRef",
       filePath: "/src/Parent.tsx",
@@ -127,11 +137,16 @@ describe("collectCallSites", () => {
     const parentTargetId = createTargetId("/src/Parent.tsx", "ParentComponent");
     const parentInfo = callSiteMap.get(parentTargetId);
 
-    expect(parentInfo).toBeDefined();
-    expect(parentInfo?.get("number")).toBeDefined();
-    expect(parentInfo?.get("number")?.length).toBe(1);
+    if (!parentInfo) {
+      expect.unreachable("parentInfo should be defined");
+    }
+    const numberUsages = parentInfo.get("number");
+    if (!numberUsages) {
+      expect.unreachable("numberUsages should be defined");
+    }
+    expect(numberUsages.length).toBe(1);
 
-    const value = parentInfo?.get("number")?.[0].value;
+    const value = numberUsages[0].value;
     expect(value).toEqual({ type: "literal", value: '"42"' });
   });
 });

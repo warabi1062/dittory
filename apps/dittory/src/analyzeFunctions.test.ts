@@ -34,17 +34,23 @@ describe("analyzeFunctionsCore", () => {
 
     // Assert
     const prefixArg = result.constants.find((a) => a.paramName === "prefix");
-    expect(prefixArg).toBeDefined();
-    expect(prefixArg?.value).toBe('"[INFO] "');
-    expect(prefixArg?.valueType).toBe("string");
-    expect(prefixArg?.usages.length).toBe(3);
+    if (!prefixArg) {
+      expect.unreachable("prefixArg should be defined");
+    }
+    expect(prefixArg.value).toBe('"[INFO] "');
+    expect(prefixArg.valueType).toBe("string");
+    expect(prefixArg.usages.length).toBe(3);
 
     // exported.usages の valueType もチェック
     const formatValue = result.exported.find((e) => e.name === "formatValue");
-    expect(formatValue).toBeDefined();
-    const prefixUsages = formatValue?.usages.prefix;
-    expect(prefixUsages).toBeDefined();
-    expect(prefixUsages?.every((u) => u.valueType === "string")).toBe(true);
+    if (!formatValue) {
+      expect.unreachable("formatValue should be defined");
+    }
+    const prefixUsages = formatValue.usages.prefix;
+    if (!prefixUsages) {
+      expect.unreachable("prefixUsages should be defined");
+    }
+    expect(prefixUsages.every((u) => u.valueType === "string")).toBe(true);
   });
 
   it("異なる値が渡されている引数は検出しないこと", () => {
@@ -90,8 +96,10 @@ describe("analyzeFunctionsCore", () => {
 
     // prefixは常に同じ値なので検出される
     const prefixArg = result.constants.find((a) => a.paramName === "prefix");
-    expect(prefixArg).toBeDefined();
-    expect(prefixArg?.value).toBe('"[INFO] "');
+    if (!prefixArg) {
+      expect.unreachable("prefixArg should be defined");
+    }
+    expect(prefixArg.value).toBe('"[INFO] "');
   });
 
   it("numberの引数を検出すること", () => {
@@ -112,17 +120,23 @@ describe("analyzeFunctionsCore", () => {
 
     // Assert - bは常に100
     const bArg = result.constants.find((a) => a.paramName === "b");
-    expect(bArg).toBeDefined();
-    expect(bArg?.value).toBe("100");
-    expect(bArg?.valueType).toBe("number");
-    expect(bArg?.usages.length).toBe(3);
+    if (!bArg) {
+      expect.unreachable("bArg should be defined");
+    }
+    expect(bArg.value).toBe("100");
+    expect(bArg.valueType).toBe("number");
+    expect(bArg.usages.length).toBe(3);
 
     // exported.usages の valueType もチェック
     const calculateSum = result.exported.find((e) => e.name === "calculateSum");
-    expect(calculateSum).toBeDefined();
-    const bUsages = calculateSum?.usages.b;
-    expect(bUsages).toBeDefined();
-    expect(bUsages?.every((u) => u.valueType === "number")).toBe(true);
+    if (!calculateSum) {
+      expect.unreachable("calculateSum should be defined");
+    }
+    const bUsages = calculateSum.usages.b;
+    if (!bUsages) {
+      expect.unreachable("bUsages should be defined");
+    }
+    expect(bUsages.every((u) => u.valueType === "number")).toBe(true);
   });
 
   it("Reactコンポーネントは除外すること", () => {
@@ -160,16 +174,20 @@ describe("analyzeFunctionsCore", () => {
 
     // Assert - Logger.logが検出される（名前は「ClassName.methodName」形式）
     const loggerLog = result.exported.find((f) => f.name === "Logger.log");
-    expect(loggerLog).toBeDefined();
+    if (!loggerLog) {
+      expect.unreachable("loggerLog should be defined");
+    }
 
     // levelは常に"DEBUG"
     const levelArg = result.constants.find(
       (a) => a.targetName === "Logger.log" && a.paramName === "level",
     );
-    expect(levelArg).toBeDefined();
-    expect(levelArg?.value).toBe('"DEBUG"');
-    expect(levelArg?.valueType).toBe("string");
-    expect(levelArg?.usages.length).toBe(3);
+    if (!levelArg) {
+      expect.unreachable("levelArg should be defined");
+    }
+    expect(levelArg.value).toBe('"DEBUG"');
+    expect(levelArg.valueType).toBe("string");
+    expect(levelArg.usages.length).toBe(3);
   });
 
   it("関数型の引数は定数として検出しないこと", () => {
@@ -219,9 +237,11 @@ describe("analyzeFunctionsCore", () => {
     const methodArg = result.constants.find(
       (a) => a.paramName === "options.method",
     );
-    expect(methodArg).toBeDefined();
-    expect(methodArg?.value).toBe('"GET"');
-    expect(methodArg?.usages.length).toBe(4);
+    if (!methodArg) {
+      expect.unreachable("methodArg should be defined");
+    }
+    expect(methodArg.value).toBe('"GET"');
+    expect(methodArg.usages.length).toBe(4);
 
     // config.timeoutは一部の呼び出しでしか存在しないため定数として検出されない
     const timeoutArg = result.constants.find(
@@ -237,10 +257,10 @@ describe("analyzeFunctionsCore", () => {
 
     // exported.usages にネストしたキーが "param.nested.key" 形式で存在することを確認
     const sendRequest = result.exported.find((e) => e.name === "sendRequest");
-    expect(sendRequest).toBeDefined();
-    expect(sendRequest?.usages["options.method"]).toBeDefined();
-    expect(sendRequest?.usages["options.method"][0].name).toBe(
-      "options.method",
-    );
+    if (!sendRequest) {
+      expect.unreachable("sendRequest should be defined");
+    }
+    expect(sendRequest.usages["options.method"]).toBeDefined();
+    expect(sendRequest.usages["options.method"][0].name).toBe("options.method");
   });
 });

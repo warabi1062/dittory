@@ -19,8 +19,9 @@ describe("resolveExpressionValue", () => {
     const stringLiteral = sourceFile.getFirstDescendantByKind(
       SyntaxKind.StringLiteral,
     );
-    expect(stringLiteral).toBeDefined();
-    if (!stringLiteral) return;
+    if (!stringLiteral) {
+      expect.unreachable("stringLiteral should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(stringLiteral, emptyContext);
@@ -39,8 +40,9 @@ describe("resolveExpressionValue", () => {
     const numericLiteral = sourceFile.getFirstDescendantByKind(
       SyntaxKind.NumericLiteral,
     );
-    expect(numericLiteral).toBeDefined();
-    if (!numericLiteral) return;
+    if (!numericLiteral) {
+      expect.unreachable("numericLiteral should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(numericLiteral, emptyContext);
@@ -60,8 +62,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const expression = jsxExpression?.getExpression();
-    expect(expression).toBeDefined();
-    if (!expression) return;
+    if (!expression) {
+      expect.unreachable("expression should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(expression, emptyContext);
@@ -84,8 +87,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const identifier = jsxExpression?.getExpression();
-    expect(identifier).toBeDefined();
-    if (!identifier) return;
+    if (!identifier) {
+      expect.unreachable("identifier should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(identifier, emptyContext);
@@ -110,8 +114,9 @@ describe("resolveExpressionValue", () => {
     const propertyAccess = sourceFile
       .getDescendantsOfKind(SyntaxKind.PropertyAccessExpression)
       .find((node) => node.getText() === "Status.Active");
-    expect(propertyAccess).toBeDefined();
-    if (!propertyAccess) return;
+    if (!propertyAccess) {
+      expect.unreachable("propertyAccess should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(propertyAccess, emptyContext);
@@ -135,8 +140,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const identifier = jsxExpression?.getExpression();
-    expect(identifier).toBeDefined();
-    if (!identifier) return;
+    if (!identifier) {
+      expect.unreachable("identifier should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(identifier, emptyContext);
@@ -158,8 +164,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const identifier = jsxExpression?.getExpression();
-    expect(identifier).toBeDefined();
-    if (!identifier) return;
+    if (!identifier) {
+      expect.unreachable("identifier should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(identifier, emptyContext);
@@ -180,8 +187,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const expression = jsxExpression?.getExpression();
-    expect(expression).toBeDefined();
-    if (!expression) return;
+    if (!expression) {
+      expect.unreachable("expression should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(expression, emptyContext);
@@ -201,8 +209,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const binaryExpression = jsxExpression?.getExpression();
-    expect(binaryExpression).toBeDefined();
-    if (!binaryExpression) return;
+    if (!binaryExpression) {
+      expect.unreachable("binaryExpression should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(binaryExpression, emptyContext);
@@ -228,8 +237,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const identifier = jsxExpression?.getExpression();
-    expect(identifier).toBeDefined();
-    if (!identifier) return;
+    if (!identifier) {
+      expect.unreachable("identifier should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(identifier, emptyContext);
@@ -268,9 +278,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const identifier2 = jsxExpression2?.getExpression();
-    expect(identifier1).toBeDefined();
-    expect(identifier2).toBeDefined();
-    if (!identifier1 || !identifier2) return;
+    if (!identifier1 || !identifier2) {
+      expect.unreachable("identifier1 and identifier2 should be defined");
+    }
 
     // Act
     const result1 = resolveExpressionValue(identifier1, emptyContext);
@@ -299,8 +309,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const identifier = jsxExpression?.getExpression();
-    expect(identifier).toBeDefined();
-    if (!identifier) return;
+    if (!identifier) {
+      expect.unreachable("identifier should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(identifier, emptyContext);
@@ -334,8 +345,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const identifier = jsxExpression?.getExpression();
-    expect(identifier).toBeDefined();
-    if (!identifier) return;
+    if (!identifier) {
+      expect.unreachable("identifier should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(identifier, emptyContext);
@@ -372,9 +384,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const expression2 = jsxExpression2?.getExpression();
-    expect(expression1).toBeDefined();
-    expect(expression2).toBeDefined();
-    if (!expression1 || !expression2) return;
+    if (!expression1 || !expression2) {
+      expect.unreachable("expression1 and expression2 should be defined");
+    }
 
     // Act
     const result1 = resolveExpressionValue(expression1, emptyContext);
@@ -401,8 +413,9 @@ describe("resolveExpressionValue", () => {
       SyntaxKind.JsxExpression,
     );
     const expression = jsxExpression?.getExpression();
-    expect(expression).toBeDefined();
-    if (!expression) return;
+    if (!expression) {
+      expect.unreachable("expression should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(expression, emptyContext);
@@ -439,9 +452,9 @@ describe("resolveExpressionValue", () => {
     const thisAccess2 = sourceFile2
       .getDescendantsOfKind(SyntaxKind.PropertyAccessExpression)
       .find((node) => node.getText() === "this.message");
-    expect(thisAccess1).toBeDefined();
-    expect(thisAccess2).toBeDefined();
-    if (!thisAccess1 || !thisAccess2) return;
+    if (!thisAccess1 || !thisAccess2) {
+      expect.unreachable("thisAccess1 and thisAccess2 should be defined");
+    }
 
     // Act
     const result1 = resolveExpressionValue(thisAccess1, emptyContext);
@@ -469,8 +482,9 @@ describe("resolveExpressionValue", () => {
     const thisAccess = sourceFile
       .getDescendantsOfKind(SyntaxKind.PropertyAccessExpression)
       .find((node) => node.getText() === "this.nested.value");
-    expect(thisAccess).toBeDefined();
-    if (!thisAccess) return;
+    if (!thisAccess) {
+      expect.unreachable("thisAccess should be defined");
+    }
 
     // Act
     const result = resolveExpressionValue(thisAccess, emptyContext);

@@ -56,6 +56,7 @@ CLIオプションや設定を変更した場合は、対応するドキュメ�
 ### Testing
 - 3A方式（Arrange, Act, Assert）でテストを記述
 - テスト名（describe、it）は日本語で記述
+- 存在チェックには `toBeDefined` ではなく `if (!x) { expect.unreachable() }` を使用する
 
 ### コメント
 - コメントは過不足なく書く

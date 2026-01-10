@@ -19,8 +19,9 @@ describe("flattenObjectExpression", () => {
     const objectLiteral = sourceFile.getFirstDescendantByKind(
       SyntaxKind.ObjectLiteralExpression,
     );
-    expect(objectLiteral).toBeDefined();
-    if (!objectLiteral) return;
+    if (!objectLiteral) {
+      expect.unreachable("objectLiteral should be defined");
+    }
 
     // Act
     const result = flattenObjectExpression(
@@ -49,8 +50,9 @@ describe("flattenObjectExpression", () => {
     const objectLiteral = sourceFile.getFirstDescendantByKind(
       SyntaxKind.ObjectLiteralExpression,
     );
-    expect(objectLiteral).toBeDefined();
-    if (!objectLiteral) return;
+    if (!objectLiteral) {
+      expect.unreachable("objectLiteral should be defined");
+    }
 
     // Act
     const result = flattenObjectExpression(
@@ -83,8 +85,9 @@ describe("flattenObjectExpression", () => {
     const objectLiteral = sourceFile.getFirstDescendantByKind(
       SyntaxKind.ObjectLiteralExpression,
     );
-    expect(objectLiteral).toBeDefined();
-    if (!objectLiteral) return;
+    if (!objectLiteral) {
+      expect.unreachable("objectLiteral should be defined");
+    }
 
     // Act
     const result = flattenObjectExpression(
@@ -111,8 +114,9 @@ describe("flattenObjectExpression", () => {
     const stringLiteral = sourceFile.getFirstDescendantByKind(
       SyntaxKind.StringLiteral,
     );
-    expect(stringLiteral).toBeDefined();
-    if (!stringLiteral) return;
+    if (!stringLiteral) {
+      expect.unreachable("stringLiteral should be defined");
+    }
 
     // Act
     const result = flattenObjectExpression(stringLiteral, "prop", emptyContext);
@@ -132,8 +136,9 @@ describe("flattenObjectExpression", () => {
     const objectLiteral = sourceFile.getFirstDescendantByKind(
       SyntaxKind.ObjectLiteralExpression,
     );
-    expect(objectLiteral).toBeDefined();
-    if (!objectLiteral) return;
+    if (!objectLiteral) {
+      expect.unreachable("objectLiteral should be defined");
+    }
 
     // Act
     const result = flattenObjectExpression(objectLiteral, "", emptyContext);
@@ -169,14 +174,16 @@ describe("flattenObjectExpression", () => {
       const callExpression = sourceFile.getFirstDescendantByKind(
         SyntaxKind.CallExpression,
       );
-      expect(callExpression).toBeDefined();
-      if (!callExpression) return;
+      if (!callExpression) {
+        expect.unreachable("callExpression should be defined");
+      }
 
       const objectLiteral = callExpression.getFirstDescendantByKind(
         SyntaxKind.ObjectLiteralExpression,
       );
-      expect(objectLiteral).toBeDefined();
-      if (!objectLiteral) return;
+      if (!objectLiteral) {
+        expect.unreachable("objectLiteral should be defined");
+      }
 
       // Act
       const result = flattenObjectExpression(
@@ -217,14 +224,16 @@ describe("flattenObjectExpression", () => {
       const callExpression = sourceFile.getFirstDescendantByKind(
         SyntaxKind.CallExpression,
       );
-      expect(callExpression).toBeDefined();
-      if (!callExpression) return;
+      if (!callExpression) {
+        expect.unreachable("callExpression should be defined");
+      }
 
       const objectLiteral = callExpression.getFirstDescendantByKind(
         SyntaxKind.ObjectLiteralExpression,
       );
-      expect(objectLiteral).toBeDefined();
-      if (!objectLiteral) return;
+      if (!objectLiteral) {
+        expect.unreachable("objectLiteral should be defined");
+      }
 
       // Act
       const result = flattenObjectExpression(
@@ -265,14 +274,16 @@ describe("flattenObjectExpression", () => {
       const callExpression = sourceFile.getFirstDescendantByKind(
         SyntaxKind.CallExpression,
       );
-      expect(callExpression).toBeDefined();
-      if (!callExpression) return;
+      if (!callExpression) {
+        expect.unreachable("callExpression should be defined");
+      }
 
       const objectLiteral = callExpression.getFirstDescendantByKind(
         SyntaxKind.ObjectLiteralExpression,
       );
-      expect(objectLiteral).toBeDefined();
-      if (!objectLiteral) return;
+      if (!objectLiteral) {
+        expect.unreachable("objectLiteral should be defined");
+      }
 
       // Act
       const result = flattenObjectExpression(
@@ -314,14 +325,16 @@ describe("flattenObjectExpression", () => {
       const callExpression = sourceFile.getFirstDescendantByKind(
         SyntaxKind.CallExpression,
       );
-      expect(callExpression).toBeDefined();
-      if (!callExpression) return;
+      if (!callExpression) {
+        expect.unreachable("callExpression should be defined");
+      }
 
       const objectLiteral = callExpression.getFirstDescendantByKind(
         SyntaxKind.ObjectLiteralExpression,
       );
-      expect(objectLiteral).toBeDefined();
-      if (!objectLiteral) return;
+      if (!objectLiteral) {
+        expect.unreachable("objectLiteral should be defined");
+      }
 
       // Act
       const result = flattenObjectExpression(
@@ -360,14 +373,16 @@ describe("flattenObjectExpression", () => {
       const callExpression = sourceFile.getFirstDescendantByKind(
         SyntaxKind.CallExpression,
       );
-      expect(callExpression).toBeDefined();
-      if (!callExpression) return;
+      if (!callExpression) {
+        expect.unreachable("callExpression should be defined");
+      }
 
       const objectLiteral = callExpression.getFirstDescendantByKind(
         SyntaxKind.ObjectLiteralExpression,
       );
-      expect(objectLiteral).toBeDefined();
-      if (!objectLiteral) return;
+      if (!objectLiteral) {
+        expect.unreachable("objectLiteral should be defined");
+      }
 
       // Act
       const result = flattenObjectExpression(

@@ -95,8 +95,10 @@ describe("ComponentAnalyzer", () => {
     const colorProp = result.exported[0].definitions.find(
       (p) => p.name === "color",
     );
-    expect(colorProp).toBeDefined();
-    expect(colorProp?.required).toBe(false);
+    if (!colorProp) {
+      expect.unreachable("colorProp should be defined");
+    }
+    expect(colorProp.required).toBe(false);
   });
 
   it("JSX属性からprops使用状況を抽出すること", () => {
@@ -130,13 +132,15 @@ describe("ComponentAnalyzer", () => {
 
     // Assert
     const button = result.exported.find((c) => c.name === "Button");
-    expect(button).toBeDefined();
-    expect(button?.usages.color).toHaveLength(1);
-    expect(button?.usages.color[0].value).toBe('"blue"');
-    expect(button?.usages.size).toHaveLength(1);
-    expect(button?.usages.size[0].value).toBe('"large"');
-    expect(button?.usages.disabled).toHaveLength(1);
-    expect(button?.usages.disabled[0].value).toBe("true");
+    if (!button) {
+      expect.unreachable("button should be defined");
+    }
+    expect(button.usages.color).toHaveLength(1);
+    expect(button.usages.color[0].value).toBe('"blue"');
+    expect(button.usages.size).toHaveLength(1);
+    expect(button.usages.size[0].value).toBe('"large"');
+    expect(button.usages.disabled).toHaveLength(1);
+    expect(button.usages.disabled[0].value).toBe("true");
   });
 
   it("オブジェクトリテラルのpropsをネストして抽出すること", () => {
@@ -168,11 +172,13 @@ describe("ComponentAnalyzer", () => {
 
     // Assert
     const box = result.exported.find((c) => c.name === "Box");
-    expect(box).toBeDefined();
-    expect(box?.usages["style.color"]).toHaveLength(1);
-    expect(box?.usages["style.color"][0].value).toBe('"red"');
-    expect(box?.usages["style.fontSize"]).toHaveLength(1);
-    expect(box?.usages["style.fontSize"][0].value).toBe("16");
+    if (!box) {
+      expect.unreachable("box should be defined");
+    }
+    expect(box.usages["style.color"]).toHaveLength(1);
+    expect(box.usages["style.color"][0].value).toBe('"red"');
+    expect(box.usages["style.fontSize"]).toHaveLength(1);
+    expect(box.usages["style.fontSize"][0].value).toBe("16");
   });
 
   it("渡されていないpropsをundefinedとして記録すること", () => {
@@ -205,10 +211,12 @@ describe("ComponentAnalyzer", () => {
 
     // Assert
     const button = result.exported.find((c) => c.name === "Button");
-    expect(button).toBeDefined();
-    expect(button?.usages.color).toHaveLength(1);
-    expect(button?.usages.color[0].value).toBe('"blue"');
-    expect(button?.usages.size).toHaveLength(1);
-    expect(button?.usages.size[0].value).toBe(UNDEFINED_VALUE);
+    if (!button) {
+      expect.unreachable("button should be defined");
+    }
+    expect(button.usages.color).toHaveLength(1);
+    expect(button.usages.color[0].value).toBe('"blue"');
+    expect(button.usages.size).toHaveLength(1);
+    expect(button.usages.size[0].value).toBe(UNDEFINED_VALUE);
   });
 });

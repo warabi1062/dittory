@@ -119,8 +119,10 @@ describe("findContainingFunction", () => {
     const result = findContainingFunction(variableDecl);
 
     // Assert
-    expect(result).toBeDefined();
-    expect(result?.getKind()).toBe(SyntaxKind.FunctionDeclaration);
+    if (!result) {
+      expect.unreachable("result should be defined");
+    }
+    expect(result.getKind()).toBe(SyntaxKind.FunctionDeclaration);
   });
 
   it("アロー関数を見つけること", () => {
@@ -140,8 +142,10 @@ describe("findContainingFunction", () => {
     const result = findContainingFunction(numericLiteral);
 
     // Assert
-    expect(result).toBeDefined();
-    expect(result?.getKind()).toBe(SyntaxKind.ArrowFunction);
+    if (!result) {
+      expect.unreachable("result should be defined");
+    }
+    expect(result.getKind()).toBe(SyntaxKind.ArrowFunction);
   });
 
   it("メソッド宣言を見つけること", () => {
@@ -161,8 +165,10 @@ describe("findContainingFunction", () => {
     const result = findContainingFunction(numericLiteral);
 
     // Assert
-    expect(result).toBeDefined();
-    expect(result?.getKind()).toBe(SyntaxKind.MethodDeclaration);
+    if (!result) {
+      expect.unreachable("result should be defined");
+    }
+    expect(result.getKind()).toBe(SyntaxKind.MethodDeclaration);
   });
 
   it("関数外のノードではundefinedを返すこと", () => {
