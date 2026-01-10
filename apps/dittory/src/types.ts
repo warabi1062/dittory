@@ -6,7 +6,9 @@ import type {
   VariableDeclaration,
 } from "ts-morph";
 
-export type { ValueType } from "@/utils/valueTypeDetector";
+import type { ValueType } from "@/utils/valueTypeDetector";
+
+export type { ValueType };
 export { VALID_VALUE_TYPES } from "@/utils/valueTypeDetector";
 
 /**
@@ -25,6 +27,8 @@ export interface Usage {
   name: string;
   /** リテラル値、enum参照、変数参照などを解決した結果 */
   value: string;
+  /** 値の種別（boolean, number, string, enum, undefined）。判定不能な場合は null */
+  valueType: ValueType | null;
   usageFilePath: string;
   usageLine: number;
 }
@@ -62,6 +66,8 @@ export interface Constant {
   targetLine: number;
   paramName: string;
   value: string;
+  /** 値の種別（boolean, number, string, enum, undefined）。判定不能な場合は null */
+  valueType: ValueType | null;
   usages: Usage[];
 }
 

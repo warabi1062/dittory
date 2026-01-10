@@ -34,7 +34,15 @@ describe("analyzePropsCore", () => {
     const colorProp = result.constants.find((p) => p.paramName === "color");
     expect(colorProp).toBeDefined();
     expect(colorProp?.value).toBe('"blue"');
+    expect(colorProp?.valueType).toBe("string");
     expect(colorProp?.usages.length).toBe(3);
+
+    // exported.usages の valueType もチェック
+    const testComp = result.exported.find((e) => e.name === "TestComp");
+    expect(testComp).toBeDefined();
+    const colorUsages = testComp?.usages.color;
+    expect(colorUsages).toBeDefined();
+    expect(colorUsages?.every((u) => u.valueType === "string")).toBe(true);
   });
 
   it("異なる値が渡されているpropsは検出しないこと", () => {
@@ -189,7 +197,15 @@ describe("analyzePropsCore", () => {
     expect(variantProp).toBeDefined();
     expect(variantProp?.value).toContain("ButtonVariant.Primary");
     expect(variantProp?.value).toContain('"primary"');
+    expect(variantProp?.valueType).toBe("enum");
     expect(variantProp?.usages.length).toBe(3);
+
+    // exported.usages の valueType もチェック
+    const testComp = result.exported.find((e) => e.name === "TestComp");
+    expect(testComp).toBeDefined();
+    const variantUsages = testComp?.usages.variant;
+    expect(variantUsages).toBeDefined();
+    expect(variantUsages?.every((u) => u.valueType === "enum")).toBe(true);
   });
 
   it("numberのpropsを検出すること", () => {
@@ -212,7 +228,15 @@ describe("analyzePropsCore", () => {
     );
     expect(priorityProp).toBeDefined();
     expect(priorityProp?.value).toBe("10");
+    expect(priorityProp?.valueType).toBe("number");
     expect(priorityProp?.usages.length).toBe(2);
+
+    // exported.usages の valueType もチェック
+    const testComp = result.exported.find((e) => e.name === "TestComp");
+    expect(testComp).toBeDefined();
+    const priorityUsages = testComp?.usages.priority;
+    expect(priorityUsages).toBeDefined();
+    expect(priorityUsages?.every((u) => u.valueType === "number")).toBe(true);
   });
 
   it("オブジェクトリテラルpropsのネストしたプロパティを検出すること", () => {
@@ -237,6 +261,7 @@ describe("analyzePropsCore", () => {
     );
     expect(themeProp).toBeDefined();
     expect(themeProp?.value).toBe('"dark"');
+    expect(themeProp?.valueType).toBe("string");
     expect(themeProp?.usages.length).toBe(2);
 
     const sizeProp = result.constants.find(
@@ -244,7 +269,16 @@ describe("analyzePropsCore", () => {
     );
     expect(sizeProp).toBeDefined();
     expect(sizeProp?.value).toBe("10");
+    expect(sizeProp?.valueType).toBe("number");
     expect(sizeProp?.usages.length).toBe(2);
+
+    // exported.usages にネストしたキーが "param.nested.key" 形式で存在することを確認
+    const testComp = result.exported.find((e) => e.name === "TestComp");
+    expect(testComp).toBeDefined();
+    expect(testComp?.usages["config.theme"]).toBeDefined();
+    expect(testComp?.usages["config.theme"][0].name).toBe("config.theme");
+    expect(testComp?.usages["config.size"]).toBeDefined();
+    expect(testComp?.usages["config.size"][0].name).toBe("config.size");
   });
 
   it("ネストしたオブジェクトの異なる値は検出しないこと", () => {

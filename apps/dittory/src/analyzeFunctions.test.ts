@@ -36,7 +36,15 @@ describe("analyzeFunctionsCore", () => {
     const prefixArg = result.constants.find((a) => a.paramName === "prefix");
     expect(prefixArg).toBeDefined();
     expect(prefixArg?.value).toBe('"[INFO] "');
+    expect(prefixArg?.valueType).toBe("string");
     expect(prefixArg?.usages.length).toBe(3);
+
+    // exported.usages の valueType もチェック
+    const formatValue = result.exported.find((e) => e.name === "formatValue");
+    expect(formatValue).toBeDefined();
+    const prefixUsages = formatValue?.usages.prefix;
+    expect(prefixUsages).toBeDefined();
+    expect(prefixUsages?.every((u) => u.valueType === "string")).toBe(true);
   });
 
   it("異なる値が渡されている引数は検出しないこと", () => {
@@ -106,7 +114,15 @@ describe("analyzeFunctionsCore", () => {
     const bArg = result.constants.find((a) => a.paramName === "b");
     expect(bArg).toBeDefined();
     expect(bArg?.value).toBe("100");
+    expect(bArg?.valueType).toBe("number");
     expect(bArg?.usages.length).toBe(3);
+
+    // exported.usages の valueType もチェック
+    const calculateSum = result.exported.find((e) => e.name === "calculateSum");
+    expect(calculateSum).toBeDefined();
+    const bUsages = calculateSum?.usages.b;
+    expect(bUsages).toBeDefined();
+    expect(bUsages?.every((u) => u.valueType === "number")).toBe(true);
   });
 
   it("Reactコンポーネントは除外すること", () => {
@@ -152,6 +168,7 @@ describe("analyzeFunctionsCore", () => {
     );
     expect(levelArg).toBeDefined();
     expect(levelArg?.value).toBe('"DEBUG"');
+    expect(levelArg?.valueType).toBe("string");
     expect(levelArg?.usages.length).toBe(3);
   });
 
@@ -217,5 +234,13 @@ describe("analyzeFunctionsCore", () => {
       (a) => a.paramName === "options.config.retries",
     );
     expect(retriesArg).toBeUndefined();
+
+    // exported.usages にネストしたキーが "param.nested.key" 形式で存在することを確認
+    const sendRequest = result.exported.find((e) => e.name === "sendRequest");
+    expect(sendRequest).toBeDefined();
+    expect(sendRequest?.usages["options.method"]).toBeDefined();
+    expect(sendRequest?.usages["options.method"][0].name).toBe(
+      "options.method",
+    );
   });
 });

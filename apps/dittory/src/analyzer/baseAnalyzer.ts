@@ -22,7 +22,7 @@ import type {
   ValueType,
 } from "@/types";
 import { getSingleValueFromSet } from "@/utils/getSingleValueFromSet";
-import { matchesValueTypes } from "@/utils/valueTypeDetector";
+import { detectValueType, matchesValueTypes } from "@/utils/valueTypeDetector";
 
 /**
  * ts-morph の参照情報を表す型
@@ -287,6 +287,7 @@ export abstract class BaseAnalyzer {
             targetLine: targetInfo.line,
             paramName,
             value,
+            valueType: detectValueType(value),
             usages: usageData.usages,
           });
         }

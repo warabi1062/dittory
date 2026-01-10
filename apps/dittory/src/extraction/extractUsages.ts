@@ -6,6 +6,7 @@ import {
   Node,
 } from "ts-morph";
 import type { Definition, Exported, Usage } from "@/types";
+import { detectValueType } from "@/utils/valueTypeDetector";
 import { flattenObjectExpression } from "./flattenObjectExpression";
 import { hasDisableComment } from "./hasDisableComment";
 import { type ResolveContext, UNDEFINED_VALUE } from "./resolveExpressionValue";
@@ -47,6 +48,7 @@ export class ExtractUsages {
         usages.push({
           name: param.name,
           value: UNDEFINED_VALUE,
+          valueType: detectValueType(UNDEFINED_VALUE),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: callExpression.getStartLineNumber(),
         });
@@ -62,6 +64,7 @@ export class ExtractUsages {
         usages.push({
           name: key,
           value,
+          valueType: detectValueType(value),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: arg.getStartLineNumber(),
         });
@@ -109,6 +112,7 @@ export class ExtractUsages {
         usages.push({
           name: prop.name,
           value: UNDEFINED_VALUE,
+          valueType: detectValueType(UNDEFINED_VALUE),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: element.getStartLineNumber(),
         });
@@ -123,6 +127,7 @@ export class ExtractUsages {
         usages.push({
           name: prop.name,
           value: "true",
+          valueType: "boolean",
           usageFilePath: sourceFile.getFilePath(),
           usageLine: attr.getStartLineNumber(),
         });
@@ -140,15 +145,18 @@ export class ExtractUsages {
           usages.push({
             name: key,
             value,
+            valueType: detectValueType(value),
             usageFilePath: sourceFile.getFilePath(),
             usageLine: attr.getStartLineNumber(),
           });
         }
       } else {
         // "string" 形式
+        const value = initializer.getText();
         usages.push({
           name: prop.name,
-          value: initializer.getText(),
+          value,
+          valueType: detectValueType(value),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: attr.getStartLineNumber(),
         });
