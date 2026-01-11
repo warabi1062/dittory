@@ -1,11 +1,11 @@
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { Project } from "ts-morph";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createFilteredSourceFiles } from "@/source/createFilteredSourceFiles";
 
 /**
  * テスト用フィルター：拡張子のみでtest/storybookを判定
- * __tests__フォルダ内のfixturesファイルを除外しないバージョン
  */
 function isTestOrStorybookFileStrict(filePath: string): boolean {
   return /\.(test|spec|stories)\.(ts|tsx|js|jsx)$/.test(filePath);
@@ -15,58 +15,57 @@ describe("createFilteredSourceFiles", () => {
   let tempDir: string;
 
   beforeEach(() => {
-    // テスト用の一時ディレクトリを作成
-    const project = new Project({ useInMemoryFileSystem: true });
-    tempDir = "/test";
+    // 一時ディレクトリを作成
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dittory-test-"));
 
     // テスト用のファイルを作成
-    project.createSourceFile(
-      `${tempDir}/Component.tsx`,
+    fs.writeFileSync(
+      path.join(tempDir, "Component.tsx"),
       "export const Component = () => <div>Test</div>;",
     );
-    project.createSourceFile(
-      `${tempDir}/Component.test.tsx`,
+    fs.writeFileSync(
+      path.join(tempDir, "Component.test.tsx"),
       "export const TestComponent = () => <div>Test</div>;",
     );
-    project.createSourceFile(
-      `${tempDir}/Component.stories.tsx`,
+    fs.writeFileSync(
+      path.join(tempDir, "Component.spec.tsx"),
+      "export const SpecComponent = () => <div>Spec</div>;",
+    );
+    fs.writeFileSync(
+      path.join(tempDir, "Component.stories.tsx"),
       "export const Story = () => <div>Story</div>;",
     );
-    project.createSourceFile(
-      `${tempDir}/utils.ts`,
+    fs.writeFileSync(
+      path.join(tempDir, "utils.ts"),
       "export const helper = () => {};",
     );
-
-    // ファイルシステムに書き込み
-    project.saveSync();
+    fs.writeFileSync(
+      path.join(tempDir, "helper.js"),
+      "export const jsHelper = () => {};",
+    );
   });
 
   afterEach(() => {
-    // クリーンアップは不要（メモリ内ファイルシステム）
+    // クリーンアップ
+    fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
   it("指定したディレクトリのソースファイルを取得すること", () => {
-    // Arrange
-    const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
-
     // Act
-    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+    const sourceFiles = createFilteredSourceFiles(tempDir, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
     });
 
     // Assert
     expect(sourceFiles.length).toBeGreaterThan(0);
     expect(
-      sourceFiles.every((file) => file.getFilePath().includes(fixturesDir)),
+      sourceFiles.every((file) => file.getFilePath().includes(tempDir)),
     ).toBe(true);
   });
 
   it("testファイルを除外すること", () => {
-    // Arrange
-    const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
-
     // Act
-    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+    const sourceFiles = createFilteredSourceFiles(tempDir, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
     });
 
@@ -77,11 +76,8 @@ describe("createFilteredSourceFiles", () => {
   });
 
   it("specファイルを除外すること", () => {
-    // Arrange
-    const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
-
     // Act
-    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+    const sourceFiles = createFilteredSourceFiles(tempDir, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
     });
 
@@ -92,11 +88,8 @@ describe("createFilteredSourceFiles", () => {
   });
 
   it("storyファイルを除外すること", () => {
-    // Arrange
-    const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
-
     // Act
-    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+    const sourceFiles = createFilteredSourceFiles(tempDir, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
     });
 
@@ -107,11 +100,8 @@ describe("createFilteredSourceFiles", () => {
   });
 
   it("デフォルトの除外パターンを全て適用すること", () => {
-    // Arrange
-    const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
-
     // Act
-    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+    const sourceFiles = createFilteredSourceFiles(tempDir, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
     });
 
@@ -127,11 +117,8 @@ describe("createFilteredSourceFiles", () => {
   });
 
   it("TypeScriptとJavaScriptファイルを取得すること", () => {
-    // Arrange
-    const fixturesDir = path.join(__dirname, "..", "__tests__", "fixtures");
-
     // Act
-    const sourceFiles = createFilteredSourceFiles(fixturesDir, {
+    const sourceFiles = createFilteredSourceFiles(tempDir, {
       shouldExcludeFile: isTestOrStorybookFileStrict,
     });
 
@@ -142,5 +129,20 @@ describe("createFilteredSourceFiles", () => {
         return [".ts", ".tsx", ".js", ".jsx"].includes(ext);
       }),
     ).toBe(true);
+  });
+
+  it("除外後に正しいファイル数を返すこと", () => {
+    // Act
+    const sourceFiles = createFilteredSourceFiles(tempDir, {
+      shouldExcludeFile: isTestOrStorybookFileStrict,
+    });
+
+    // Assert
+    // Component.tsx, utils.ts, helper.js の3ファイルのみ
+    expect(sourceFiles.length).toBe(3);
+    const fileNames = sourceFiles.map((f) => path.basename(f.getFilePath()));
+    expect(fileNames).toContain("Component.tsx");
+    expect(fileNames).toContain("utils.ts");
+    expect(fileNames).toContain("helper.js");
   });
 });
