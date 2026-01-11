@@ -4,6 +4,8 @@ import {
   type ParameterDeclaration,
   type ReferencedSymbol,
 } from "ts-morph";
+import { Constants } from "@/constants";
+import type { Exporteds } from "@/exporteds";
 import {
   type ArgValue,
   FunctionArgValue,
@@ -20,7 +22,6 @@ import type {
   AnalysisResult,
   AnalyzerOptions,
   ClassifiedDeclaration,
-  Constant,
   Definition,
   Exported,
   FileFilter,
@@ -34,36 +35,179 @@ type ReferenceEntry = ReturnType<ReferencedSymbol["getReferences"]>[number];
 
 /**
  * 使用データのグループ
- * valueKeys.size === 1 の場合、そのパラメータは「定数」として検出される
+ *
+ * 各パラメータに渡された値を集約し、定数判定を行う
  */
-interface UsageData {
+class UsageData {
   /** 値の比較キー（toKey()の結果）のセット */
-  valueKeys: Set<string>;
+  private readonly valueKeys: Set<string>;
   /** 代表的な値（定数検出時に使用） */
-  representativeValue: ArgValue;
-  usages: Usage[];
+  readonly representativeValue: ArgValue;
+  readonly usages: Usage[];
+
+  constructor(usages: Usage[]) {
+    this.usages = usages;
+    this.valueKeys = new Set<string>();
+    let representativeValue: ArgValue = new UndefinedArgValue();
+    for (const usage of usages) {
+      this.valueKeys.add(usage.value.toKey());
+      representativeValue = usage.value;
+    }
+    this.representativeValue = representativeValue;
+  }
+
+  /**
+   * 定数として認識できるかを判定
+   *
+   * 条件:
+   * 1. 使用回数が最小使用回数以上
+   * 2. すべての使用箇所で同じ値（valueKeys.size === 1）
+   * 3. Usage数が総呼び出し回数と一致（すべての呼び出しで値が存在）
+   *    これにより、オプショナルなプロパティが一部の呼び出しでのみ
+   *    指定されている場合を定数として誤検出しない
+   */
+  isConstant(minUsages: number, totalCallCount: number): boolean {
+    return (
+      this.usages.length >= minUsages &&
+      this.valueKeys.size === 1 &&
+      this.usages.length === totalCallCount
+    );
+  }
 }
 
 /**
  * 対象ごとの情報（行番号とパラメータ使用状況）
  */
-interface TargetInfo {
-  line: number;
-  params: Map<string, UsageData>;
+class TargetInfo {
+  readonly line: number;
+  private readonly params: Map<string, UsageData>;
   /** 総呼び出し回数（ネストしたプロパティの存在チェックに使用） */
-  totalCallCount: number;
+  private readonly totalCallCount: number;
+
+  constructor(
+    line: number,
+    params: Map<string, UsageData>,
+    totalCallCount: number,
+  ) {
+    this.line = line;
+    this.params = params;
+    this.totalCallCount = totalCallCount;
+  }
+
+  /**
+   * 定数として認識されるパラメータを返す
+   */
+  *findConstantParams(
+    minUsages: number,
+  ): IterableIterator<[string, UsageData]> {
+    for (const [paramName, usageData] of this.params) {
+      if (usageData.isConstant(minUsages, this.totalCallCount)) {
+        yield [paramName, usageData];
+      }
+    }
+  }
+}
+
+/**
+ * ファイル内の対象（関数/コンポーネント）を管理するマップ
+ */
+class TargetMap {
+  private readonly map = new Map<string, TargetInfo>();
+
+  /**
+   * Exported から TargetInfo を作成して追加
+   */
+  addFromExported(item: Exported): void {
+    const paramMap = new Map<string, UsageData>();
+    for (const [paramName, usages] of Object.entries(item.usages)) {
+      paramMap.set(paramName, new UsageData(usages));
+    }
+
+    // 総呼び出し回数を計算（最大のUsage配列の長さを使用）
+    // すべての呼び出しで存在するパラメータのUsage数が基準となる
+    const totalCallCount = Math.max(
+      ...Object.values(item.usages).map((usages) => usages.length),
+      0,
+    );
+
+    this.map.set(
+      item.name,
+      new TargetInfo(item.sourceLine, paramMap, totalCallCount),
+    );
+  }
+
+  /**
+   * イテレーション用
+   */
+  *[Symbol.iterator](): Iterator<[string, TargetInfo]> {
+    yield* this.map;
+  }
 }
 
 /**
  * 使用状況を階層的にグループ化したマップ
  *
- * 3階層の構造で使用状況を整理する:
+ * 2階層の構造で使用状況を整理する:
  * 1. ソースファイルパス: どのファイルで定義された対象か
  * 2. 対象名: 関数名/コンポーネント名（+ 行番号とパラメータ使用状況）
  *
  * この構造により、定数検出時に効率的に走査できる。
  */
-type GroupedMap = Map<string, Map<string, TargetInfo>>;
+class GroupedMap {
+  private readonly map = new Map<string, TargetMap>();
+
+  /**
+   * TargetMap を取得（存在しなければ作成）
+   */
+  private getOrCreateTargetMap(sourceFilePath: string): TargetMap {
+    let targetMap = this.map.get(sourceFilePath);
+    if (!targetMap) {
+      targetMap = new TargetMap();
+      this.map.set(sourceFilePath, targetMap);
+    }
+    return targetMap;
+  }
+
+  /**
+   * Exporteds から GroupedMap を作成
+   */
+  static fromExporteds(exporteds: Exporteds): GroupedMap {
+    const groupedMap = new GroupedMap();
+    for (const item of exporteds) {
+      groupedMap
+        .getOrCreateTargetMap(item.sourceFilePath)
+        .addFromExported(item);
+    }
+    return groupedMap;
+  }
+
+  /**
+   * すべての定数パラメータをフラットに取得
+   */
+  *findAllConstantParams(minUsages: number): IterableIterator<{
+    sourceFile: string;
+    targetName: string;
+    targetLine: number;
+    paramName: string;
+    usageData: UsageData;
+  }> {
+    for (const [sourceFile, targetMap] of this.map) {
+      for (const [targetName, targetInfo] of targetMap) {
+        for (const [paramName, usageData] of targetInfo.findConstantParams(
+          minUsages,
+        )) {
+          yield {
+            sourceFile,
+            targetName,
+            targetLine: targetInfo.line,
+            paramName,
+            usageData,
+          };
+        }
+      }
+    }
+  }
+}
 
 /**
  * 分析処理の基底クラス
@@ -193,7 +337,7 @@ export abstract class BaseAnalyzer {
     const exported = this.collect(declarations);
 
     // 2. 使用状況をグループ化
-    const groupedMap = this.createGroupedMap(exported);
+    const groupedMap = GroupedMap.fromExporteds(exported);
 
     // 3. 常に同じ値が渡されているパラメータを抽出
     const constants = this.extractConstants(groupedMap);
@@ -207,96 +351,38 @@ export abstract class BaseAnalyzer {
    *
    * @param declarations - 事前分類済みの宣言配列
    */
-  protected abstract collect(declarations: ClassifiedDeclaration[]): Exported[];
-
-  /**
-   * 使用状況をグループ化したマップを作成
-   */
-  private createGroupedMap(exported: Exported[]): GroupedMap {
-    const groupedMap: GroupedMap = new Map();
-
-    for (const item of exported) {
-      let fileMap = groupedMap.get(item.sourceFilePath);
-      if (!fileMap) {
-        fileMap = new Map();
-        groupedMap.set(item.sourceFilePath, fileMap);
-      }
-
-      const paramMap = new Map<string, UsageData>();
-      for (const [paramName, usages] of Object.entries(item.usages)) {
-        const valueKeys = new Set<string>();
-        let representativeValue: ArgValue = new UndefinedArgValue();
-        for (const usage of usages) {
-          valueKeys.add(usage.value.toKey());
-          representativeValue = usage.value;
-        }
-        paramMap.set(paramName, { valueKeys, representativeValue, usages });
-      }
-
-      // 総呼び出し回数を計算（最大のUsage配列の長さを使用）
-      // すべての呼び出しで存在するパラメータのUsage数が基準となる
-      const totalCallCount = Math.max(
-        ...Object.values(item.usages).map((usages) => usages.length),
-        0,
-      );
-
-      fileMap.set(item.name, {
-        line: item.sourceLine,
-        params: paramMap,
-        totalCallCount,
-      });
-    }
-
-    return groupedMap;
-  }
+  protected abstract collect(declarations: ClassifiedDeclaration[]): Exporteds;
 
   /**
    * 常に同じ値が渡されているパラメータを抽出
    */
-  private extractConstants(groupedMap: GroupedMap): Constant[] {
-    const result: Constant[] = [];
+  private extractConstants(groupedMap: GroupedMap): Constants {
+    const result = new Constants();
 
-    for (const [sourceFile, targetMap] of groupedMap) {
-      for (const [targetName, targetInfo] of targetMap) {
-        for (const [paramName, usageData] of targetInfo.params) {
-          // 定数として認識する条件:
-          // 1. 使用回数が最小使用回数以上
-          // 2. すべての使用箇所で同じ値
-          // 3. Usage数が総呼び出し回数と一致（すべての呼び出しで値が存在）
-          //    これにより、オプショナルなプロパティが一部の呼び出しでのみ
-          //    指定されている場合を定数として誤検出しない
-          const isConstant =
-            usageData.usages.length >= this.minUsages &&
-            usageData.valueKeys.size === 1 &&
-            usageData.usages.length === targetInfo.totalCallCount;
+    for (const entry of groupedMap.findAllConstantParams(this.minUsages)) {
+      const { sourceFile, targetName, targetLine, paramName, usageData } =
+        entry;
+      const value = usageData.representativeValue;
 
-          if (!isConstant) {
-            continue;
-          }
-
-          const value = usageData.representativeValue;
-
-          // 関数型の値は定数として報告しない
-          // （onClickに同じハンドラを渡している等は、デフォルト値化の候補ではない）
-          if (value instanceof FunctionArgValue) {
-            continue;
-          }
-
-          // 値種別によるフィルタリング
-          if (!matchesValueTypes(value, this.valueTypes)) {
-            continue;
-          }
-
-          result.push({
-            targetName,
-            targetSourceFile: sourceFile,
-            targetLine: targetInfo.line,
-            paramName,
-            value,
-            usages: usageData.usages,
-          });
-        }
+      // 関数型の値は定数として報告しない
+      // （onClickに同じハンドラを渡している等は、デフォルト値化の候補ではない）
+      if (value instanceof FunctionArgValue) {
+        continue;
       }
+
+      // 値種別によるフィルタリング
+      if (!matchesValueTypes(value, this.valueTypes)) {
+        continue;
+      }
+
+      result.push({
+        targetName,
+        targetSourceFile: sourceFile,
+        targetLine,
+        paramName,
+        value,
+        usages: usageData.usages,
+      });
     }
 
     return result;

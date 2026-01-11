@@ -1,6 +1,8 @@
 import path from "node:path";
 import type { OutputMode } from "@/cli/parseCliOptions";
-import type { AnalysisResult, Constant, Exported } from "@/types";
+import type { Constants } from "@/constants";
+import type { Exporteds } from "@/exporteds";
+import type { AnalysisResult } from "@/types";
 
 function bold(text: string): string {
   return `\x1b[1m${text}\x1b[0m`;
@@ -11,55 +13,9 @@ function green(text: string): string {
 }
 
 /**
- * グループ化された定数情報
- */
-interface GroupedConstant {
-  targetName: string;
-  targetSourceFile: string;
-  targetLine: number;
-  params: Array<{
-    paramName: string;
-    value: Constant["value"];
-    usageCount: number;
-    usages: Constant["usages"];
-  }>;
-}
-
-/**
- * Constant[]を関数/コンポーネント単位でグループ化する
- */
-function groupConstantsByTarget(constants: Constant[]): GroupedConstant[] {
-  const groupMap = new Map<string, GroupedConstant>();
-
-  for (const constant of constants) {
-    const key = `${constant.targetSourceFile}:${constant.targetName}`;
-
-    let group = groupMap.get(key);
-    if (!group) {
-      group = {
-        targetName: constant.targetName,
-        targetSourceFile: constant.targetSourceFile,
-        targetLine: constant.targetLine,
-        params: [],
-      };
-      groupMap.set(key, group);
-    }
-
-    group.params.push({
-      paramName: constant.paramName,
-      value: constant.value,
-      usageCount: constant.usages.length,
-      usages: constant.usages,
-    });
-  }
-
-  return Array.from(groupMap.values());
-}
-
-/**
  * exportされた関数の一覧を出力
  */
-function printExportedFunctions(exported: Exported[]): void {
+function printExportedFunctions(exported: Exporteds): void {
   const lines = [
     "Collecting exported functions...",
     `   → Found ${exported.length} function(s)`,
@@ -78,12 +34,12 @@ function printExportedFunctions(exported: Exported[]): void {
 /**
  * 常に同じ値が渡されている引数を出力
  */
-function printConstantArguments(constants: Constant[]): void {
-  if (constants.length === 0) {
+function printConstantArguments(constants: Constants): void {
+  if (constants.isEmpty()) {
     return;
   }
 
-  const grouped = groupConstantsByTarget(constants);
+  const grouped = constants.groupByTarget();
 
   for (const group of grouped) {
     const relativePath = path.relative(process.cwd(), group.targetSourceFile);
@@ -115,9 +71,7 @@ function printConstantArguments(constants: Constant[]): void {
  */
 function printStatistics(result: AnalysisResult): void {
   const totalFunctions = result.exported.length;
-  const functionsWithConstants = groupConstantsByTarget(
-    result.constants,
-  ).length;
+  const functionsWithConstants = result.constants.groupByTarget().length;
 
   console.log("---");
   console.log(
@@ -136,7 +90,7 @@ export function printAnalysisResult(
     printExportedFunctions(result.exported);
   }
 
-  if (result.constants.length === 0) {
+  if (result.constants.isEmpty()) {
     console.log("No arguments with constant values were found.");
   } else {
     printConstantArguments(result.constants);

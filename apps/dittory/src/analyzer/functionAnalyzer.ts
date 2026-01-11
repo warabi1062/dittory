@@ -1,4 +1,5 @@
 import { Node, SyntaxKind } from "ts-morph";
+import { Exporteds } from "@/exporteds";
 import { ExtractUsages } from "@/extraction/extractUsages";
 import type {
   AnalyzerOptions,
@@ -30,10 +31,10 @@ export class FunctionAnalyzer extends BaseAnalyzer {
    * 事前分類済みの宣言から関数を収集する
    *
    * @param declarations - 事前分類済みの宣言配列（type: "function"）
-   * @returns exportされた関数とその使用状況の配列
+   * @returns exportされた関数とその使用状況
    */
-  protected collect(declarations: ClassifiedDeclaration[]): Exported[] {
-    const results: Exported[] = [];
+  protected collect(declarations: ClassifiedDeclaration[]): Exporteds {
+    const results = new Exporteds();
 
     for (const classified of declarations) {
       const { exportName, sourceFile, declaration } = classified;

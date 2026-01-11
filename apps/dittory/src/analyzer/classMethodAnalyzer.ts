@@ -1,4 +1,5 @@
 import { Node } from "ts-morph";
+import { Exporteds } from "@/exporteds";
 import { ExtractUsages } from "@/extraction/extractUsages";
 import type {
   AnalyzerOptions,
@@ -31,10 +32,10 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
    * 事前分類済みの宣言からクラスメソッドを収集する
    *
    * @param declarations - 事前分類済みの宣言配列（type: "class"）
-   * @returns クラスメソッドとその使用状況の配列（名前は「ClassName.methodName」形式）
+   * @returns クラスメソッドとその使用状況（名前は「ClassName.methodName」形式）
    */
-  protected collect(declarations: ClassifiedDeclaration[]): Exported[] {
-    const results: Exported[] = [];
+  protected collect(declarations: ClassifiedDeclaration[]): Exporteds {
+    const results = new Exporteds();
 
     for (const classified of declarations) {
       const { exportName, sourceFile, declaration } = classified;

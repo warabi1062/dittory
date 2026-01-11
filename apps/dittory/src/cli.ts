@@ -12,6 +12,8 @@ import {
   validateTargetDir,
   validateTsConfig,
 } from "@/cli/parseCliOptions";
+import { Constants } from "@/constants";
+import { Exporteds } from "@/exporteds";
 import { CallSiteCollector } from "@/extraction/callSiteCollector";
 import { printAnalysisResult } from "@/output/printAnalysisResult";
 import { createFilteredSourceFiles } from "@/source/createFilteredSourceFiles";
@@ -107,8 +109,8 @@ async function main(): Promise<void> {
   const callSiteMap = new CallSiteCollector().collect(sourceFilesToAnalyze);
 
   // 各解析結果を収集
-  const allExported: AnalysisResult["exported"] = [];
-  const allConstants: AnalysisResult["constants"] = [];
+  const exportedsToMerge: Exporteds[] = [];
+  const constantsToMerge: Constants[] = [];
 
   if (target === "all" || target === "components") {
     const propsResult = analyzePropsCore(sourceFilesToAnalyze, {
@@ -116,8 +118,8 @@ async function main(): Promise<void> {
       valueTypes,
       callSiteMap,
     });
-    allExported.push(...propsResult.exported);
-    allConstants.push(...propsResult.constants);
+    exportedsToMerge.push(propsResult.exported);
+    constantsToMerge.push(propsResult.constants);
   }
 
   if (target === "all" || target === "functions") {
@@ -126,13 +128,13 @@ async function main(): Promise<void> {
       valueTypes,
       callSiteMap,
     });
-    allExported.push(...functionsResult.exported);
-    allConstants.push(...functionsResult.constants);
+    exportedsToMerge.push(functionsResult.exported);
+    constantsToMerge.push(functionsResult.constants);
   }
 
   const result: AnalysisResult = {
-    exported: allExported,
-    constants: allConstants,
+    exported: Exporteds.merge(...exportedsToMerge),
+    constants: Constants.merge(...constantsToMerge),
   };
 
   printAnalysisResult(result, output);

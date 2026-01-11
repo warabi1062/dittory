@@ -1,6 +1,8 @@
 import type { SourceFile } from "ts-morph";
 import { ClassMethodAnalyzer } from "@/analyzer/classMethodAnalyzer";
 import { FunctionAnalyzer } from "@/analyzer/functionAnalyzer";
+import { Constants } from "@/constants";
+import { Exporteds } from "@/exporteds";
 import type { CallSiteMap } from "@/extraction/callSiteMap";
 import type { ValueType } from "@/extraction/valueTypeDetector";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
@@ -58,7 +60,13 @@ export function analyzeFunctionsCore(
 
   // 結果をマージ
   return {
-    constants: [...functionResult.constants, ...classMethodResult.constants],
-    exported: [...functionResult.exported, ...classMethodResult.exported],
+    constants: Constants.merge(
+      functionResult.constants,
+      classMethodResult.constants,
+    ),
+    exported: Exporteds.merge(
+      functionResult.exported,
+      classMethodResult.exported,
+    ),
   };
 }

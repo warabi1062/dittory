@@ -5,7 +5,8 @@ import type {
   SourceFile,
   VariableDeclaration,
 } from "ts-morph";
-
+import type { Constants } from "@/constants";
+import type { Exporteds } from "@/exporteds";
 import type { ArgValue } from "@/extraction/argValueClasses";
 
 /**
@@ -68,8 +69,8 @@ export interface Constant {
  * 分析結果
  */
 export interface AnalysisResult {
-  constants: Constant[];
-  exported: Exported[];
+  constants: Constants;
+  exported: Exporteds;
 }
 
 /**

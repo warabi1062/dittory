@@ -1,4 +1,5 @@
 import { Node, SyntaxKind } from "ts-morph";
+import { Exporteds } from "@/exporteds";
 import { ExtractUsages } from "@/extraction/extractUsages";
 import { getProps } from "@/react/getProps";
 import type {
@@ -31,10 +32,10 @@ export class ComponentAnalyzer extends BaseAnalyzer {
    * 事前分類済みの宣言からReactコンポーネントを収集する
    *
    * @param declarations - 事前分類済みの宣言配列
-   * @returns exportされたコンポーネントとその使用状況の配列
+   * @returns exportされたコンポーネントとその使用状況
    */
-  protected collect(declarations: ClassifiedDeclaration[]): Exported[] {
-    const exportedComponents: Exported[] = [];
+  protected collect(declarations: ClassifiedDeclaration[]): Exporteds {
+    const exportedComponents = new Exporteds();
 
     for (const classified of declarations) {
       const { exportName, sourceFile, declaration } = classified;

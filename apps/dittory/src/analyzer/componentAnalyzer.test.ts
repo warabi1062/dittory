@@ -65,7 +65,11 @@ describe("ComponentAnalyzer", () => {
 
     // Assert
     expect(result.exported.length).toBe(1);
-    expect(result.exported[0].name).toBe("Button");
+    const button = result.exported.get(0);
+    if (!button) {
+      expect.unreachable("button should be defined");
+    }
+    expect(button.name).toBe("Button");
   });
 
   it("optional propsの情報を含むこと", () => {
@@ -91,10 +95,12 @@ describe("ComponentAnalyzer", () => {
 
     // Assert
     expect(result.exported.length).toBe(1);
-    expect(result.exported[0].name).toBe("Button");
-    const colorProp = result.exported[0].definitions.find(
-      (p) => p.name === "color",
-    );
+    const button = result.exported.get(0);
+    if (!button) {
+      expect.unreachable("button should be defined");
+    }
+    expect(button.name).toBe("Button");
+    const colorProp = button.definitions.find((p) => p.name === "color");
     if (!colorProp) {
       expect.unreachable("colorProp should be defined");
     }
