@@ -27,7 +27,7 @@
     "test": "vitest --run",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "cp ../../README.md ./README.md && pnpm run build",
-    "knip": "knip"
+    "knip": "knip --production"
   },
   "keywords": [
     "react",

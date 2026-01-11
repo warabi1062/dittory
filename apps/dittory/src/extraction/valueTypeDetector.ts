@@ -29,7 +29,7 @@ export const VALID_VALUE_TYPES: readonly ValueType[] = [
  * @param value - ArgValue インスタンス
  * @returns 検出された種別、または判定不能な場合は null
  */
-export function detectValueType(value: ArgValue): ValueType | null {
+function detectValueType(value: ArgValue): ValueType | null {
   if (value instanceof BooleanLiteralArgValue) {
     return "boolean";
   }

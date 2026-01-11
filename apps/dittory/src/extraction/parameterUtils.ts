@@ -26,7 +26,7 @@ export function isParameterReference(expression: Node): boolean {
 /**
  * 式を含む関数宣言を見つける
  */
-export function findContainingFunction(node: Node): Node | undefined {
+function findContainingFunction(node: Node): Node | undefined {
   let current: Node | undefined = node;
   while (current) {
     if (
@@ -45,7 +45,7 @@ export function findContainingFunction(node: Node): Node | undefined {
 /**
  * 関数スコープから関数名を取得する
  */
-export function getFunctionName(functionScope: Node): string {
+function getFunctionName(functionScope: Node): string {
   if (Node.isFunctionDeclaration(functionScope)) {
     return functionScope.getName() ?? "anonymous";
   }
@@ -74,7 +74,7 @@ export function getFunctionName(functionScope: Node): string {
  * 式からパラメータパスを構築
  * 例: props.nested.value → "props.nested.value"
  */
-export function buildParameterPath(expression: Node): string {
+function buildParameterPath(expression: Node): string {
   if (Node.isIdentifier(expression)) {
     return expression.getText();
   }

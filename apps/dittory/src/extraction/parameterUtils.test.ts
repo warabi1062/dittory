@@ -10,13 +10,7 @@ import {
 } from "./argValueClasses";
 import { CallSiteInfo } from "./callSiteInfo";
 import { CallSiteMap } from "./callSiteMap";
-import {
-  buildParameterPath,
-  createParamRefValue,
-  findContainingFunction,
-  getFunctionName,
-  isParameterReference,
-} from "./parameterUtils";
+import { createParamRefValue, isParameterReference } from "./parameterUtils";
 
 describe("isParameterReference", () => {
   it("関数パラメータを参照している場合はtrueを返すこと", () => {
@@ -108,223 +102,8 @@ describe("isParameterReference", () => {
   });
 });
 
-describe("findContainingFunction", () => {
-  it("関数宣言を見つけること", () => {
-    // Arrange
-    const project = new Project({ useInMemoryFileSystem: true });
-    const sourceFile = project.createSourceFile(
-      "test.ts",
-      `function myFunction() { const x = 1; }`,
-    );
-    const variableDecl = sourceFile.getFirstDescendantByKind(
-      SyntaxKind.VariableDeclaration,
-    );
-    expect(variableDecl).toBeDefined();
-    if (!variableDecl) return;
-
-    // Act
-    const result = findContainingFunction(variableDecl);
-
-    // Assert
-    if (!result) {
-      expect.unreachable("result should be defined");
-    }
-    expect(result.getKind()).toBe(SyntaxKind.FunctionDeclaration);
-  });
-
-  it("アロー関数を見つけること", () => {
-    // Arrange
-    const project = new Project({ useInMemoryFileSystem: true });
-    const sourceFile = project.createSourceFile(
-      "test.ts",
-      `const myArrow = () => { const x = 1; };`,
-    );
-    const numericLiteral = sourceFile.getFirstDescendantByKind(
-      SyntaxKind.NumericLiteral,
-    );
-    expect(numericLiteral).toBeDefined();
-    if (!numericLiteral) return;
-
-    // Act
-    const result = findContainingFunction(numericLiteral);
-
-    // Assert
-    if (!result) {
-      expect.unreachable("result should be defined");
-    }
-    expect(result.getKind()).toBe(SyntaxKind.ArrowFunction);
-  });
-
-  it("メソッド宣言を見つけること", () => {
-    // Arrange
-    const project = new Project({ useInMemoryFileSystem: true });
-    const sourceFile = project.createSourceFile(
-      "test.ts",
-      `class MyClass { myMethod() { const x = 1; } }`,
-    );
-    const numericLiteral = sourceFile.getFirstDescendantByKind(
-      SyntaxKind.NumericLiteral,
-    );
-    expect(numericLiteral).toBeDefined();
-    if (!numericLiteral) return;
-
-    // Act
-    const result = findContainingFunction(numericLiteral);
-
-    // Assert
-    if (!result) {
-      expect.unreachable("result should be defined");
-    }
-    expect(result.getKind()).toBe(SyntaxKind.MethodDeclaration);
-  });
-
-  it("関数外のノードではundefinedを返すこと", () => {
-    // Arrange
-    const project = new Project({ useInMemoryFileSystem: true });
-    const sourceFile = project.createSourceFile("test.ts", `const x = 1;`);
-    const numericLiteral = sourceFile.getFirstDescendantByKind(
-      SyntaxKind.NumericLiteral,
-    );
-    expect(numericLiteral).toBeDefined();
-    if (!numericLiteral) return;
-
-    // Act
-    const result = findContainingFunction(numericLiteral);
-
-    // Assert
-    expect(result).toBeUndefined();
-  });
-});
-
-describe("getFunctionName", () => {
-  it("関数宣言から名前を取得すること", () => {
-    // Arrange
-    const project = new Project({ useInMemoryFileSystem: true });
-    const sourceFile = project.createSourceFile(
-      "test.ts",
-      `function myFunction() {}`,
-    );
-    const funcDecl = sourceFile.getFirstDescendantByKind(
-      SyntaxKind.FunctionDeclaration,
-    );
-    expect(funcDecl).toBeDefined();
-    if (!funcDecl) return;
-
-    // Act
-    const result = getFunctionName(funcDecl);
-
-    // Assert
-    expect(result).toBe("myFunction");
-  });
-
-  it("変数に代入されたアロー関数から名前を取得すること", () => {
-    // Arrange
-    const project = new Project({ useInMemoryFileSystem: true });
-    const sourceFile = project.createSourceFile(
-      "test.ts",
-      `const myArrow = () => {};`,
-    );
-    const arrowFunc = sourceFile.getFirstDescendantByKind(
-      SyntaxKind.ArrowFunction,
-    );
-    expect(arrowFunc).toBeDefined();
-    if (!arrowFunc) return;
-
-    // Act
-    const result = getFunctionName(arrowFunc);
-
-    // Assert
-    expect(result).toBe("myArrow");
-  });
-
-  it("クラスメソッドから「クラス名.メソッド名」形式で取得すること", () => {
-    // Arrange
-    const project = new Project({ useInMemoryFileSystem: true });
-    const sourceFile = project.createSourceFile(
-      "test.ts",
-      `class MyClass { myMethod() {} }`,
-    );
-    const methodDecl = sourceFile.getFirstDescendantByKind(
-      SyntaxKind.MethodDeclaration,
-    );
-    expect(methodDecl).toBeDefined();
-    if (!methodDecl) return;
-
-    // Act
-    const result = getFunctionName(methodDecl);
-
-    // Assert
-    expect(result).toBe("MyClass.myMethod");
-  });
-
-  it("無名関数では'anonymous'を返すこと", () => {
-    // Arrange
-    const project = new Project({ useInMemoryFileSystem: true });
-    const sourceFile = project.createSourceFile("test.ts", `[1].map(() => 2);`);
-    const arrowFunc = sourceFile.getFirstDescendantByKind(
-      SyntaxKind.ArrowFunction,
-    );
-    expect(arrowFunc).toBeDefined();
-    if (!arrowFunc) return;
-
-    // Act
-    const result = getFunctionName(arrowFunc);
-
-    // Assert
-    expect(result).toBe("anonymous");
-  });
-});
-
-describe("buildParameterPath", () => {
-  it("単純な識別子のパスを構築すること", () => {
-    // Arrange
-    const project = new Project({ useInMemoryFileSystem: true });
-    const sourceFile = project.createSourceFile("test.ts", `const x = param;`);
-    const identifier = sourceFile
-      .getDescendantsOfKind(SyntaxKind.Identifier)
-      .find((id) => id.getText() === "param");
-    expect(identifier).toBeDefined();
-    if (!identifier) return;
-
-    // Act
-    const result = buildParameterPath(identifier);
-
-    // Assert
-    expect(result).toBe("param");
-  });
-
-  it("ネストしたプロパティアクセスのパスを構築すること", () => {
-    // Arrange
-    const project = new Project({ useInMemoryFileSystem: true });
-    const sourceFile = project.createSourceFile(
-      "test.ts",
-      `const x = props.nested.value;`,
-    );
-    const propertyAccess = sourceFile.getFirstDescendantByKind(
-      SyntaxKind.PropertyAccessExpression,
-    );
-    // 最も外側の PropertyAccessExpression を取得
-    let outermost = propertyAccess;
-    while (
-      outermost?.getParent()?.getKind() === SyntaxKind.PropertyAccessExpression
-    ) {
-      outermost = outermost
-        .getParent()
-        ?.asKind(SyntaxKind.PropertyAccessExpression);
-    }
-    expect(outermost).toBeDefined();
-    if (!outermost) return;
-
-    // Act
-    const result = buildParameterPath(outermost);
-
-    // Assert
-    expect(result).toBe("props.nested.value");
-  });
-});
-
 describe("createParamRefValue", () => {
-  it("パラメータ参照のArgValueを作成すること", () => {
+  it("アロー関数内のパラメータ参照からArgValueを作成すること", () => {
     // Arrange
     const project = new Project({ useInMemoryFileSystem: true });
     const sourceFile = project.createSourceFile(
@@ -348,6 +127,109 @@ describe("createParamRefValue", () => {
     expect(result.filePath).toBe("/src/Component.tsx");
     expect(result.functionName).toBe("Component");
     expect(result.path).toBe("props.value");
+  });
+
+  it("関数宣言内のパラメータ参照から関数名を取得すること", () => {
+    // Arrange
+    const project = new Project({ useInMemoryFileSystem: true });
+    const sourceFile = project.createSourceFile(
+      "/src/utils.ts",
+      `function myFunction(param: string) { return param; }`,
+    );
+    const returnStatement = sourceFile.getFirstDescendantByKind(
+      SyntaxKind.ReturnStatement,
+    );
+    const expression = returnStatement?.getExpression();
+    if (!expression) {
+      expect.unreachable("expression should be defined");
+    }
+
+    // Act
+    const result = createParamRefValue(expression);
+
+    // Assert
+    if (!(result instanceof ParamRefArgValue)) {
+      expect.unreachable("result should be ParamRefArgValue");
+    }
+    expect(result.functionName).toBe("myFunction");
+    expect(result.path).toBe("param");
+  });
+
+  it("クラスメソッド内のパラメータ参照から「クラス名.メソッド名」形式で取得すること", () => {
+    // Arrange
+    const project = new Project({ useInMemoryFileSystem: true });
+    const sourceFile = project.createSourceFile(
+      "/src/service.ts",
+      `class MyClass { myMethod(arg: number) { return arg; } }`,
+    );
+    const returnStatement = sourceFile.getFirstDescendantByKind(
+      SyntaxKind.ReturnStatement,
+    );
+    const expression = returnStatement?.getExpression();
+    if (!expression) {
+      expect.unreachable("expression should be defined");
+    }
+
+    // Act
+    const result = createParamRefValue(expression);
+
+    // Assert
+    if (!(result instanceof ParamRefArgValue)) {
+      expect.unreachable("result should be ParamRefArgValue");
+    }
+    expect(result.functionName).toBe("MyClass.myMethod");
+    expect(result.path).toBe("arg");
+  });
+
+  it("無名関数内のパラメータ参照ではanonymousを含むこと", () => {
+    // Arrange
+    const project = new Project({ useInMemoryFileSystem: true });
+    const sourceFile = project.createSourceFile(
+      "/src/file.ts",
+      `[1].map((x) => x * 2);`,
+    );
+    const binaryExpr = sourceFile.getFirstDescendantByKind(
+      SyntaxKind.BinaryExpression,
+    );
+    const identifier = binaryExpr?.getLeft();
+    if (!identifier) {
+      expect.unreachable("identifier should be defined");
+    }
+
+    // Act
+    const result = createParamRefValue(identifier);
+
+    // Assert
+    if (!(result instanceof ParamRefArgValue)) {
+      expect.unreachable("result should be ParamRefArgValue");
+    }
+    expect(result.functionName).toBe("anonymous");
+    expect(result.path).toBe("x");
+  });
+
+  it("ネストしたプロパティアクセスのパスを構築すること", () => {
+    // Arrange
+    const project = new Project({ useInMemoryFileSystem: true });
+    const sourceFile = project.createSourceFile(
+      "/src/Component.tsx",
+      `const Component = (props: { nested: { deep: string } }) => <div>{props.nested.deep}</div>;`,
+    );
+    const jsxExpression = sourceFile.getFirstDescendantByKind(
+      SyntaxKind.JsxExpression,
+    );
+    const expression = jsxExpression?.getExpression();
+    if (!expression) {
+      expect.unreachable("expression should be defined");
+    }
+
+    // Act
+    const result = createParamRefValue(expression);
+
+    // Assert
+    if (!(result instanceof ParamRefArgValue)) {
+      expect.unreachable("result should be ParamRefArgValue");
+    }
+    expect(result.path).toBe("props.nested.deep");
   });
 
   it("関数スコープが見つからない場合はliteral型を返すこと", () => {
