@@ -7,9 +7,9 @@ import {
   ParamRefArgValue,
   StringLiteralArgValue,
   UndefinedArgValue,
-} from "./argValueClasses";
-import { CallSiteInfo } from "./callSiteInfo";
-import { CallSiteMap } from "./callSiteMap";
+} from "@/domain/argValueClasses";
+import { CallSiteInfo } from "@/domain/callSiteInfo";
+import { CallSiteMap } from "@/domain/callSiteMap";
 import { createParamRefValue, isParameterReference } from "./parameterUtils";
 
 describe("isParameterReference", () => {

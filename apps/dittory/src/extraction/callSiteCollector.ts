@@ -7,9 +7,9 @@ import {
   type SourceFile,
   SyntaxKind,
 } from "ts-morph";
+import type { FileFilter } from "@/domain/analyzerOptions";
+import { CallSiteMap } from "@/domain/callSiteMap";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
-import type { FileFilter } from "@/types";
-import { CallSiteMap } from "./callSiteMap";
 import { extractArgValue } from "./extractArgValue";
 
 /**

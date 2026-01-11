@@ -1,8 +1,8 @@
 import path from "node:path";
-import type { AnalyzedDeclarations } from "@/analyzedDeclarations";
 import type { OutputMode } from "@/cli/parseCliOptions";
-import type { ConstantParams } from "@/constantParams";
-import type { AnalysisResult } from "@/types";
+import type { AnalysisResult } from "@/domain/analysisResult";
+import type { AnalyzedDeclarations } from "@/domain/analyzedDeclarations";
+import type { ConstantParams } from "@/domain/constantParams";
 
 function bold(text: string): string {
   return `\x1b[1m${text}\x1b[0m`;

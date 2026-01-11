@@ -1,13 +1,14 @@
 import type { SourceFile } from "ts-morph";
-import { AnalyzedDeclarations } from "@/analyzedDeclarations";
 import { ClassMethodAnalyzer } from "@/analyzer/classMethodAnalyzer";
 import { FunctionAnalyzer } from "@/analyzer/functionAnalyzer";
-import { ConstantParams } from "@/constantParams";
-import type { CallSiteMap } from "@/extraction/callSiteMap";
+import type { AnalysisResult } from "@/domain/analysisResult";
+import { AnalyzedDeclarations } from "@/domain/analyzedDeclarations";
+import type { FileFilter } from "@/domain/analyzerOptions";
+import type { CallSiteMap } from "@/domain/callSiteMap";
+import { ConstantParams } from "@/domain/constantParams";
 import type { ValueType } from "@/extraction/valueTypeDetector";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
-import type { AnalysisResult, FileFilter } from "@/types";
 
 interface AnalyzeFunctionsOptions {
   shouldExcludeFile?: FileFilter;

@@ -1,13 +1,13 @@
 import { Node, SyntaxKind } from "ts-morph";
-import { AnalyzedDeclarations } from "@/analyzedDeclarations";
+import {
+  type AnalyzedDeclaration,
+  AnalyzedDeclarations,
+} from "@/domain/analyzedDeclarations";
+import type { AnalyzerOptions } from "@/domain/analyzerOptions";
+import type { ClassifiedDeclaration } from "@/domain/classifiedDeclaration";
+import { UsagesByParam } from "@/domain/usagesByParam";
 import { ExtractUsages } from "@/extraction/extractUsages";
-import type {
-  AnalyzedDeclaration,
-  AnalyzerOptions,
-  ClassifiedDeclaration,
-} from "@/types";
 import { BaseAnalyzer } from "./baseAnalyzer";
-import { UsagesByParam } from "./usagesByParam";
 
 /**
  * 関数の引数分析を行うAnalyzer

@@ -1,7 +1,7 @@
 import { Project, SyntaxKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { UndefinedArgValue } from "@/extraction/argValueClasses";
-import { CallSiteMap } from "@/extraction/callSiteMap";
+import { UndefinedArgValue } from "@/domain/argValueClasses";
+import { CallSiteMap } from "@/domain/callSiteMap";
 import { ExpressionResolver } from "@/extraction/expressionResolver";
 
 const emptyResolver: ExpressionResolver = new ExpressionResolver(

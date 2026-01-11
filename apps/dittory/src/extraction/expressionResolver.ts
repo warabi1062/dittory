@@ -3,8 +3,8 @@ import {
   type ArgValue,
   ParamRefArgValue,
   UndefinedArgValue,
-} from "./argValueClasses";
-import type { CallSiteMap } from "./callSiteMap";
+} from "@/domain/argValueClasses";
+import type { CallSiteMap } from "@/domain/callSiteMap";
 import { extractArgValue } from "./extractArgValue";
 import { extractObjectType } from "./extractObjectType";
 

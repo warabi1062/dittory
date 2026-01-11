@@ -18,34 +18,14 @@ export interface CallSiteArg {
  * 関数/コンポーネントへの呼び出し情報を管理するクラス
  * key: パラメータ名, value: 渡された値の配列
  */
-export class CallSiteInfo {
-  private map: Map<string, CallSiteArg[]>;
-
-  constructor(initialMap?: Map<string, CallSiteArg[]>) {
-    this.map = initialMap ?? new Map();
-  }
-
-  /**
-   * 指定されたパラメータ名の引数情報を取得する
-   */
-  get(name: string): CallSiteArg[] | undefined {
-    return this.map.get(name);
-  }
-
-  /**
-   * 指定されたパラメータ名の引数情報を設定する
-   */
-  set(name: string, args: CallSiteArg[]): void {
-    this.map.set(name, args);
-  }
-
+export class CallSiteInfo extends Map<string, CallSiteArg[]> {
   /**
    * 引数情報を追加する
    * 既存の配列がある場合は追加、ない場合は新規作成
    */
   addArg(name: string, arg: CallSiteArg): void {
-    const args = this.map.get(name) ?? [];
+    const args = this.get(name) ?? [];
     args.push(arg);
-    this.map.set(name, args);
+    this.set(name, args);
   }
 }

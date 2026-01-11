@@ -5,11 +5,12 @@ import {
   type JsxSelfClosingElement,
   Node,
 } from "ts-morph";
-import type { AnalyzedDeclaration, Definition, Usage } from "@/types";
+import type { AnalyzedDeclaration } from "@/domain/analyzedDeclarations";
 import {
   JsxShorthandLiteralArgValue,
   UndefinedArgValue,
-} from "./argValueClasses";
+} from "@/domain/argValueClasses";
+import type { Definition, Usage } from "@/domain/usagesByParam";
 import type { ExpressionResolver } from "./expressionResolver";
 import { hasDisableComment } from "./hasDisableComment";
 

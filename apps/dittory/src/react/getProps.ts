@@ -1,5 +1,5 @@
 import { Node, type Type } from "ts-morph";
-import type { Definition } from "@/types";
+import type { Definition } from "@/domain/usagesByParam";
 
 /**
  * コンポーネントのprops定義を取得する

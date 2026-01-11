@@ -5,7 +5,7 @@ import {
   ParamRefArgValue,
   StringLiteralArgValue,
   VariableLiteralArgValue,
-} from "./argValueClasses";
+} from "@/domain/argValueClasses";
 import { extractArgValue } from "./extractArgValue";
 
 describe("extractArgValue", () => {

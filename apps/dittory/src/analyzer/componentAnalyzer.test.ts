@@ -1,7 +1,7 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { ComponentAnalyzer } from "@/analyzer/componentAnalyzer";
-import { UndefinedArgValue } from "@/extraction/argValueClasses";
+import { UndefinedArgValue } from "@/domain/argValueClasses";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 
 /**

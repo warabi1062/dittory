@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   NumberLiteralArgValue,
   StringLiteralArgValue,
-} from "./argValueClasses";
-import { CallSiteInfo } from "./callSiteInfo";
+} from "@/domain/argValueClasses";
+import { CallSiteInfo } from "@/domain/callSiteInfo";
 
 describe("CallSiteInfo", () => {
   describe("get", () => {

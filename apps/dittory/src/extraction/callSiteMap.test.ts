@@ -3,8 +3,8 @@ import {
   NumberLiteralArgValue,
   ParamRefArgValue,
   StringLiteralArgValue,
-} from "./argValueClasses";
-import { CallSiteMap } from "./callSiteMap";
+} from "@/domain/argValueClasses";
+import { CallSiteMap } from "@/domain/callSiteMap";
 
 describe("CallSiteMap", () => {
   describe("get", () => {

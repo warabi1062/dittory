@@ -2,13 +2,10 @@ export { analyzeFunctionsCore } from "@/analyzeFunctions";
 export { analyzePropsCore } from "@/analyzeProps";
 export type { DittoryConfig } from "@/cli/loadConfig";
 export type { AnalyzeMode, OutputMode } from "@/cli/parseCliOptions";
+export type { AnalysisResult } from "@/domain/analysisResult";
+export type { AnalyzedDeclaration } from "@/domain/analyzedDeclarations";
+export type { FileFilter } from "@/domain/analyzerOptions";
+export { CallSiteMap } from "@/domain/callSiteMap";
+export type { ConstantParam } from "@/domain/constantParams";
+export type { Definition, Usage } from "@/domain/usagesByParam";
 export { CallSiteCollector } from "@/extraction/callSiteCollector";
-export { CallSiteMap } from "@/extraction/callSiteMap";
-export type {
-  AnalysisResult,
-  AnalyzedDeclaration,
-  ConstantParam,
-  Definition,
-  FileFilter,
-  Usage,
-} from "@/types";

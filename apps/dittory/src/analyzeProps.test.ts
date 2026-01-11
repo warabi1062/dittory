@@ -1,8 +1,8 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { analyzePropsCore } from "@/analyzeProps";
+import type { AnalysisResult } from "@/domain/analysisResult";
 import { CallSiteCollector } from "@/extraction/callSiteCollector";
-import type { AnalysisResult } from "@/types";
 
 // 共通フィクスチャコード
 const BUTTON_VARIANT = `

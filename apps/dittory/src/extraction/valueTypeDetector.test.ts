@@ -9,7 +9,7 @@ import {
   ThisLiteralArgValue,
   UndefinedArgValue,
   VariableLiteralArgValue,
-} from "@/extraction/argValueClasses";
+} from "@/domain/argValueClasses";
 import {
   matchesValueTypes,
   VALID_VALUE_TYPES,

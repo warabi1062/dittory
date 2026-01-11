@@ -1,6 +1,9 @@
 import { Node, type SourceFile } from "ts-morph";
+import type {
+  ClassifiedDeclaration,
+  DeclarationType,
+} from "@/domain/classifiedDeclaration";
 import { isReactComponent } from "@/react/isReactComponent";
-import type { ClassifiedDeclaration, DeclarationType } from "@/types";
 
 /**
  * ソースファイルからexportされた関数/コンポーネント/クラス宣言を収集し、

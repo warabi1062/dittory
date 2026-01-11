@@ -1,4 +1,22 @@
-import type { AnalyzedDeclaration } from "@/types";
+import type {
+  FunctionDeclaration,
+  MethodDeclaration,
+  VariableDeclaration,
+} from "ts-morph";
+import type { Definition, UsagesByParam } from "@/domain/usagesByParam";
+
+/**
+ * 分析対象（エクスポートされた関数/コンポーネント）
+ */
+export interface AnalyzedDeclaration {
+  /** クラスメソッドの場合は "ClassName.methodName" 形式 */
+  name: string;
+  sourceFilePath: string;
+  sourceLine: number;
+  definitions: Definition[];
+  declaration: FunctionDeclaration | VariableDeclaration | MethodDeclaration;
+  usages: UsagesByParam;
+}
 
 /**
  * 分析対象のコレクション

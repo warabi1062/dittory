@@ -4,78 +4,33 @@ import {
   type ParameterDeclaration,
   type ReferencedSymbol,
 } from "ts-morph";
-import type { AnalyzedDeclarations } from "@/analyzedDeclarations";
-import { ConstantParams } from "@/constantParams";
+import type { AnalysisResult } from "@/domain/analysisResult";
+import type {
+  AnalyzedDeclaration,
+  AnalyzedDeclarations,
+} from "@/domain/analyzedDeclarations";
+import type { AnalyzerOptions, FileFilter } from "@/domain/analyzerOptions";
 import {
-  type ArgValue,
   FunctionArgValue,
   MethodCallLiteralArgValue,
   ParamRefArgValue,
-  UndefinedArgValue,
-} from "@/extraction/argValueClasses";
-import type { CallSiteMap } from "@/extraction/callSiteMap";
+} from "@/domain/argValueClasses";
+import type { CallSiteMap } from "@/domain/callSiteMap";
+import type { ClassifiedDeclaration } from "@/domain/classifiedDeclaration";
+import { ConstantCandidate } from "@/domain/constantCandidate";
+import { ConstantParams } from "@/domain/constantParams";
+import type { Definition } from "@/domain/usagesByParam";
 import { ExpressionResolver } from "@/extraction/expressionResolver";
 import {
   matchesValueTypes,
   type ValueType,
 } from "@/extraction/valueTypeDetector";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
-import type {
-  AnalysisResult,
-  AnalyzedDeclaration,
-  AnalyzerOptions,
-  ClassifiedDeclaration,
-  Definition,
-  FileFilter,
-  Usage,
-} from "@/types";
 
 /**
  * ts-morph の参照情報を表す型
  */
 type ReferenceEntry = ReturnType<ReferencedSymbol["getReferences"]>[number];
-
-/**
- * 定数候補
- *
- * あるパラメータに渡された値を集約し、定数として扱えるかを判定する
- */
-class ConstantCandidate {
-  /** 値の比較キー（toKey()の結果）のセット */
-  private readonly valueKeys: Set<string>;
-  /** 代表的な値（定数検出時に使用） */
-  readonly representativeValue: ArgValue;
-  readonly usages: Usage[];
-
-  constructor(usages: Usage[]) {
-    this.usages = usages;
-    this.valueKeys = new Set<string>();
-    let representativeValue: ArgValue = new UndefinedArgValue();
-    for (const usage of usages) {
-      this.valueKeys.add(usage.value.toKey());
-      representativeValue = usage.value;
-    }
-    this.representativeValue = representativeValue;
-  }
-
-  /**
-   * 定数として認識できるかを判定
-   *
-   * 条件:
-   * 1. 使用回数が最小使用回数以上
-   * 2. すべての使用箇所で同じ値（valueKeys.size === 1）
-   * 3. Usage数が総呼び出し回数と一致（すべての呼び出しで値が存在）
-   *    これにより、オプショナルなプロパティが一部の呼び出しでのみ
-   *    指定されている場合を定数として誤検出しない
-   */
-  isConstant(minUsages: number, totalCallCount: number): boolean {
-    return (
-      this.usages.length >= minUsages &&
-      this.valueKeys.size === 1 &&
-      this.usages.length === totalCallCount
-    );
-  }
-}
 
 /**
  * 宣言ごとの使用状況プロファイル（行番号とパラメータ使用状況）
@@ -113,9 +68,7 @@ class DeclarationUsageProfile {
 /**
  * ファイル内の宣言（関数/コンポーネント）を管理するレジストリ
  */
-class DeclarationRegistry {
-  private readonly profilesByName = new Map<string, DeclarationUsageProfile>();
-
+class DeclarationRegistry extends Map<string, DeclarationUsageProfile> {
   /**
    * AnalyzedDeclaration から DeclarationUsageProfile を作成して追加
    */
@@ -134,7 +87,7 @@ class DeclarationRegistry {
       0,
     );
 
-    this.profilesByName.set(
+    this.set(
       analyzedDeclaration.name,
       new DeclarationUsageProfile(
         analyzedDeclaration.sourceLine,
@@ -142,13 +95,6 @@ class DeclarationRegistry {
         totalCallCount,
       ),
     );
-  }
-
-  /**
-   * イテレーション用
-   */
-  *[Symbol.iterator](): Iterator<[string, DeclarationUsageProfile]> {
-    yield* this.profilesByName;
   }
 }
 
@@ -161,19 +107,17 @@ class DeclarationRegistry {
  *
  * この構造により、定数検出時に効率的に走査できる。
  */
-class UsageRegistry {
-  private readonly registriesByFile = new Map<string, DeclarationRegistry>();
-
+class UsageRegistry extends Map<string, DeclarationRegistry> {
   /**
    * DeclarationRegistry を取得（存在しなければ作成）
    */
   private getOrCreateDeclarationRegistry(
     sourceFilePath: string,
   ): DeclarationRegistry {
-    let declarationRegistry = this.registriesByFile.get(sourceFilePath);
+    let declarationRegistry = this.get(sourceFilePath);
     if (!declarationRegistry) {
       declarationRegistry = new DeclarationRegistry();
-      this.registriesByFile.set(sourceFilePath, declarationRegistry);
+      this.set(sourceFilePath, declarationRegistry);
     }
     return declarationRegistry;
   }
@@ -201,7 +145,7 @@ class UsageRegistry {
     paramName: string;
     candidate: ConstantCandidate;
   }> {
-    for (const [sourceFile, declarationRegistry] of this.registriesByFile) {
+    for (const [sourceFile, declarationRegistry] of this) {
       for (const [declarationName, usageProfile] of declarationRegistry) {
         for (const [paramName, candidate] of usageProfile.findConstantParams(
           minUsages,

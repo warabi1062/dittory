@@ -1,7 +1,7 @@
 import path from "node:path";
 import { Project, type SourceFile } from "ts-morph";
+import type { FileFilter } from "@/domain/analyzerOptions";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
-import type { FileFilter } from "@/types";
 
 export interface CreateFilteredSourceFilesOptions {
   shouldExcludeFile?: FileFilter;

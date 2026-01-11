@@ -4,20 +4,7 @@ import { type CallSiteArg, CallSiteInfo } from "./callSiteInfo";
 /**
  * すべての関数/コンポーネントの呼び出し情報を管理するクラス
  */
-export class CallSiteMap {
-  private map: Map<string, CallSiteInfo>;
-
-  constructor(initialMap?: Map<string, CallSiteInfo>) {
-    this.map = initialMap ?? new Map();
-  }
-
-  /**
-   * 指定されたtargetIdの呼び出し情報を取得する
-   */
-  get(targetId: string): CallSiteInfo | undefined {
-    return this.map.get(targetId);
-  }
-
+export class CallSiteMap extends Map<string, CallSiteInfo> {
   /**
    * 引数情報をCallSiteInfoに追加する
    */
@@ -58,7 +45,7 @@ export class CallSiteMap {
 
     const { filePath, functionName, path } = paramRef;
     const targetId = `${filePath}:${functionName}`;
-    const callSiteInfo = this.map.get(targetId);
+    const callSiteInfo = this.get(targetId);
 
     if (!callSiteInfo) {
       return undefined;
@@ -116,10 +103,10 @@ export class CallSiteMap {
    * 存在しない場合は新規作成して登録する
    */
   private getOrCreateInfo(targetId: string): CallSiteInfo {
-    let callSiteInfo = this.map.get(targetId);
+    let callSiteInfo = this.get(targetId);
     if (!callSiteInfo) {
       callSiteInfo = new CallSiteInfo();
-      this.map.set(targetId, callSiteInfo);
+      this.set(targetId, callSiteInfo);
     }
     return callSiteInfo;
   }

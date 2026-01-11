@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import path from "node:path";
-import { AnalyzedDeclarations } from "@/analyzedDeclarations";
 import { analyzeFunctionsCore } from "@/analyzeFunctions";
 import { analyzePropsCore } from "@/analyzeProps";
 import { loadConfig } from "@/cli/loadConfig";
@@ -13,11 +12,12 @@ import {
   validateTargetDir,
   validateTsConfig,
 } from "@/cli/parseCliOptions";
-import { ConstantParams } from "@/constantParams";
+import type { AnalysisResult } from "@/domain/analysisResult";
+import { AnalyzedDeclarations } from "@/domain/analyzedDeclarations";
+import { ConstantParams } from "@/domain/constantParams";
 import { CallSiteCollector } from "@/extraction/callSiteCollector";
 import { printAnalysisResult } from "@/output/printAnalysisResult";
 import { createFilteredSourceFiles } from "@/source/createFilteredSourceFiles";
-import type { AnalysisResult } from "@/types";
 
 /**
  * エラーメッセージを表示してプロセスを終了する

@@ -1,5 +1,17 @@
-import type { ArgValue } from "@/extraction/argValueClasses";
-import type { ConstantParam, Usage } from "@/types";
+import type { Usage } from "@/domain/usagesByParam";
+import type { ArgValue } from "./argValueClasses";
+
+/**
+ * 常に同じ値が渡されているパラメータ（デフォルト値化の候補）
+ */
+export interface ConstantParam {
+  declarationName: string;
+  declarationSourceFile: string;
+  declarationLine: number;
+  paramName: string;
+  value: ArgValue;
+  usages: Usage[];
+}
 
 /**
  * 宣言（関数/コンポーネント）ごとにグループ化された定数パラメータ情報
