@@ -3,7 +3,7 @@ import type { Usage } from "@/types";
 /**
  * パラメータ名ごとにUsageをグループ化して管理するクラス
  */
-export class UsageGroup {
+export class UsagesByParam {
   private usagesByName: Map<string, Usage[]>;
 
   constructor() {

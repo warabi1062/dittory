@@ -7,7 +7,7 @@ import type {
   ClassifiedDeclaration,
 } from "@/types";
 import { BaseAnalyzer } from "./baseAnalyzer";
-import { UsageGroup } from "./usageGroup";
+import { UsagesByParam } from "./usagesByParam";
 
 /**
  * クラスメソッドの引数分析を行うAnalyzer
@@ -52,7 +52,7 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
         const methodName = method.getName();
         const parameters = this.getParameterDefinitions(method);
 
-        const usageGroup = new UsageGroup();
+        const usageGroup = new UsagesByParam();
         const analyzed: AnalyzedDeclaration = {
           name: `${exportName}.${methodName}`,
           sourceFilePath: sourceFile.getFilePath(),

@@ -7,7 +7,7 @@ import type {
   ClassifiedDeclaration,
 } from "@/types";
 import { BaseAnalyzer } from "./baseAnalyzer";
-import { UsageGroup } from "./usageGroup";
+import { UsagesByParam } from "./usagesByParam";
 
 /**
  * 関数の引数分析を行うAnalyzer
@@ -61,7 +61,7 @@ export class FunctionAnalyzer extends BaseAnalyzer {
       // 関数の宣言からパラメータ定義を取得
       const parameters = this.getParameterDefinitions(declaration);
 
-      const usageGroup = new UsageGroup();
+      const usageGroup = new UsagesByParam();
       const analyzed: AnalyzedDeclaration = {
         name: exportName,
         sourceFilePath: sourceFile.getFilePath(),

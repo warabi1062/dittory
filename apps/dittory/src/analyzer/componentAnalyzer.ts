@@ -8,7 +8,7 @@ import type {
   ClassifiedDeclaration,
 } from "@/types";
 import { BaseAnalyzer } from "./baseAnalyzer";
-import { UsageGroup } from "./usageGroup";
+import { UsagesByParam } from "./usagesByParam";
 
 /**
  * Reactコンポーネントのprops分析を行うAnalyzer
@@ -62,7 +62,7 @@ export class ComponentAnalyzer extends BaseAnalyzer {
       // コンポーネントの宣言からprops定義を取得
       const props = getProps(declaration);
 
-      const usageGroup = new UsageGroup();
+      const usageGroup = new UsagesByParam();
       const analyzed: AnalyzedDeclaration = {
         name: exportName,
         sourceFilePath: sourceFile.getFilePath(),

@@ -36,11 +36,11 @@ import type {
 type ReferenceEntry = ReturnType<ReferencedSymbol["getReferences"]>[number];
 
 /**
- * 使用データのグループ
+ * 定数候補
  *
- * 各パラメータに渡された値を集約し、定数判定を行う
+ * あるパラメータに渡された値を集約し、定数として扱えるかを判定する
  */
-class UsageData {
+class ConstantCandidate {
   /** 値の比較キー（toKey()の結果）のセット */
   private readonly valueKeys: Set<string>;
   /** 代表的な値（定数検出時に使用） */
@@ -82,17 +82,17 @@ class UsageData {
  */
 class DeclarationUsageProfile {
   readonly sourceLine: number;
-  private readonly usageDataByParam: Map<string, UsageData>;
+  private readonly candidatesByParam: Map<string, ConstantCandidate>;
   /** 総呼び出し回数（ネストしたプロパティの存在チェックに使用） */
   private readonly totalCallCount: number;
 
   constructor(
     sourceLine: number,
-    usageDataByParam: Map<string, UsageData>,
+    candidatesByParam: Map<string, ConstantCandidate>,
     totalCallCount: number,
   ) {
     this.sourceLine = sourceLine;
-    this.usageDataByParam = usageDataByParam;
+    this.candidatesByParam = candidatesByParam;
     this.totalCallCount = totalCallCount;
   }
 
@@ -101,10 +101,10 @@ class DeclarationUsageProfile {
    */
   *findConstantParams(
     minUsages: number,
-  ): IterableIterator<[string, UsageData]> {
-    for (const [paramName, usageData] of this.usageDataByParam) {
-      if (usageData.isConstant(minUsages, this.totalCallCount)) {
-        yield [paramName, usageData];
+  ): IterableIterator<[string, ConstantCandidate]> {
+    for (const [paramName, candidate] of this.candidatesByParam) {
+      if (candidate.isConstant(minUsages, this.totalCallCount)) {
+        yield [paramName, candidate];
       }
     }
   }
@@ -120,9 +120,9 @@ class DeclarationRegistry {
    * AnalyzedDeclaration から DeclarationUsageProfile を作成して追加
    */
   addFromDeclaration(analyzedDeclaration: AnalyzedDeclaration): void {
-    const paramMap = new Map<string, UsageData>();
+    const paramMap = new Map<string, ConstantCandidate>();
     for (const [paramName, usages] of analyzedDeclaration.usages.entries()) {
-      paramMap.set(paramName, new UsageData(usages));
+      paramMap.set(paramName, new ConstantCandidate(usages));
     }
 
     // 総呼び出し回数を計算（最大のUsage配列の長さを使用）
@@ -199,11 +199,11 @@ class UsageRegistry {
     declarationName: string;
     declarationLine: number;
     paramName: string;
-    usageData: UsageData;
+    candidate: ConstantCandidate;
   }> {
     for (const [sourceFile, declarationRegistry] of this.registriesByFile) {
       for (const [declarationName, usageProfile] of declarationRegistry) {
-        for (const [paramName, usageData] of usageProfile.findConstantParams(
+        for (const [paramName, candidate] of usageProfile.findConstantParams(
           minUsages,
         )) {
           yield {
@@ -211,7 +211,7 @@ class UsageRegistry {
             declarationName,
             declarationLine: usageProfile.sourceLine,
             paramName,
-            usageData,
+            candidate,
           };
         }
       }
@@ -359,9 +359,9 @@ export abstract class BaseAnalyzer {
         declarationName,
         declarationLine,
         paramName,
-        usageData,
+        candidate,
       } = entry;
-      const value = usageData.representativeValue;
+      const value = candidate.representativeValue;
 
       // 以下の値種別は定数として報告しない（デフォルト値化の候補ではない）
       // - FunctionArgValue: 関数型の値（onClickに同じハンドラを渡している等）
@@ -386,7 +386,7 @@ export abstract class BaseAnalyzer {
         declarationLine,
         paramName,
         value,
-        usages: usageData.usages,
+        usages: candidate.usages,
       });
     }
 

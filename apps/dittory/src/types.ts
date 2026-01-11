@@ -6,7 +6,7 @@ import type {
   VariableDeclaration,
 } from "ts-morph";
 import type { AnalyzedDeclarations } from "@/analyzedDeclarations";
-import type { UsageGroup } from "@/analyzer/usageGroup";
+import type { UsagesByParam } from "@/analyzer/usagesByParam";
 import type { ConstantParams } from "@/constantParams";
 import type { ArgValue } from "@/extraction/argValueClasses";
 
@@ -51,7 +51,7 @@ export interface AnalyzedDeclaration {
   sourceLine: number;
   definitions: Definition[];
   declaration: FunctionDeclaration | VariableDeclaration | MethodDeclaration;
-  usages: UsageGroup;
+  usages: UsagesByParam;
 }
 
 /**
