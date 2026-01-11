@@ -1,7 +1,7 @@
 {
   "name": "dittory",
   "version": "0.0.5",
-  "description": "A static analysis CLI that detects parameters always receiving the same value in React components and functions",
+  "description": "A static analysis CLI that detects parameters that always receive the same value in React components and functions",
   "type": "module",
   "main": "./dist/index.mjs",
   "types": "./dist/index.d.mts",

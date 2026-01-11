@@ -1,8 +1,6 @@
 # What is dittory?
 
-dittory is a static analysis CLI tool that detects **parameters always receiving the same value** in React components and functions.
-
-> **dittory** = "ditto" (same) + "-ory" — finds the repetitive patterns in your code
+dittory is a static analysis CLI tool that detects **parameters that always receive the same value** in React components and functions.
 
 ## The Problem
 
@@ -33,7 +31,7 @@ These patterns indicate:
 | Target | Description |
 |--------|-------------|
 | **React Components** | Props passed to JSX elements (`<Button variant="primary" />`) |
-| **Functions** | Arguments passed to exported function calls |
+| **Functions** | Arguments passed to exported functions |
 | **Class Methods** | Arguments passed to methods of exported classes |
 
 ## How It Works
@@ -105,7 +103,7 @@ Found 2 function(s) with constant arguments out of 24 function(s).
 <Button onClick={handleClick}>Submit</Button>
 ```
 
-### Remove Unused Flexibility
+### Remove Unnecessary Flexibility
 
 ```ts
 // Before: cache is always false in all 15 call sites

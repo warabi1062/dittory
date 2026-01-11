@@ -10,7 +10,7 @@ dittory [options] [directory]
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--min=<n>` | Minimum number of usages to consider | `2` |
+| `--min=<n>` | Minimum number of usages required to report | `2` |
 | `--target=<mode>` | What to analyze: `all`, `components`, `functions` | `all` |
 | `--output=<mode>` | Output verbosity: `simple`, `verbose` | `simple` |
 | `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |

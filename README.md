@@ -3,9 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/dittory.svg)](https://www.npmjs.com/package/dittory)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A static analysis CLI that detects **parameters always receiving the same value** in React components and functions.
-
-> **dittory** = "ditto" (same) + "-ory" — finds repetitive patterns in your code
+A static analysis CLI that detects **parameters that always receive the same value** in React components and functions.
 
 ## Why?
 
@@ -47,8 +45,8 @@ dittory --target=functions   # Functions and class methods only
 dittory --target=all         # Both (default)
 
 # Output mode
-dittory --output=simple      # Show only constants (default)
-dittory --output=verbose     # Show all exported functions and details
+dittory --output=simple      # Show only constant parameters (default)
+dittory --output=verbose     # Also show all analyzed functions
 ```
 
 ## Example Output
@@ -84,7 +82,7 @@ Found 2 function(s) with constant arguments out of 24 function(s).
 | Target | Description |
 |--------|-------------|
 | **React Components** | Props passed to JSX elements (`<Button variant="primary" />`) |
-| **Functions** | Arguments passed to exported function calls |
+| **Functions** | Arguments passed to exported functions |
 | **Class Methods** | Arguments passed to methods of exported classes |
 
 ## Supported Detection Patterns
@@ -101,8 +99,10 @@ Found 2 function(s) with constant arguments out of 24 function(s).
 | Variable references | `const x = 3; fn(x)` | ✅ |
 | Variable chains | `const a = 1; const b = a; fn(b)` → resolves to `1` | ✅ |
 | Object literals | `{ nested: { value: 1 } }` | ✅ |
-| Function references | `onClick={handleClick}` | ✅ (by location) |
+| Function references | `onClick={handleClick}` | ⚠️ (tracked per call site) |
 | `undefined` | `fn(undefined)` | ✅ |
+
+> **Note on Function references:** Function values are identified by their usage location (file + line), not by identity. Even if the same function is passed from multiple locations, each usage is treated as a different value. This is by design, as the analysis takes a conservative approach regarding runtime behavior.
 
 ### Parameter Propagation (Call Graph Analysis)
 
@@ -152,7 +152,7 @@ const Parent = ({ num, ...others }) => <Child {...others} />;
 
 ### Conditional Branches
 
-When different code paths pass different values, dittory correctly identifies them as different values (not constant):
+When different code paths pass different values, dittory correctly identifies them as different values (not constants):
 
 ```tsx
 // Different values in branches → correctly NOT reported as constant
@@ -205,7 +205,7 @@ process("hello", 42);  // "b" argument is not tracked
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--min=<n>` | Minimum number of usages to consider | `2` |
+| `--min=<n>` | Minimum number of usages required to report | `2` |
 | `--target=<mode>` | What to analyze: `all`, `components`, `functions` | `all` |
 | `--output=<mode>` | Output verbosity: `simple`, `verbose` | `simple` |
 | `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |
@@ -261,7 +261,7 @@ Works alongside other directives like `eslint-disable-line` or `@ts-ignore`.
 <Button onClick={handleClick}>Submit</Button>
 ```
 
-### Remove Unused Flexibility
+### Remove Unnecessary Flexibility
 
 ```ts
 // Before: cache is always false in all 15 call sites

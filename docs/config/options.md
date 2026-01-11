@@ -4,7 +4,7 @@
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `minUsages` | `number` | `2` | Minimum number of usages to consider |
+| `minUsages` | `number` | `2` | Minimum number of usages required to report |
 | `target` | `AnalyzeMode` | `"all"` | What to analyze |
 | `output` | `OutputMode` | `"simple"` | Output verbosity |
 | `tsconfig` | `string` | `"./tsconfig.json"` | Path to tsconfig.json |
@@ -13,7 +13,7 @@
 
 ## minUsages
 
-Minimum number of usages required before a parameter is considered for constant detection.
+Minimum number of usages required before reporting a parameter as constant.
 
 - **Type:** `number`
 - **Default:** `2`
@@ -59,8 +59,8 @@ Controls the verbosity of the output.
 
 | Value | Description |
 |-------|-------------|
-| `"simple"` | Show only functions with constant arguments |
-| `"verbose"` | Show all exported functions and additional details |
+| `"simple"` | Show only constant parameters |
+| `"verbose"` | Also show all analyzed functions |
 
 ```js
 export default {

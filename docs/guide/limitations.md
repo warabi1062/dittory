@@ -78,7 +78,7 @@ function internalFn(x: number) { ... }
 
 ## Conditional Branches
 
-When different code paths pass different values, dittory correctly identifies them as different values (not constant). This is expected behavior:
+When different code paths pass different values, dittory correctly identifies them as different values (not constants). This is expected behavior:
 
 ```tsx
 // Different values in branches → correctly NOT reported as constant
