@@ -1,6 +1,6 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { isReactComponent } from "@/components/isReactComponent";
+import { isReactComponent } from "@/react/isReactComponent";
 
 describe("isReactComponent", () => {
   it("JSXを返すアロー関数をコンポーネントとして判定すること", () => {

@@ -1,5 +1,5 @@
 import { Node, type SourceFile } from "ts-morph";
-import { isReactComponent } from "@/components/isReactComponent";
+import { isReactComponent } from "@/react/isReactComponent";
 import type { ClassifiedDeclaration, DeclarationType } from "@/types";
 
 /**

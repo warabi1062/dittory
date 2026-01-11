@@ -1,10 +1,10 @@
 import type { SourceFile } from "ts-morph";
 import { ComponentAnalyzer } from "@/analyzer/componentAnalyzer";
 import type { CallSiteMap } from "@/extraction/callSiteMap";
+import type { ValueType } from "@/extraction/valueTypeDetector";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type { AnalysisResult, FileFilter } from "@/types";
-import type { ValueType } from "@/utils/valueTypeDetector";
 
 interface AnalyzePropsOptions {
   shouldExcludeFile?: FileFilter;

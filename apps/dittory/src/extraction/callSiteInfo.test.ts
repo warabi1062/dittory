@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { NumberLiteralArgValue, StringLiteralArgValue } from "./argValue";
+import {
+  NumberLiteralArgValue,
+  StringLiteralArgValue,
+} from "./argValueClasses";
 import { CallSiteInfo } from "./callSiteInfo";
 
 describe("CallSiteInfo", () => {

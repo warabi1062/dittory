@@ -8,9 +8,13 @@ import {
   type ArgValue,
   FunctionArgValue,
   UndefinedArgValue,
-} from "@/extraction/argValue";
+} from "@/extraction/argValueClasses";
 import type { CallSiteMap } from "@/extraction/callSiteMap";
 import { ExpressionResolver } from "@/extraction/expressionResolver";
+import {
+  matchesValueTypes,
+  type ValueType,
+} from "@/extraction/valueTypeDetector";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type {
   AnalysisResult,
@@ -22,7 +26,6 @@ import type {
   FileFilter,
   Usage,
 } from "@/types";
-import { matchesValueTypes, type ValueType } from "@/utils/valueTypeDetector";
 
 /**
  * ts-morph の参照情報を表す型

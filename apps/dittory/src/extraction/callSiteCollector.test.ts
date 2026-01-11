@@ -1,6 +1,6 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { ParamRefArgValue, StringLiteralArgValue } from "./argValue";
+import { ParamRefArgValue, StringLiteralArgValue } from "./argValueClasses";
 import { CallSiteCollector } from "./callSiteCollector";
 
 describe("CallSiteCollector", () => {

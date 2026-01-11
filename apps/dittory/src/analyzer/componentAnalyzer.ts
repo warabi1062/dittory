@@ -1,6 +1,6 @@
 import { Node, SyntaxKind } from "ts-morph";
-import { getProps } from "@/components/getProps";
 import { ExtractUsages } from "@/extraction/extractUsages";
+import { getProps } from "@/react/getProps";
 import type {
   AnalyzerOptions,
   ClassifiedDeclaration,

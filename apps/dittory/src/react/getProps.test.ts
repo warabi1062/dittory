@@ -1,6 +1,6 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { getProps } from "@/components/getProps";
+import { getProps } from "@/react/getProps";
 
 describe("getProps", () => {
   it("interfaceからprops定義を抽出すること", () => {

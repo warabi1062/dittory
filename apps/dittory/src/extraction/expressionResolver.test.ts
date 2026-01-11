@@ -1,6 +1,6 @@
 import { Project, SyntaxKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { UndefinedArgValue } from "@/extraction/argValue";
+import { UndefinedArgValue } from "@/extraction/argValueClasses";
 import { CallSiteMap } from "@/extraction/callSiteMap";
 import { ExpressionResolver } from "@/extraction/expressionResolver";
 

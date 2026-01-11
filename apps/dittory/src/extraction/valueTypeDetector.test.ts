@@ -9,7 +9,7 @@ import {
   ThisLiteralArgValue,
   UndefinedArgValue,
   VariableLiteralArgValue,
-} from "@/extraction/argValue";
+} from "@/extraction/argValueClasses";
 import {
   detectValueType,
   matchesValueTypes,

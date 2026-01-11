@@ -1,4 +1,4 @@
-import type { ArgValue } from "./argValue";
+import type { ArgValue } from "./argValueClasses";
 
 /**
  * 呼び出し箇所での引数情報

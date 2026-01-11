@@ -59,7 +59,7 @@ export class EnumLiteralArgValue extends LiteralArgValue {
     readonly filePath: string,
     readonly enumName: string,
     readonly memberName: string,
-    readonly enumValue: string | number | undefined
+    readonly enumValue: string | number | undefined,
   ) {
     super();
   }
@@ -82,7 +82,7 @@ export class ThisLiteralArgValue extends LiteralArgValue {
   constructor(
     readonly filePath: string,
     readonly line: number,
-    readonly expression: string
+    readonly expression: string,
   ) {
     super();
   }
@@ -102,7 +102,7 @@ export class MethodCallLiteralArgValue extends LiteralArgValue {
   constructor(
     readonly filePath: string,
     readonly line: number,
-    readonly expression: string
+    readonly expression: string,
   ) {
     super();
   }
@@ -119,7 +119,10 @@ export class MethodCallLiteralArgValue extends LiteralArgValue {
  * 変数参照のリテラル値
  */
 export class VariableLiteralArgValue extends LiteralArgValue {
-  constructor(readonly filePath: string, readonly identifier: string) {
+  constructor(
+    readonly filePath: string,
+    readonly identifier: string,
+  ) {
     super();
   }
 
@@ -193,7 +196,10 @@ export class OtherLiteralArgValue extends LiteralArgValue {
  * 関数型の値
  */
 export class FunctionArgValue extends ArgValue {
-  constructor(readonly filePath: string, readonly line: number) {
+  constructor(
+    readonly filePath: string,
+    readonly line: number,
+  ) {
     super();
   }
 
@@ -213,7 +219,7 @@ export class ParamRefArgValue extends ArgValue {
     readonly filePath: string,
     readonly functionName: string,
     readonly path: string,
-    readonly line: number
+    readonly line: number,
   ) {
     super();
   }

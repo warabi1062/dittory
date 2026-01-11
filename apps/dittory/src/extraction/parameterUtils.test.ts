@@ -7,7 +7,7 @@ import {
   ParamRefArgValue,
   StringLiteralArgValue,
   UndefinedArgValue,
-} from "./argValue";
+} from "./argValueClasses";
 import { CallSiteInfo } from "./callSiteInfo";
 import { CallSiteMap } from "./callSiteMap";
 import {

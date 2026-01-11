@@ -12,7 +12,7 @@ import {
   ThisLiteralArgValue,
   UndefinedArgValue,
   VariableLiteralArgValue,
-} from "./argValue";
+} from "./argValueClasses";
 import { createParamRefValue, isParameterReference } from "./parameterUtils";
 
 /**

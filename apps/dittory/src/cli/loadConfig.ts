@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { VALID_VALUE_TYPES, type ValueType } from "@/utils/valueTypeDetector";
+import {
+  VALID_VALUE_TYPES,
+  type ValueType,
+} from "@/extraction/valueTypeDetector";
 import type { AnalyzeMode, OutputMode } from "./parseCliOptions";
 
 /** コンフィグファイルの検索順序 */

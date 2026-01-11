@@ -5,7 +5,7 @@ import {
   NumberLiteralArgValue,
   StringLiteralArgValue,
   UndefinedArgValue,
-} from "@/extraction/argValue";
+} from "@/extraction/argValueClasses";
 
 /**
  * フィルタリング対象の値種別

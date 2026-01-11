@@ -6,7 +6,7 @@ import type {
   VariableDeclaration,
 } from "ts-morph";
 
-import type { ArgValue } from "@/extraction/argValue";
+import type { ArgValue } from "@/extraction/argValueClasses";
 
 /**
  * ファイルパスを受け取り、除外すべきかどうかを判定する関数の型
@@ -80,7 +80,7 @@ export interface AnalyzerOptions {
   /** デフォルト: 2 */
   minUsages?: number;
   /** 検出対象の値種別。デフォルト: "all" */
-  valueTypes?: import("@/utils/valueTypeDetector").ValueType[] | "all";
+  valueTypes?: import("@/extraction/valueTypeDetector").ValueType[] | "all";
 }
 
 /**

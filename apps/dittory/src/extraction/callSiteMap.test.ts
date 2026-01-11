@@ -3,7 +3,7 @@ import {
   NumberLiteralArgValue,
   ParamRefArgValue,
   StringLiteralArgValue,
-} from "./argValue";
+} from "./argValueClasses";
 import { CallSiteMap } from "./callSiteMap";
 
 describe("CallSiteMap", () => {

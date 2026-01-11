@@ -6,7 +6,10 @@ import {
   Node,
 } from "ts-morph";
 import type { Definition, Exported, Usage } from "@/types";
-import { JsxShorthandLiteralArgValue, UndefinedArgValue } from "./argValue";
+import {
+  JsxShorthandLiteralArgValue,
+  UndefinedArgValue,
+} from "./argValueClasses";
 import type { ExpressionResolver } from "./expressionResolver";
 import { hasDisableComment } from "./hasDisableComment";
 
