@@ -149,7 +149,7 @@ describe("loadConfig", () => {
       const result = await loadConfig();
 
       // Assert
-      expect(result.valueTypes).toEqual(["boolean", "number"]);
+      expect(result.allowedValueTypes).toEqual(["boolean", "number"]);
     });
 
     it("valueTypes を all として読み込むこと", async () => {
@@ -163,7 +163,7 @@ describe("loadConfig", () => {
       const result = await loadConfig();
 
       // Assert
-      expect(result.valueTypes).toBe("all");
+      expect(result.allowedValueTypes).toBe("all");
     });
 
     it("すべての有効な種別を読み込むこと", async () => {
@@ -179,7 +179,7 @@ describe("loadConfig", () => {
       const result = await loadConfig();
 
       // Assert
-      expect(result.valueTypes).toEqual([
+      expect(result.allowedValueTypes).toEqual([
         "boolean",
         "number",
         "string",

@@ -10,7 +10,7 @@ interface AnalyzePropsOptions {
   shouldExcludeFile?: FileFilter;
   minUsages?: number;
   /** 検出対象の値種別。デフォルト: "all" */
-  valueTypes?: ValueType[] | "all";
+  allowedValueTypes?: ValueType[] | "all";
   /** 呼び出し情報（パラメータ経由で渡された値を解決するために使用） */
   callSiteMap: CallSiteMap;
 }
@@ -34,7 +34,7 @@ export function analyzePropsCore(
   const {
     shouldExcludeFile = isTestOrStorybookFile,
     minUsages = 2,
-    valueTypes = "all",
+    allowedValueTypes = "all",
     callSiteMap,
   } = options;
 
@@ -45,7 +45,7 @@ export function analyzePropsCore(
   const analyzer = new ComponentAnalyzer({
     shouldExcludeFile,
     minUsages,
-    valueTypes,
+    allowedValueTypes,
   });
   analyzer.setCallSiteMap(callSiteMap);
 

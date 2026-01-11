@@ -1,11 +1,11 @@
 import { Node, SyntaxKind } from "ts-morph";
-import { Exporteds } from "@/exporteds";
+import { AnalyzedDeclarations } from "@/analyzedDeclarations";
 import { ExtractUsages } from "@/extraction/extractUsages";
 import { getProps } from "@/react/getProps";
 import type {
+  AnalyzedDeclaration,
   AnalyzerOptions,
   ClassifiedDeclaration,
-  Exported,
   Usage,
 } from "@/types";
 import { BaseAnalyzer } from "./baseAnalyzer";
@@ -31,14 +31,16 @@ export class ComponentAnalyzer extends BaseAnalyzer {
   /**
    * 事前分類済みの宣言からReactコンポーネントを収集する
    *
-   * @param declarations - 事前分類済みの宣言配列
-   * @returns exportされたコンポーネントとその使用状況
+   * @param classifiedDeclarations - 事前分類済みの宣言配列
+   * @returns 分析対象のコンポーネントとその使用状況
    */
-  protected collect(declarations: ClassifiedDeclaration[]): Exporteds {
-    const exportedComponents = new Exporteds();
+  protected collect(
+    classifiedDeclarations: ClassifiedDeclaration[],
+  ): AnalyzedDeclarations {
+    const analyzedDeclarations = new AnalyzedDeclarations();
 
-    for (const classified of declarations) {
-      const { exportName, sourceFile, declaration } = classified;
+    for (const classifiedDeclaration of classifiedDeclarations) {
+      const { exportName, sourceFile, declaration } = classifiedDeclaration;
 
       // FunctionDeclaration または VariableDeclaration のみを処理
       if (
@@ -60,7 +62,7 @@ export class ComponentAnalyzer extends BaseAnalyzer {
       // コンポーネントの宣言からprops定義を取得
       const props = getProps(declaration);
 
-      const component: Exported = {
+      const analyzed: AnalyzedDeclaration = {
         name: exportName,
         sourceFilePath: sourceFile.getFilePath(),
         sourceLine: declaration.getStartLineNumber(),
@@ -96,16 +98,16 @@ export class ComponentAnalyzer extends BaseAnalyzer {
         // JSX要素からprops使用状況を抽出
         const usages = ExtractUsages.fromJsxElement(
           jsxElement,
-          component.definitions,
+          analyzed.definitions,
           this.getExpressionResolver(),
         );
         this.addUsagesToGroup(groupedUsages, usages);
       }
 
-      component.usages = groupedUsages;
-      exportedComponents.push(component);
+      analyzed.usages = groupedUsages;
+      analyzedDeclarations.push(analyzed);
     }
 
-    return exportedComponents;
+    return analyzedDeclarations;
   }
 }

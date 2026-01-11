@@ -6,9 +6,9 @@ export { CallSiteCollector } from "@/extraction/callSiteCollector";
 export { CallSiteMap } from "@/extraction/callSiteMap";
 export type {
   AnalysisResult,
-  Constant,
+  AnalyzedDeclaration,
+  ConstantParam,
   Definition,
-  Exported,
   FileFilter,
   Usage,
 } from "@/types";

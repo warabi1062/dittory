@@ -229,7 +229,9 @@ describe("analyzeFunctionsCore", () => {
     });
 
     // Assert
-    const prefixArg = result.constants.find((a) => a.paramName === "prefix");
+    const prefixArg = result.constantParams.find(
+      (a) => a.paramName === "prefix",
+    );
     if (!prefixArg) {
       expect.unreachable("prefixArg should be defined");
     }
@@ -255,7 +257,9 @@ describe("analyzeFunctionsCore", () => {
     });
 
     // Assert
-    const prefixArg = result.constants.find((a) => a.paramName === "prefix");
+    const prefixArg = result.constantParams.find(
+      (a) => a.paramName === "prefix",
+    );
     expect(prefixArg).toBeUndefined();
   });
 
@@ -277,11 +281,15 @@ describe("analyzeFunctionsCore", () => {
     });
 
     // Assert - suffixは一部で渡されていないため定数として検出されない
-    const suffixArg = result.constants.find((a) => a.paramName === "suffix");
+    const suffixArg = result.constantParams.find(
+      (a) => a.paramName === "suffix",
+    );
     expect(suffixArg).toBeUndefined();
 
     // prefixは常に同じ値なので検出される
-    const prefixArg = result.constants.find((a) => a.paramName === "prefix");
+    const prefixArg = result.constantParams.find(
+      (a) => a.paramName === "prefix",
+    );
     if (!prefixArg) {
       expect.unreachable("prefixArg should be defined");
     }
@@ -303,7 +311,7 @@ describe("analyzeFunctionsCore", () => {
     });
 
     // Assert - bは常に100
-    const bArg = result.constants.find((a) => a.paramName === "b");
+    const bArg = result.constantParams.find((a) => a.paramName === "b");
     if (!bArg) {
       expect.unreachable("bArg should be defined");
     }
@@ -329,7 +337,7 @@ describe("analyzeFunctionsCore", () => {
     });
 
     // Assert - TestCompはReactコンポーネントなので関数として検出されない
-    const testCompFunc = result.exported.find((f) => f.name === "TestComp");
+    const testCompFunc = result.declarations.find((f) => f.name === "TestComp");
     expect(testCompFunc).toBeUndefined();
   });
 
@@ -348,14 +356,14 @@ describe("analyzeFunctionsCore", () => {
     });
 
     // Assert - Logger.logが検出される（名前は「ClassName.methodName」形式）
-    const loggerLog = result.exported.find((f) => f.name === "Logger.log");
+    const loggerLog = result.declarations.find((f) => f.name === "Logger.log");
     if (!loggerLog) {
       expect.unreachable("loggerLog should be defined");
     }
 
     // levelは常に"DEBUG"
-    const levelArg = result.constants.find(
-      (a) => a.targetName === "Logger.log" && a.paramName === "level",
+    const levelArg = result.constantParams.find(
+      (a) => a.declarationName === "Logger.log" && a.paramName === "level",
     );
     if (!levelArg) {
       expect.unreachable("levelArg should be defined");
@@ -385,7 +393,7 @@ describe("analyzeFunctionsCore", () => {
     });
 
     // Assert - callbackは同じ関数が渡されているが、関数型なので検出されない
-    const callbackArg = result.constants.find(
+    const callbackArg = result.constantParams.find(
       (a) => a.paramName === "callback",
     );
     expect(callbackArg).toBeUndefined();
@@ -412,7 +420,7 @@ describe("analyzeFunctionsCore", () => {
     });
 
     // Assert - methodはすべての呼び出しで同じ値("GET")なので定数として検出される
-    const methodArg = result.constants.find(
+    const methodArg = result.constantParams.find(
       (a) => a.paramName === "options.method",
     );
     if (!methodArg) {
@@ -422,19 +430,21 @@ describe("analyzeFunctionsCore", () => {
     expect(methodArg.usages.length).toBe(4);
 
     // config.timeoutは一部の呼び出しでしか存在しないため定数として検出されない
-    const timeoutArg = result.constants.find(
+    const timeoutArg = result.constantParams.find(
       (a) => a.paramName === "options.config.timeout",
     );
     expect(timeoutArg).toBeUndefined();
 
     // config.retriesも一部の呼び出しでしか存在しないため定数として検出されない
-    const retriesArg = result.constants.find(
+    const retriesArg = result.constantParams.find(
       (a) => a.paramName === "options.config.retries",
     );
     expect(retriesArg).toBeUndefined();
 
     // exported.usages にネストしたキーが "param.nested.key" 形式で存在することを確認
-    const sendRequest = result.exported.find((e) => e.name === "sendRequest");
+    const sendRequest = result.declarations.find(
+      (e) => e.name === "sendRequest",
+    );
     if (!sendRequest) {
       expect.unreachable("sendRequest should be defined");
     }

@@ -32,22 +32,22 @@ export class CallSiteCollector {
       if (this.shouldExcludeFile(sourceFile.getFilePath())) continue;
 
       // JSX要素を収集
-      for (const el of sourceFile.getDescendantsOfKind(
+      for (const jsxElement of sourceFile.getDescendantsOfKind(
         SyntaxKind.JsxOpeningElement,
       )) {
-        this.extractFromJsxElement(el);
+        this.extractFromJsxElement(jsxElement);
       }
-      for (const el of sourceFile.getDescendantsOfKind(
+      for (const jsxElement of sourceFile.getDescendantsOfKind(
         SyntaxKind.JsxSelfClosingElement,
       )) {
-        this.extractFromJsxElement(el);
+        this.extractFromJsxElement(jsxElement);
       }
 
       // 関数呼び出しを収集
-      for (const callExpr of sourceFile.getDescendantsOfKind(
+      for (const callExpression of sourceFile.getDescendantsOfKind(
         SyntaxKind.CallExpression,
       )) {
-        this.extractFromCallExpression(callExpr);
+        this.extractFromCallExpression(callExpression);
       }
     }
 
@@ -67,10 +67,10 @@ export class CallSiteCollector {
     // ここでは単純な識別子のみを対象とし、名前空間付きはスキップする
     if (!Node.isIdentifier(tagName)) return;
 
-    const decl = this.getDeclaration(tagName);
-    if (!decl) return;
+    const declaration = this.getDeclaration(tagName);
+    if (!declaration) return;
 
-    const targetId = this.createTargetId(decl, tagName.getText());
+    const targetId = this.createTargetId(declaration, tagName.getText());
     const filePath = jsxElement.getSourceFile().getFilePath();
     const line = jsxElement.getStartLineNumber();
 
@@ -90,18 +90,24 @@ export class CallSiteCollector {
    * 関数呼び出しから呼び出し情報を抽出して登録する
    * 呼び出し式がIdentifierでない場合や、宣言が解決できない場合は何もしない
    */
-  private extractFromCallExpression(callExpr: CallExpression): void {
-    const expr = callExpr.getExpression();
-    if (!Node.isIdentifier(expr)) return;
+  private extractFromCallExpression(callExpression: CallExpression): void {
+    const calleeExpression = callExpression.getExpression();
+    if (!Node.isIdentifier(calleeExpression)) return;
 
-    const decl = this.getDeclaration(expr);
-    if (!decl) return;
+    const declaration = this.getDeclaration(calleeExpression);
+    if (!declaration) return;
 
-    const targetId = this.createTargetId(decl, expr.getText());
-    const filePath = callExpr.getSourceFile().getFilePath();
-    const line = callExpr.getStartLineNumber();
+    const targetId = this.createTargetId(
+      declaration,
+      calleeExpression.getText(),
+    );
+    const filePath = callExpression.getSourceFile().getFilePath();
+    const line = callExpression.getStartLineNumber();
 
-    const argsWithName = this.getArgsWithName(decl, callExpr.getArguments());
+    const argsWithName = this.getArgsWithName(
+      declaration,
+      callExpression.getArguments(),
+    );
 
     for (const { name, node } of argsWithName) {
       this.callSiteMap.addArg(targetId, {
@@ -119,20 +125,21 @@ export class CallSiteCollector {
    * 引数が省略されている場合、node は undefined になる
    */
   private getArgsWithName(
-    decl: Node,
+    declaration: Node,
     args: Node[],
   ): { name: string; node: Node | undefined }[] {
     let paramNames: string[] = [];
 
-    if (Node.isFunctionDeclaration(decl)) {
-      paramNames = decl.getParameters().map((p) => p.getName());
-    } else if (Node.isVariableDeclaration(decl)) {
-      const init = decl.getInitializer();
+    if (Node.isFunctionDeclaration(declaration)) {
+      paramNames = declaration.getParameters().map((p) => p.getName());
+    } else if (Node.isVariableDeclaration(declaration)) {
+      const initializer = declaration.getInitializer();
       if (
-        init &&
-        (Node.isArrowFunction(init) || Node.isFunctionExpression(init))
+        initializer &&
+        (Node.isArrowFunction(initializer) ||
+          Node.isFunctionExpression(initializer))
       ) {
-        paramNames = init.getParameters().map((p) => p.getName());
+        paramNames = initializer.getParameters().map((p) => p.getName());
       }
     }
 
@@ -155,8 +162,8 @@ export class CallSiteCollector {
    * 宣言ノードと名前からtargetIdを生成する
    * 形式: "{ファイルパス}:{名前}"
    */
-  private createTargetId(decl: Node, name: string): string {
-    return `${decl.getSourceFile().getFilePath()}:${name}`;
+  private createTargetId(declaration: Node, name: string): string {
+    return `${declaration.getSourceFile().getFilePath()}:${name}`;
   }
 
   /**

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import path from "node:path";
+import { AnalyzedDeclarations } from "@/analyzedDeclarations";
 import { analyzeFunctionsCore } from "@/analyzeFunctions";
 import { analyzePropsCore } from "@/analyzeProps";
 import { loadConfig } from "@/cli/loadConfig";
@@ -12,8 +13,7 @@ import {
   validateTargetDir,
   validateTsConfig,
 } from "@/cli/parseCliOptions";
-import { Constants } from "@/constants";
-import { Exporteds } from "@/exporteds";
+import { ConstantParams } from "@/constantParams";
 import { CallSiteCollector } from "@/extraction/callSiteCollector";
 import { printAnalysisResult } from "@/output/printAnalysisResult";
 import { createFilteredSourceFiles } from "@/source/createFilteredSourceFiles";
@@ -66,13 +66,13 @@ async function main(): Promise<void> {
     output: cliOptions.output ?? fileConfig.output ?? DEFAULT_OPTIONS.output,
     tsconfig:
       cliOptions.tsconfig ?? fileConfig.tsconfig ?? DEFAULT_OPTIONS.tsconfig,
-    valueTypes:
-      cliOptions.valueTypes ??
-      fileConfig.valueTypes ??
-      DEFAULT_OPTIONS.valueTypes,
+    allowedValueTypes:
+      cliOptions.allowedValueTypes ??
+      fileConfig.allowedValueTypes ??
+      DEFAULT_OPTIONS.allowedValueTypes,
   };
 
-  const { targetDir, minUsages, target, output, tsconfig, valueTypes } =
+  const { targetDir, minUsages, target, output, tsconfig, allowedValueTypes } =
     options;
 
   // 対象ディレクトリの存在を検証
@@ -109,32 +109,32 @@ async function main(): Promise<void> {
   const callSiteMap = new CallSiteCollector().collect(sourceFilesToAnalyze);
 
   // 各解析結果を収集
-  const exportedsToMerge: Exporteds[] = [];
-  const constantsToMerge: Constants[] = [];
+  const declarationsToMerge: AnalyzedDeclarations[] = [];
+  const constantParamsToMerge: ConstantParams[] = [];
 
   if (target === "all" || target === "components") {
     const propsResult = analyzePropsCore(sourceFilesToAnalyze, {
       minUsages,
-      valueTypes,
+      allowedValueTypes,
       callSiteMap,
     });
-    exportedsToMerge.push(propsResult.exported);
-    constantsToMerge.push(propsResult.constants);
+    declarationsToMerge.push(propsResult.declarations);
+    constantParamsToMerge.push(propsResult.constantParams);
   }
 
   if (target === "all" || target === "functions") {
     const functionsResult = analyzeFunctionsCore(sourceFilesToAnalyze, {
       minUsages,
-      valueTypes,
+      allowedValueTypes,
       callSiteMap,
     });
-    exportedsToMerge.push(functionsResult.exported);
-    constantsToMerge.push(functionsResult.constants);
+    declarationsToMerge.push(functionsResult.declarations);
+    constantParamsToMerge.push(functionsResult.constantParams);
   }
 
   const result: AnalysisResult = {
-    exported: Exporteds.merge(...exportedsToMerge),
-    constants: Constants.merge(...constantsToMerge),
+    declarations: AnalyzedDeclarations.merge(...declarationsToMerge),
+    constantParams: ConstantParams.merge(...constantParamsToMerge),
   };
 
   printAnalysisResult(result, output);

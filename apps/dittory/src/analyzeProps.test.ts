@@ -108,7 +108,9 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert
-    const colorProp = result.constants.find((p) => p.paramName === "color");
+    const colorProp = result.constantParams.find(
+      (p) => p.paramName === "color",
+    );
     if (!colorProp) {
       expect.unreachable("colorProp should be defined");
     }
@@ -146,7 +148,9 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert
-    const colorProp = result.constants.find((p) => p.paramName === "color");
+    const colorProp = result.constantParams.find(
+      (p) => p.paramName === "color",
+    );
     expect(colorProp).toBeUndefined();
   });
 
@@ -181,7 +185,7 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert - disabledは定数として検出されない
-    const disabledProp = result.constants.find(
+    const disabledProp = result.constantParams.find(
       (p) => p.paramName === "disabled",
     );
     expect(disabledProp).toBeUndefined();
@@ -225,7 +229,7 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert - darkとlightが混在するため定数ではない
-    const configTheme = result.constants.find(
+    const configTheme = result.constantParams.find(
       (p) => p.paramName === "config.theme",
     );
     expect(configTheme).toBeUndefined();
@@ -267,7 +271,7 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert
-    const configTheme = result.constants.find(
+    const configTheme = result.constantParams.find(
       (p) => p.paramName === "config.theme",
     );
     if (!configTheme) {
@@ -310,7 +314,9 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert - StatusAとStatusBは異なる値なので検出されない
-    const statusProp = result.constants.find((p) => p.paramName === "status");
+    const statusProp = result.constantParams.find(
+      (p) => p.paramName === "status",
+    );
     expect(statusProp).toBeUndefined();
   });
 
@@ -346,7 +352,9 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert
-    const variantProp = result.constants.find((p) => p.paramName === "variant");
+    const variantProp = result.constantParams.find(
+      (p) => p.paramName === "variant",
+    );
     if (!variantProp) {
       expect.unreachable("variantProp should be defined");
     }
@@ -384,7 +392,7 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert
-    const priorityProp = result.constants.find(
+    const priorityProp = result.constantParams.find(
       (p) => p.paramName === "priority",
     );
     if (!priorityProp) {
@@ -424,7 +432,7 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert
-    const themeProp = result.constants.find(
+    const themeProp = result.constantParams.find(
       (p) => p.paramName === "config.theme",
     );
     if (!themeProp) {
@@ -433,7 +441,7 @@ describe("analyzePropsCore", () => {
     expect(themeProp.value.outputString()).toBe('"dark"');
     expect(themeProp.usages.length).toBe(2);
 
-    const sizeProp = result.constants.find(
+    const sizeProp = result.constantParams.find(
       (p) => p.paramName === "config.size",
     );
     if (!sizeProp) {
@@ -443,7 +451,7 @@ describe("analyzePropsCore", () => {
     expect(sizeProp.usages.length).toBe(2);
 
     // exported.usages にネストしたキーが存在することを確認
-    const testComp = result.exported.find((e) => e.name === "TestComp");
+    const testComp = result.declarations.find((e) => e.name === "TestComp");
     if (!testComp) {
       expect.unreachable("testComp should be defined");
     }
@@ -483,12 +491,12 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert
-    const themeProp = result.constants.find(
+    const themeProp = result.constantParams.find(
       (p) => p.paramName === "config.theme",
     );
     expect(themeProp).toBeUndefined();
 
-    const sizeProp = result.constants.find(
+    const sizeProp = result.constantParams.find(
       (p) => p.paramName === "config.size",
     );
     expect(sizeProp).toBeUndefined();
@@ -530,7 +538,7 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert
-    const primaryProp = result.constants.find(
+    const primaryProp = result.constantParams.find(
       (p) => p.paramName === "style.colors.primary",
     );
     if (!primaryProp) {
@@ -538,7 +546,7 @@ describe("analyzePropsCore", () => {
     }
     expect(primaryProp.value.outputString()).toBe('"blue"');
 
-    const secondaryProp = result.constants.find(
+    const secondaryProp = result.constantParams.find(
       (p) => p.paramName === "style.colors.secondary",
     );
     if (!secondaryProp) {
@@ -577,7 +585,7 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert
-    const themeProp = result.constants.find(
+    const themeProp = result.constantParams.find(
       (p) => p.paramName === "config.theme",
     );
     if (!themeProp) {
@@ -586,7 +594,7 @@ describe("analyzePropsCore", () => {
     expect(themeProp.value.outputString()).toBe('"dark"');
 
     // sizeは片方にしかないため定数ではない
-    const sizeProp = result.constants.find(
+    const sizeProp = result.constantParams.find(
       (p) => p.paramName === "config.size",
     );
     expect(sizeProp).toBeUndefined();
@@ -629,7 +637,9 @@ describe("analyzePropsCore", () => {
     });
 
     // Assert - onClickは同じ関数が渡されているが、関数型なので検出されない
-    const onClickProp = result.constants.find((p) => p.paramName === "onClick");
+    const onClickProp = result.constantParams.find(
+      (p) => p.paramName === "onClick",
+    );
     expect(onClickProp).toBeUndefined();
   });
 });

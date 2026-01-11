@@ -74,17 +74,17 @@ export function extractArgValue(expression: Node | undefined): ArgValue {
   // PropertyAccessExpression (例: Status.Active, props.number)
   if (Node.isPropertyAccessExpression(expression)) {
     const symbol = expression.getSymbol();
-    const decl = symbol?.getDeclarations()[0];
+    const declaration = symbol?.getDeclarations()[0];
 
     // enum memberの場合
-    if (decl && Node.isEnumMember(decl)) {
-      const enumDecl = decl.getParent();
-      if (Node.isEnumDeclaration(enumDecl)) {
+    if (declaration && Node.isEnumMember(declaration)) {
+      const enumDeclaration = declaration.getParent();
+      if (Node.isEnumDeclaration(enumDeclaration)) {
         return new EnumLiteralArgValue(
-          enumDecl.getSourceFile().getFilePath(),
-          enumDecl.getName(),
-          decl.getName(),
-          decl.getValue(),
+          enumDeclaration.getSourceFile().getFilePath(),
+          enumDeclaration.getName(),
+          declaration.getName(),
+          declaration.getValue(),
         );
       }
     }
@@ -114,23 +114,23 @@ export function extractArgValue(expression: Node | undefined): ArgValue {
 
     const symbol = expression.getSymbol();
     const resolvedSymbol = symbol?.getAliasedSymbol() ?? symbol;
-    const decl = resolvedSymbol?.getDeclarations()[0];
+    const declaration = resolvedSymbol?.getDeclarations()[0];
 
-    if (decl) {
-      const kind = decl.getKind();
+    if (declaration) {
+      const kind = declaration.getKind();
       // パラメータまたはBindingElementの場合
       if (kind === SyntaxKind.Parameter || kind === SyntaxKind.BindingElement) {
         return createParamRefValue(expression);
       }
 
       // 変数宣言の場合は初期化子を再帰的に解決
-      if (Node.isVariableDeclaration(decl)) {
-        const initializer = decl.getInitializer();
+      if (Node.isVariableDeclaration(declaration)) {
+        const initializer = declaration.getInitializer();
         if (initializer) {
           return extractArgValue(initializer);
         }
         return new VariableLiteralArgValue(
-          decl.getSourceFile().getFilePath(),
+          declaration.getSourceFile().getFilePath(),
           expression.getText(),
         );
       }
@@ -138,7 +138,7 @@ export function extractArgValue(expression: Node | undefined): ArgValue {
       // その他の宣言タイプ（インポート宣言など）
       // ファイルパス + 変数名で識別する
       return new VariableLiteralArgValue(
-        decl.getSourceFile().getFilePath(),
+        declaration.getSourceFile().getFilePath(),
         expression.getText(),
       );
     }

@@ -4,8 +4,8 @@ import {
   type ParameterDeclaration,
   type ReferencedSymbol,
 } from "ts-morph";
-import { Constants } from "@/constants";
-import type { Exporteds } from "@/exporteds";
+import type { AnalyzedDeclarations } from "@/analyzedDeclarations";
+import { ConstantParams } from "@/constantParams";
 import {
   type ArgValue,
   FunctionArgValue,
@@ -20,10 +20,10 @@ import {
 import { isTestOrStorybookFile } from "@/source/fileFilters";
 import type {
   AnalysisResult,
+  AnalyzedDeclaration,
   AnalyzerOptions,
   ClassifiedDeclaration,
   Definition,
-  Exported,
   FileFilter,
   Usage,
 } from "@/types";
@@ -76,21 +76,21 @@ class UsageData {
 }
 
 /**
- * 対象ごとの情報（行番号とパラメータ使用状況）
+ * 宣言ごとの使用状況プロファイル（行番号とパラメータ使用状況）
  */
-class TargetInfo {
-  readonly line: number;
-  private readonly params: Map<string, UsageData>;
+class DeclarationUsageProfile {
+  readonly sourceLine: number;
+  private readonly usageDataByParam: Map<string, UsageData>;
   /** 総呼び出し回数（ネストしたプロパティの存在チェックに使用） */
   private readonly totalCallCount: number;
 
   constructor(
-    line: number,
-    params: Map<string, UsageData>,
+    sourceLine: number,
+    usageDataByParam: Map<string, UsageData>,
     totalCallCount: number,
   ) {
-    this.line = line;
-    this.params = params;
+    this.sourceLine = sourceLine;
+    this.usageDataByParam = usageDataByParam;
     this.totalCallCount = totalCallCount;
   }
 
@@ -100,7 +100,7 @@ class TargetInfo {
   *findConstantParams(
     minUsages: number,
   ): IterableIterator<[string, UsageData]> {
-    for (const [paramName, usageData] of this.params) {
+    for (const [paramName, usageData] of this.usageDataByParam) {
       if (usageData.isConstant(minUsages, this.totalCallCount)) {
         yield [paramName, usageData];
       }
@@ -109,76 +109,86 @@ class TargetInfo {
 }
 
 /**
- * ファイル内の対象（関数/コンポーネント）を管理するマップ
+ * ファイル内の宣言（関数/コンポーネント）を管理するレジストリ
  */
-class TargetMap {
-  private readonly map = new Map<string, TargetInfo>();
+class DeclarationRegistry {
+  private readonly profilesByName = new Map<string, DeclarationUsageProfile>();
 
   /**
-   * Exported から TargetInfo を作成して追加
+   * AnalyzedDeclaration から DeclarationUsageProfile を作成して追加
    */
-  addFromExported(item: Exported): void {
+  addFromDeclaration(analyzedDeclaration: AnalyzedDeclaration): void {
     const paramMap = new Map<string, UsageData>();
-    for (const [paramName, usages] of Object.entries(item.usages)) {
+    for (const [paramName, usages] of Object.entries(
+      analyzedDeclaration.usages,
+    )) {
       paramMap.set(paramName, new UsageData(usages));
     }
 
     // 総呼び出し回数を計算（最大のUsage配列の長さを使用）
     // すべての呼び出しで存在するパラメータのUsage数が基準となる
     const totalCallCount = Math.max(
-      ...Object.values(item.usages).map((usages) => usages.length),
+      ...Object.values(analyzedDeclaration.usages).map(
+        (usages) => usages.length,
+      ),
       0,
     );
 
-    this.map.set(
-      item.name,
-      new TargetInfo(item.sourceLine, paramMap, totalCallCount),
+    this.profilesByName.set(
+      analyzedDeclaration.name,
+      new DeclarationUsageProfile(
+        analyzedDeclaration.sourceLine,
+        paramMap,
+        totalCallCount,
+      ),
     );
   }
 
   /**
    * イテレーション用
    */
-  *[Symbol.iterator](): Iterator<[string, TargetInfo]> {
-    yield* this.map;
+  *[Symbol.iterator](): Iterator<[string, DeclarationUsageProfile]> {
+    yield* this.profilesByName;
   }
 }
 
 /**
- * 使用状況を階層的にグループ化したマップ
+ * 使用状況を階層的に管理するレジストリ
  *
  * 2階層の構造で使用状況を整理する:
- * 1. ソースファイルパス: どのファイルで定義された対象か
- * 2. 対象名: 関数名/コンポーネント名（+ 行番号とパラメータ使用状況）
+ * 1. ソースファイルパス: どのファイルで定義された宣言か
+ * 2. 宣言名: 関数名/コンポーネント名（+ 行番号とパラメータ使用状況）
  *
  * この構造により、定数検出時に効率的に走査できる。
  */
-class GroupedMap {
-  private readonly map = new Map<string, TargetMap>();
+class UsageRegistry {
+  private readonly registriesByFile = new Map<string, DeclarationRegistry>();
 
   /**
-   * TargetMap を取得（存在しなければ作成）
+   * DeclarationRegistry を取得（存在しなければ作成）
    */
-  private getOrCreateTargetMap(sourceFilePath: string): TargetMap {
-    let targetMap = this.map.get(sourceFilePath);
-    if (!targetMap) {
-      targetMap = new TargetMap();
-      this.map.set(sourceFilePath, targetMap);
+  private getOrCreateDeclarationRegistry(
+    sourceFilePath: string,
+  ): DeclarationRegistry {
+    let declarationRegistry = this.registriesByFile.get(sourceFilePath);
+    if (!declarationRegistry) {
+      declarationRegistry = new DeclarationRegistry();
+      this.registriesByFile.set(sourceFilePath, declarationRegistry);
     }
-    return targetMap;
+    return declarationRegistry;
   }
 
   /**
-   * Exporteds から GroupedMap を作成
+   * AnalyzedDeclarations から UsageRegistry を作成
    */
-  static fromExporteds(exporteds: Exporteds): GroupedMap {
-    const groupedMap = new GroupedMap();
-    for (const item of exporteds) {
-      groupedMap
-        .getOrCreateTargetMap(item.sourceFilePath)
-        .addFromExported(item);
+  static fromDeclarations(declarations: AnalyzedDeclarations): UsageRegistry {
+    const usageRegistry = new UsageRegistry();
+    for (const analyzedDeclaration of declarations) {
+      usageRegistry
+        .getOrCreateDeclarationRegistry(analyzedDeclaration.sourceFilePath)
+        .addFromDeclaration(analyzedDeclaration);
     }
-    return groupedMap;
+    return usageRegistry;
   }
 
   /**
@@ -186,20 +196,20 @@ class GroupedMap {
    */
   *findAllConstantParams(minUsages: number): IterableIterator<{
     sourceFile: string;
-    targetName: string;
-    targetLine: number;
+    declarationName: string;
+    declarationLine: number;
     paramName: string;
     usageData: UsageData;
   }> {
-    for (const [sourceFile, targetMap] of this.map) {
-      for (const [targetName, targetInfo] of targetMap) {
-        for (const [paramName, usageData] of targetInfo.findConstantParams(
+    for (const [sourceFile, declarationRegistry] of this.registriesByFile) {
+      for (const [declarationName, usageProfile] of declarationRegistry) {
+        for (const [paramName, usageData] of usageProfile.findConstantParams(
           minUsages,
         )) {
           yield {
             sourceFile,
-            targetName,
-            targetLine: targetInfo.line,
+            declarationName,
+            declarationLine: usageProfile.sourceLine,
             paramName,
             usageData,
           };
@@ -215,13 +225,13 @@ class GroupedMap {
 export abstract class BaseAnalyzer {
   protected shouldExcludeFile: FileFilter;
   protected minUsages: number;
-  protected valueTypes: ValueType[] | "all";
+  protected allowedValueTypes: ValueType[] | "all";
   protected callSiteMap!: CallSiteMap;
 
   constructor(options: AnalyzerOptions = {}) {
     this.shouldExcludeFile = options.shouldExcludeFile ?? isTestOrStorybookFile;
     this.minUsages = options.minUsages ?? 2;
-    this.valueTypes = options.valueTypes ?? "all";
+    this.allowedValueTypes = options.allowedValueTypes ?? "all";
   }
 
   /**
@@ -330,38 +340,45 @@ export abstract class BaseAnalyzer {
   /**
    * メイン分析処理
    *
-   * @param declarations - 事前分類済みの宣言配列
+   * @param classifiedDeclarations - 事前分類済みの宣言配列
    */
-  analyze(declarations: ClassifiedDeclaration[]): AnalysisResult {
-    // 1. エクスポートされた対象を収集
-    const exported = this.collect(declarations);
+  analyze(classifiedDeclarations: ClassifiedDeclaration[]): AnalysisResult {
+    // 1. 分析対象を収集
+    const declarations = this.collect(classifiedDeclarations);
 
-    // 2. 使用状況をグループ化
-    const groupedMap = GroupedMap.fromExporteds(exported);
+    // 2. 使用状況をレジストリに登録
+    const usageRegistry = UsageRegistry.fromDeclarations(declarations);
 
     // 3. 常に同じ値が渡されているパラメータを抽出
-    const constants = this.extractConstants(groupedMap);
+    const constantParams = this.extractConstantParams(usageRegistry);
 
     // 4. 結果を構築
-    return { constants, exported };
+    return { constantParams, declarations };
   }
 
   /**
-   * エクスポートされた対象を収集する（サブクラスで実装）
+   * 分析対象を収集する（サブクラスで実装）
    *
-   * @param declarations - 事前分類済みの宣言配列
+   * @param classifiedDeclarations - 事前分類済みの宣言配列
    */
-  protected abstract collect(declarations: ClassifiedDeclaration[]): Exporteds;
+  protected abstract collect(
+    classifiedDeclarations: ClassifiedDeclaration[],
+  ): AnalyzedDeclarations;
 
   /**
    * 常に同じ値が渡されているパラメータを抽出
    */
-  private extractConstants(groupedMap: GroupedMap): Constants {
-    const result = new Constants();
+  private extractConstantParams(usageRegistry: UsageRegistry): ConstantParams {
+    const constantParams = new ConstantParams();
 
-    for (const entry of groupedMap.findAllConstantParams(this.minUsages)) {
-      const { sourceFile, targetName, targetLine, paramName, usageData } =
-        entry;
+    for (const entry of usageRegistry.findAllConstantParams(this.minUsages)) {
+      const {
+        sourceFile,
+        declarationName,
+        declarationLine,
+        paramName,
+        usageData,
+      } = entry;
       const value = usageData.representativeValue;
 
       // 関数型の値は定数として報告しない
@@ -371,20 +388,20 @@ export abstract class BaseAnalyzer {
       }
 
       // 値種別によるフィルタリング
-      if (!matchesValueTypes(value, this.valueTypes)) {
+      if (!matchesValueTypes(value, this.allowedValueTypes)) {
         continue;
       }
 
-      result.push({
-        targetName,
-        targetSourceFile: sourceFile,
-        targetLine,
+      constantParams.push({
+        declarationName,
+        declarationSourceFile: sourceFile,
+        declarationLine,
         paramName,
         value,
         usages: usageData.usages,
       });
     }
 
-    return result;
+    return constantParams;
   }
 }

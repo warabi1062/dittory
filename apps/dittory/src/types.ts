@@ -5,8 +5,8 @@ import type {
   SourceFile,
   VariableDeclaration,
 } from "ts-morph";
-import type { Constants } from "@/constants";
-import type { Exporteds } from "@/exporteds";
+import type { AnalyzedDeclarations } from "@/analyzedDeclarations";
+import type { ConstantParams } from "@/constantParams";
 import type { ArgValue } from "@/extraction/argValueClasses";
 
 /**
@@ -41,9 +41,9 @@ export interface Definition {
 }
 
 /**
- * エクスポートされた対象の共通interface
+ * 分析対象（エクスポートされた関数/コンポーネント）
  */
-export interface Exported {
+export interface AnalyzedDeclaration {
   /** クラスメソッドの場合は "ClassName.methodName" 形式 */
   name: string;
   sourceFilePath: string;
@@ -56,10 +56,10 @@ export interface Exported {
 /**
  * 常に同じ値が渡されているパラメータ（デフォルト値化の候補）
  */
-export interface Constant {
-  targetName: string;
-  targetSourceFile: string;
-  targetLine: number;
+export interface ConstantParam {
+  declarationName: string;
+  declarationSourceFile: string;
+  declarationLine: number;
   paramName: string;
   value: ArgValue;
   usages: Usage[];
@@ -69,8 +69,8 @@ export interface Constant {
  * 分析結果
  */
 export interface AnalysisResult {
-  constants: Constants;
-  exported: Exporteds;
+  constantParams: ConstantParams;
+  declarations: AnalyzedDeclarations;
 }
 
 /**
@@ -81,7 +81,9 @@ export interface AnalyzerOptions {
   /** デフォルト: 2 */
   minUsages?: number;
   /** 検出対象の値種別。デフォルト: "all" */
-  valueTypes?: import("@/extraction/valueTypeDetector").ValueType[] | "all";
+  allowedValueTypes?:
+    | import("@/extraction/valueTypeDetector").ValueType[]
+    | "all";
 }
 
 /**

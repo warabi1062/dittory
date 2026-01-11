@@ -116,11 +116,11 @@ export class CallSiteMap {
    * 存在しない場合は新規作成して登録する
    */
   private getOrCreateInfo(targetId: string): CallSiteInfo {
-    let info = this.map.get(targetId);
-    if (!info) {
-      info = new CallSiteInfo();
-      this.map.set(targetId, info);
+    let callSiteInfo = this.map.get(targetId);
+    if (!callSiteInfo) {
+      callSiteInfo = new CallSiteInfo();
+      this.map.set(targetId, callSiteInfo);
     }
-    return info;
+    return callSiteInfo;
   }
 }

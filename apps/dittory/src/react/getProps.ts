@@ -98,8 +98,11 @@ function collectPropsFromType(
     const declarations = prop.getDeclarations();
 
     let isOptional = false;
-    for (const decl of declarations) {
-      if (Node.isPropertySignature(decl) && decl.hasQuestionToken()) {
+    for (const declaration of declarations) {
+      if (
+        Node.isPropertySignature(declaration) &&
+        declaration.hasQuestionToken()
+      ) {
         isOptional = true;
         break;
       }

@@ -12,9 +12,9 @@ import {
 export function isParameterReference(expression: Node): boolean {
   if (Node.isIdentifier(expression)) {
     const symbol = expression.getSymbol();
-    const decl = symbol?.getDeclarations()[0];
-    if (!decl) return false;
-    const kind = decl.getKind();
+    const declaration = symbol?.getDeclarations()[0];
+    if (!declaration) return false;
+    const kind = declaration.getKind();
     return kind === SyntaxKind.Parameter || kind === SyntaxKind.BindingElement;
   }
   if (Node.isPropertyAccessExpression(expression)) {

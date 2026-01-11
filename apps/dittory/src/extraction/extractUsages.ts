@@ -5,7 +5,7 @@ import {
   type JsxSelfClosingElement,
   Node,
 } from "ts-morph";
-import type { Definition, Exported, Usage } from "@/types";
+import type { AnalyzedDeclaration, Definition, Usage } from "@/types";
 import {
   JsxShorthandLiteralArgValue,
   UndefinedArgValue,
@@ -24,13 +24,13 @@ export class ExtractUsages {
    * 各プロパティを「引数名.プロパティ名」形式で記録する。
    *
    * @param callExpression - 関数呼び出しノード
-   * @param callable - 対象の関数情報
+   * @param declaration - 分析対象の関数情報
    * @param resolver - 式を解決するためのリゾルバ
    * @returns 引数使用状況の配列
    */
   static fromCall(
     callExpression: CallExpression,
-    callable: Exported,
+    declaration: AnalyzedDeclaration,
     resolver: ExpressionResolver,
   ): Usage[] {
     // dittory-disable-next-line コメントがある場合は除外
@@ -42,13 +42,13 @@ export class ExtractUsages {
     const sourceFile = callExpression.getSourceFile();
     const args = callExpression.getArguments();
 
-    for (const param of callable.definitions) {
-      const arg = args[param.index];
+    for (const definition of declaration.definitions) {
+      const arg = args[definition.index];
 
       if (!arg) {
         // 引数が渡されていない場合はundefinedとして記録
         usages.push({
-          name: param.name,
+          name: definition.name,
           value: new UndefinedArgValue(),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: callExpression.getStartLineNumber(),
@@ -57,7 +57,10 @@ export class ExtractUsages {
       }
 
       // オブジェクトリテラルの場合は再帰的にフラット化
-      for (const { key, value } of resolver.flattenObject(arg, param.name)) {
+      for (const { key, value } of resolver.flattenObject(
+        arg,
+        definition.name,
+      )) {
         usages.push({
           name: key,
           value,
@@ -100,13 +103,13 @@ export class ExtractUsages {
     }
 
     // definitionsをループして処理
-    for (const prop of definitions) {
-      const attr = attributeMap.get(prop.name);
+    for (const definition of definitions) {
+      const attr = attributeMap.get(definition.name);
 
       if (!attr) {
         // 渡されていない場合（required/optional問わず記録）
         usages.push({
-          name: prop.name,
+          name: definition.name,
           value: new UndefinedArgValue(),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: element.getStartLineNumber(),
@@ -120,7 +123,7 @@ export class ExtractUsages {
       if (!initializer) {
         // boolean shorthand (例: <Component disabled />)
         usages.push({
-          name: prop.name,
+          name: definition.name,
           value: new JsxShorthandLiteralArgValue(),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: attr.getStartLineNumber(),
@@ -133,7 +136,7 @@ export class ExtractUsages {
         }
         for (const { key, value } of resolver.flattenObject(
           expression,
-          prop.name,
+          definition.name,
         )) {
           usages.push({
             name: key,
@@ -145,7 +148,7 @@ export class ExtractUsages {
       } else {
         // "string" 形式 - resolverを通して解決
         usages.push({
-          name: prop.name,
+          name: definition.name,
           value: resolver.resolve(initializer),
           usageFilePath: sourceFile.getFilePath(),
           usageLine: attr.getStartLineNumber(),

@@ -1,10 +1,10 @@
 import { Node } from "ts-morph";
-import { Exporteds } from "@/exporteds";
+import { AnalyzedDeclarations } from "@/analyzedDeclarations";
 import { ExtractUsages } from "@/extraction/extractUsages";
 import type {
+  AnalyzedDeclaration,
   AnalyzerOptions,
   ClassifiedDeclaration,
-  Exported,
   Usage,
 } from "@/types";
 import { BaseAnalyzer } from "./baseAnalyzer";
@@ -31,14 +31,16 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
   /**
    * 事前分類済みの宣言からクラスメソッドを収集する
    *
-   * @param declarations - 事前分類済みの宣言配列（type: "class"）
-   * @returns クラスメソッドとその使用状況（名前は「ClassName.methodName」形式）
+   * @param classifiedDeclarations - 事前分類済みの宣言配列（type: "class"）
+   * @returns 分析対象のメソッドとその使用状況（名前は「ClassName.methodName」形式）
    */
-  protected collect(declarations: ClassifiedDeclaration[]): Exporteds {
-    const results = new Exporteds();
+  protected collect(
+    classifiedDeclarations: ClassifiedDeclaration[],
+  ): AnalyzedDeclarations {
+    const analyzedDeclarations = new AnalyzedDeclarations();
 
-    for (const classified of declarations) {
-      const { exportName, sourceFile, declaration } = classified;
+    for (const classifiedDeclaration of classifiedDeclarations) {
+      const { exportName, sourceFile, declaration } = classifiedDeclaration;
 
       if (!Node.isClassDeclaration(declaration)) {
         continue;
@@ -50,7 +52,7 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
         const methodName = method.getName();
         const parameters = this.getParameterDefinitions(method);
 
-        const callable: Exported = {
+        const analyzed: AnalyzedDeclaration = {
           name: `${exportName}.${methodName}`,
           sourceFilePath: sourceFile.getFilePath(),
           sourceLine: method.getStartLineNumber(),
@@ -96,17 +98,17 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
           // メソッド呼び出しから引数使用状況を抽出
           const usages = ExtractUsages.fromCall(
             callExpression,
-            callable,
+            analyzed,
             this.getExpressionResolver(),
           );
           this.addUsagesToGroup(groupedUsages, usages);
         }
 
-        callable.usages = groupedUsages;
-        results.push(callable);
+        analyzed.usages = groupedUsages;
+        analyzedDeclarations.push(analyzed);
       }
     }
 
-    return results;
+    return analyzedDeclarations;
   }
 }
