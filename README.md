@@ -209,6 +209,7 @@ process("hello", 42);  // "b" argument is not tracked
 | `--target=<mode>` | What to analyze: `all`, `components`, `functions` | `all` |
 | `--output=<mode>` | Output verbosity: `simple`, `verbose` | `simple` |
 | `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |
+| `--value-types=<types>` | Value types to detect (comma-separated): `boolean`, `number`, `string`, `enum`, `undefined`, `all` | `all` |
 | `--help` | Show help message | — |
 
 ## Configuration File
@@ -227,6 +228,7 @@ export default {
   output: "verbose",
   tsconfig: "./tsconfig.app.json",
   targetDir: "./src",
+  valueTypes: ["boolean", "string"], // or "all"
 };
 ```
 

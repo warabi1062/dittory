@@ -44,6 +44,27 @@ These patterns indicate:
 4. **Analyzes** each parameter to check if it always receives the same value
 5. **Reports** parameters that are constant across all usages
 
+### Parameter Propagation (Call Graph Analysis)
+
+dittory can track values through component/function chains:
+
+```tsx
+// App passes "42" to Parent, Parent passes props.number to Child
+// → Child.number is detected as constant "42"
+
+const Child = ({ number }) => <div>{number}</div>;
+const Parent = ({ number }) => <Child number={number} />;
+export const App = () => <Parent number="42" />;
+```
+
+| Pattern | Example | Supported |
+|---------|---------|-----------|
+| Direct props access | `props.value` | ✅ |
+| Destructured props | `({ value }) => ...` | ✅ |
+| Nested access | `props.user.name` | ✅ |
+| Multi-level chains | `A → B → C` propagation | ✅ |
+| Circular reference protection | Prevents infinite loops | ✅ |
+
 ## Example Output
 
 ```
