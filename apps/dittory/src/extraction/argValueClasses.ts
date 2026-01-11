@@ -122,12 +122,13 @@ export class VariableLiteralArgValue extends LiteralArgValue {
   constructor(
     readonly filePath: string,
     readonly identifier: string,
+    readonly declarationLine: number,
   ) {
     super();
   }
 
   getValue(): string {
-    return `${this.filePath}:${this.identifier}`;
+    return `${this.filePath}:${this.declarationLine}:${this.identifier}`;
   }
 }
 

@@ -160,7 +160,7 @@ describe("matchesValueTypes", () => {
       ).toBe(false);
       expect(
         matchesValueTypes(
-          new VariableLiteralArgValue("/path", "VALUE"),
+          new VariableLiteralArgValue("/path", "VALUE", 1),
           allowedTypes,
         ),
       ).toBe(false);

@@ -455,10 +455,10 @@ describe("analyzePropsCore", () => {
     if (!testComp) {
       expect.unreachable("testComp should be defined");
     }
-    expect(testComp.usages["config.theme"]).toBeDefined();
-    expect(testComp.usages["config.theme"][0].name).toBe("config.theme");
-    expect(testComp.usages["config.size"]).toBeDefined();
-    expect(testComp.usages["config.size"][0].name).toBe("config.size");
+    expect(testComp.usages.get("config.theme")).toBeDefined();
+    expect(testComp.usages.get("config.theme")?.[0].name).toBe("config.theme");
+    expect(testComp.usages.get("config.size")).toBeDefined();
+    expect(testComp.usages.get("config.size")?.[0].name).toBe("config.size");
   });
 
   it("ネストしたオブジェクトの異なる値は検出しないこと", () => {

@@ -141,12 +141,14 @@ describe("ComponentAnalyzer", () => {
     if (!button) {
       expect.unreachable("button should be defined");
     }
-    expect(button.usages.color).toHaveLength(1);
-    expect(button.usages.color[0].value.outputString()).toBe('"blue"');
-    expect(button.usages.size).toHaveLength(1);
-    expect(button.usages.size[0].value.outputString()).toBe('"large"');
-    expect(button.usages.disabled).toHaveLength(1);
-    expect(button.usages.disabled[0].value.outputString()).toBe("true");
+    expect(button.usages.get("color")).toHaveLength(1);
+    expect(button.usages.get("color")?.[0].value.outputString()).toBe('"blue"');
+    expect(button.usages.get("size")).toHaveLength(1);
+    expect(button.usages.get("size")?.[0].value.outputString()).toBe('"large"');
+    expect(button.usages.get("disabled")).toHaveLength(1);
+    expect(button.usages.get("disabled")?.[0].value.outputString()).toBe(
+      "true",
+    );
   });
 
   it("オブジェクトリテラルのpropsをネストして抽出すること", () => {
@@ -181,10 +183,14 @@ describe("ComponentAnalyzer", () => {
     if (!box) {
       expect.unreachable("box should be defined");
     }
-    expect(box.usages["style.color"]).toHaveLength(1);
-    expect(box.usages["style.color"][0].value.outputString()).toBe('"red"');
-    expect(box.usages["style.fontSize"]).toHaveLength(1);
-    expect(box.usages["style.fontSize"][0].value.outputString()).toBe("16");
+    expect(box.usages.get("style.color")).toHaveLength(1);
+    expect(box.usages.get("style.color")?.[0].value.outputString()).toBe(
+      '"red"',
+    );
+    expect(box.usages.get("style.fontSize")).toHaveLength(1);
+    expect(box.usages.get("style.fontSize")?.[0].value.outputString()).toBe(
+      "16",
+    );
   });
 
   it("渡されていないpropsをundefinedとして記録すること", () => {
@@ -220,9 +226,11 @@ describe("ComponentAnalyzer", () => {
     if (!button) {
       expect.unreachable("button should be defined");
     }
-    expect(button.usages.color).toHaveLength(1);
-    expect(button.usages.color[0].value.outputString()).toBe('"blue"');
-    expect(button.usages.size).toHaveLength(1);
-    expect(button.usages.size[0].value).toBeInstanceOf(UndefinedArgValue);
+    expect(button.usages.get("color")).toHaveLength(1);
+    expect(button.usages.get("color")?.[0].value.outputString()).toBe('"blue"');
+    expect(button.usages.get("size")).toHaveLength(1);
+    expect(button.usages.get("size")?.[0].value).toBeInstanceOf(
+      UndefinedArgValue,
+    );
   });
 });

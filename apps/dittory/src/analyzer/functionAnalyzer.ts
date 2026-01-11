@@ -5,9 +5,9 @@ import type {
   AnalyzedDeclaration,
   AnalyzerOptions,
   ClassifiedDeclaration,
-  Usage,
 } from "@/types";
 import { BaseAnalyzer } from "./baseAnalyzer";
+import { UsageGroup } from "./usageGroup";
 
 /**
  * 関数の引数分析を行うAnalyzer
@@ -61,17 +61,17 @@ export class FunctionAnalyzer extends BaseAnalyzer {
       // 関数の宣言からパラメータ定義を取得
       const parameters = this.getParameterDefinitions(declaration);
 
+      const usageGroup = new UsageGroup();
       const analyzed: AnalyzedDeclaration = {
         name: exportName,
         sourceFilePath: sourceFile.getFilePath(),
         sourceLine: declaration.getStartLineNumber(),
         definitions: parameters,
         declaration,
-        usages: {},
+        usages: usageGroup,
       };
 
       // 参照から関数呼び出しを抽出し、usagesをパラメータ名ごとにグループ化
-      const groupedUsages: Record<string, Usage[]> = {};
       for (const reference of references) {
         const refNode = reference.getNode();
         const parent = refNode.getParent();
@@ -97,10 +97,9 @@ export class FunctionAnalyzer extends BaseAnalyzer {
           analyzed,
           this.getExpressionResolver(),
         );
-        this.addUsagesToGroup(groupedUsages, usages);
+        usageGroup.addAll(usages);
       }
 
-      analyzed.usages = groupedUsages;
       analyzedDeclarations.push(analyzed);
     }
 

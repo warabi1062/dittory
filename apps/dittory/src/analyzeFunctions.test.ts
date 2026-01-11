@@ -448,7 +448,9 @@ describe("analyzeFunctionsCore", () => {
     if (!sendRequest) {
       expect.unreachable("sendRequest should be defined");
     }
-    expect(sendRequest.usages["options.method"]).toBeDefined();
-    expect(sendRequest.usages["options.method"][0].name).toBe("options.method");
+    expect(sendRequest.usages.get("options.method")).toBeDefined();
+    expect(sendRequest.usages.get("options.method")?.[0].name).toBe(
+      "options.method",
+    );
   });
 });

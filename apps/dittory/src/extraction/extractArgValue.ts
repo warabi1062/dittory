@@ -117,29 +117,55 @@ export function extractArgValue(expression: Node | undefined): ArgValue {
     const declaration = resolvedSymbol?.getDeclarations()[0];
 
     if (declaration) {
-      const kind = declaration.getKind();
+      let actualDeclaration: Node = declaration;
+      let kind = declaration.getKind();
+
+      // ShorthandPropertyAssignment の場合、実際の参照先を解決する
+      // 例: { name } という短縮プロパティで、name が for...of の分割代入から来ている場合、
+      // シンボルの宣言は ShorthandPropertyAssignment 自体になるが、
+      // 実際には BindingElement や Parameter や VariableDeclaration を参照している
+      if (kind === SyntaxKind.ShorthandPropertyAssignment) {
+        const definitions = expression.getDefinitions();
+        for (const def of definitions) {
+          const node = def.getDeclarationNode();
+          if (!node) continue;
+          const k = node.getKind();
+          if (
+            k === SyntaxKind.BindingElement ||
+            k === SyntaxKind.Parameter ||
+            k === SyntaxKind.VariableDeclaration
+          ) {
+            actualDeclaration = node;
+            kind = k;
+            break;
+          }
+        }
+      }
+
       // パラメータまたはBindingElementの場合
       if (kind === SyntaxKind.Parameter || kind === SyntaxKind.BindingElement) {
         return createParamRefValue(expression);
       }
 
       // 変数宣言の場合は初期化子を再帰的に解決
-      if (Node.isVariableDeclaration(declaration)) {
-        const initializer = declaration.getInitializer();
+      if (Node.isVariableDeclaration(actualDeclaration)) {
+        const initializer = actualDeclaration.getInitializer();
         if (initializer) {
           return extractArgValue(initializer);
         }
         return new VariableLiteralArgValue(
-          declaration.getSourceFile().getFilePath(),
+          actualDeclaration.getSourceFile().getFilePath(),
           expression.getText(),
+          actualDeclaration.getStartLineNumber(),
         );
       }
 
       // その他の宣言タイプ（インポート宣言など）
-      // ファイルパス + 変数名で識別する
+      // ファイルパス + 宣言行番号 + 変数名で識別する
       return new VariableLiteralArgValue(
-        declaration.getSourceFile().getFilePath(),
+        actualDeclaration.getSourceFile().getFilePath(),
         expression.getText(),
+        actualDeclaration.getStartLineNumber(),
       );
     }
   }
@@ -158,13 +184,17 @@ export function extractArgValue(expression: Node | undefined): ArgValue {
     return new BooleanLiteralArgValue(type.getText() === "true");
   }
 
-  // CallExpression (例: this.method(), obj.method())
-  // プロパティアクセスを伴うメソッド呼び出しは、実行時に異なる値を返す可能性があるため、
-  // 使用箇所ごとにユニークな値として扱う
-  // 例: declSourceFile.getFilePath() はループ内で異なる declSourceFile に対して呼ばれる可能性がある
+  // CallExpression (例: this.method(), obj.method(), func(arg))
+  // 以下の場合は実行時に異なる値を返す可能性があるため、使用箇所ごとにユニークな値として扱う：
+  // 1. プロパティアクセスを伴うメソッド呼び出し（例: declSourceFile.getFilePath()）
+  // 2. 引数にパラメータ参照が含まれる関数呼び出し（例: extractArgValue(node)）
   if (Node.isCallExpression(expression)) {
     const calleeExpr = expression.getExpression();
-    if (Node.isPropertyAccessExpression(calleeExpr)) {
+    const hasParamRefArg = expression
+      .getArguments()
+      .some((arg) => isParameterReference(arg));
+
+    if (Node.isPropertyAccessExpression(calleeExpr) || hasParamRefArg) {
       return new MethodCallLiteralArgValue(
         expression.getSourceFile().getFilePath(),
         expression.getStartLineNumber(),

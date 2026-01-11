@@ -5,9 +5,9 @@ import type {
   AnalyzedDeclaration,
   AnalyzerOptions,
   ClassifiedDeclaration,
-  Usage,
 } from "@/types";
 import { BaseAnalyzer } from "./baseAnalyzer";
+import { UsageGroup } from "./usageGroup";
 
 /**
  * クラスメソッドの引数分析を行うAnalyzer
@@ -52,13 +52,14 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
         const methodName = method.getName();
         const parameters = this.getParameterDefinitions(method);
 
+        const usageGroup = new UsageGroup();
         const analyzed: AnalyzedDeclaration = {
           name: `${exportName}.${methodName}`,
           sourceFilePath: sourceFile.getFilePath(),
           sourceLine: method.getStartLineNumber(),
           definitions: parameters,
           declaration: method,
-          usages: {},
+          usages: usageGroup,
         };
 
         // メソッド名から参照を検索
@@ -71,7 +72,6 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
         const references = this.findFilteredReferences(nameNode);
 
         // 参照からメソッド呼び出しを抽出し、usagesをパラメータ名ごとにグループ化
-        const groupedUsages: Record<string, Usage[]> = {};
         for (const reference of references) {
           const refNode = reference.getNode();
 
@@ -101,10 +101,9 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
             analyzed,
             this.getExpressionResolver(),
           );
-          this.addUsagesToGroup(groupedUsages, usages);
+          usageGroup.addAll(usages);
         }
 
-        analyzed.usages = groupedUsages;
         analyzedDeclarations.push(analyzed);
       }
     }

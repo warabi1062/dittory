@@ -6,9 +6,9 @@ import type {
   AnalyzedDeclaration,
   AnalyzerOptions,
   ClassifiedDeclaration,
-  Usage,
 } from "@/types";
 import { BaseAnalyzer } from "./baseAnalyzer";
+import { UsageGroup } from "./usageGroup";
 
 /**
  * Reactコンポーネントのprops分析を行うAnalyzer
@@ -62,17 +62,17 @@ export class ComponentAnalyzer extends BaseAnalyzer {
       // コンポーネントの宣言からprops定義を取得
       const props = getProps(declaration);
 
+      const usageGroup = new UsageGroup();
       const analyzed: AnalyzedDeclaration = {
         name: exportName,
         sourceFilePath: sourceFile.getFilePath(),
         sourceLine: declaration.getStartLineNumber(),
         definitions: props,
         declaration,
-        usages: {},
+        usages: usageGroup,
       };
 
       // 参照からJSX要素を抽出し、usagesをprop名ごとにグループ化
-      const groupedUsages: Record<string, Usage[]> = {};
       for (const reference of references) {
         const refNode = reference.getNode();
         const parent = refNode.getParent();
@@ -101,10 +101,9 @@ export class ComponentAnalyzer extends BaseAnalyzer {
           analyzed.definitions,
           this.getExpressionResolver(),
         );
-        this.addUsagesToGroup(groupedUsages, usages);
+        usageGroup.addAll(usages);
       }
 
-      analyzed.usages = groupedUsages;
       analyzedDeclarations.push(analyzed);
     }
 

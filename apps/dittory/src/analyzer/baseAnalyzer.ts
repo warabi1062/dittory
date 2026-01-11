@@ -119,16 +119,14 @@ class DeclarationRegistry {
    */
   addFromDeclaration(analyzedDeclaration: AnalyzedDeclaration): void {
     const paramMap = new Map<string, UsageData>();
-    for (const [paramName, usages] of Object.entries(
-      analyzedDeclaration.usages,
-    )) {
+    for (const [paramName, usages] of analyzedDeclaration.usages.entries()) {
       paramMap.set(paramName, new UsageData(usages));
     }
 
     // 総呼び出し回数を計算（最大のUsage配列の長さを使用）
     // すべての呼び出しで存在するパラメータのUsage数が基準となる
     const totalCallCount = Math.max(
-      ...Object.values(analyzedDeclaration.usages).map(
+      ...[...analyzedDeclaration.usages.values()].map(
         (usages) => usages.length,
       ),
       0,
@@ -264,24 +262,6 @@ export abstract class BaseAnalyzer {
       .filter(
         (ref) => !this.shouldExcludeFile(ref.getSourceFile().getFilePath()),
       );
-  }
-
-  /**
-   * 使用状況をグループに追加する
-   *
-   * @param groupedUsages - 使用状況のグループ（パラメータ名 → 使用状況配列）
-   * @param usages - 追加する使用状況の配列
-   */
-  protected addUsagesToGroup(
-    groupedUsages: Record<string, Usage[]>,
-    usages: Usage[],
-  ): void {
-    for (const usage of usages) {
-      if (!groupedUsages[usage.name]) {
-        groupedUsages[usage.name] = [];
-      }
-      groupedUsages[usage.name].push(usage);
-    }
   }
 
   /**
