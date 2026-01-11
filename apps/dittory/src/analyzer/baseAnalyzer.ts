@@ -9,6 +9,8 @@ import { ConstantParams } from "@/constantParams";
 import {
   type ArgValue,
   FunctionArgValue,
+  MethodCallLiteralArgValue,
+  ParamRefArgValue,
   UndefinedArgValue,
 } from "@/extraction/argValueClasses";
 import type { CallSiteMap } from "@/extraction/callSiteMap";
@@ -361,9 +363,15 @@ export abstract class BaseAnalyzer {
       } = entry;
       const value = usageData.representativeValue;
 
-      // 関数型の値は定数として報告しない
-      // （onClickに同じハンドラを渡している等は、デフォルト値化の候補ではない）
-      if (value instanceof FunctionArgValue) {
+      // 以下の値種別は定数として報告しない（デフォルト値化の候補ではない）
+      // - FunctionArgValue: 関数型の値（onClickに同じハンドラを渡している等）
+      // - ParamRefArgValue: パラメータ参照（パラメータをそのまま次の関数に渡すパススルーパターン）
+      // - MethodCallLiteralArgValue: メソッド呼び出し結果（実行時に異なる値を返す可能性がある）
+      if (
+        value instanceof FunctionArgValue ||
+        value instanceof ParamRefArgValue ||
+        value instanceof MethodCallLiteralArgValue
+      ) {
         continue;
       }
 
