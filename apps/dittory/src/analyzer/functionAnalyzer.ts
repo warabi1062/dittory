@@ -1,11 +1,12 @@
 import { Node, SyntaxKind } from "ts-morph";
+import {
+  type AnalyzedDeclaration,
+  AnalyzedDeclarations,
+} from "@/domain/analyzedDeclarations";
+import type { AnalyzerOptions } from "@/domain/analyzerOptions";
+import type { ClassifiedDeclaration } from "@/domain/classifiedDeclaration";
+import { UsagesByParam } from "@/domain/usagesByParam";
 import { ExtractUsages } from "@/extraction/extractUsages";
-import type {
-  AnalyzerOptions,
-  ClassifiedDeclaration,
-  Exported,
-  Usage,
-} from "@/types";
 import { BaseAnalyzer } from "./baseAnalyzer";
 
 /**
@@ -29,14 +30,16 @@ export class FunctionAnalyzer extends BaseAnalyzer {
   /**
    * 事前分類済みの宣言から関数を収集する
    *
-   * @param declarations - 事前分類済みの宣言配列（type: "function"）
-   * @returns exportされた関数とその使用状況の配列
+   * @param classifiedDeclarations - 事前分類済みの宣言配列（type: "function"）
+   * @returns 分析対象の関数とその使用状況
    */
-  protected collect(declarations: ClassifiedDeclaration[]): Exported[] {
-    const results: Exported[] = [];
+  protected collect(
+    classifiedDeclarations: ClassifiedDeclaration[],
+  ): AnalyzedDeclarations {
+    const analyzedDeclarations = new AnalyzedDeclarations();
 
-    for (const classified of declarations) {
-      const { exportName, sourceFile, declaration } = classified;
+    for (const classifiedDeclaration of classifiedDeclarations) {
+      const { exportName, sourceFile, declaration } = classifiedDeclaration;
 
       // FunctionDeclaration または VariableDeclaration のみを処理
       if (
@@ -58,17 +61,17 @@ export class FunctionAnalyzer extends BaseAnalyzer {
       // 関数の宣言からパラメータ定義を取得
       const parameters = this.getParameterDefinitions(declaration);
 
-      const callable: Exported = {
+      const usageGroup = new UsagesByParam();
+      const analyzed: AnalyzedDeclaration = {
         name: exportName,
         sourceFilePath: sourceFile.getFilePath(),
         sourceLine: declaration.getStartLineNumber(),
         definitions: parameters,
         declaration,
-        usages: {},
+        usages: usageGroup,
       };
 
       // 参照から関数呼び出しを抽出し、usagesをパラメータ名ごとにグループ化
-      const groupedUsages: Record<string, Usage[]> = {};
       for (const reference of references) {
         const refNode = reference.getNode();
         const parent = refNode.getParent();
@@ -91,16 +94,15 @@ export class FunctionAnalyzer extends BaseAnalyzer {
         // 関数呼び出しから引数使用状況を抽出
         const usages = ExtractUsages.fromCall(
           callExpression,
-          callable,
-          this.getResolveContext(),
+          analyzed,
+          this.getExpressionResolver(),
         );
-        this.addUsagesToGroup(groupedUsages, usages);
+        usageGroup.addAll(usages);
       }
 
-      callable.usages = groupedUsages;
-      results.push(callable);
+      analyzedDeclarations.push(analyzed);
     }
 
-    return results;
+    return analyzedDeclarations;
   }
 }

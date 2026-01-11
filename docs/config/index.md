@@ -16,6 +16,7 @@ export default {
   output: "verbose",
   tsconfig: "./tsconfig.app.json",
   targetDir: "./src",
+  valueTypes: ["boolean", "string"], // or "all"
 };
 ```
 
@@ -24,13 +25,13 @@ Using the `@type` JSDoc comment provides full TypeScript type checking and autoc
 ## JSON Config
 
 ```json
-// dittory.config.json
 {
   "minUsages": 3,
   "target": "components",
   "output": "verbose",
   "tsconfig": "./tsconfig.app.json",
-  "targetDir": "./src"
+  "targetDir": "./src",
+  "valueTypes": ["boolean", "string"]
 }
 ```
 

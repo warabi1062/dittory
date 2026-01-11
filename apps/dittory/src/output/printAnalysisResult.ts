@@ -1,6 +1,8 @@
 import path from "node:path";
 import type { OutputMode } from "@/cli/parseCliOptions";
-import type { AnalysisResult, Constant, Exported } from "@/types";
+import type { AnalysisResult } from "@/domain/analysisResult";
+import type { AnalyzedDeclarations } from "@/domain/analyzedDeclarations";
+import type { ConstantParams } from "@/domain/constantParams";
 
 function bold(text: string): string {
   return `\x1b[1m${text}\x1b[0m`;
@@ -11,78 +13,17 @@ function green(text: string): string {
 }
 
 /**
- * 値を表示用にフォーマットする
- *
- * 内部的にはenum区別のためにファイルパスを含むが、表示時は不要なので除去する
- * 例: "/path/to/file.ts:ButtonVariant.Primary=\"primary\"" → "ButtonVariant.Primary"
+ * 分析対象の一覧を出力
  */
-function formatValueForDisplay(value: string): string {
-  // enum形式: "ファイルパス:EnumName.MemberName=値" のパターンをチェック
-  const enumMatch = value.match(/^.+:(\w+\.\w+)=.+$/);
-  if (enumMatch) {
-    return enumMatch[1];
-  }
-  return value;
-}
-
-/**
- * グループ化された定数情報
- */
-interface GroupedConstant {
-  targetName: string;
-  targetSourceFile: string;
-  targetLine: number;
-  params: Array<{
-    paramName: string;
-    value: string;
-    usageCount: number;
-    usages: Constant["usages"];
-  }>;
-}
-
-/**
- * Constant[]を関数/コンポーネント単位でグループ化する
- */
-function groupConstantsByTarget(constants: Constant[]): GroupedConstant[] {
-  const groupMap = new Map<string, GroupedConstant>();
-
-  for (const constant of constants) {
-    const key = `${constant.targetSourceFile}:${constant.targetName}`;
-
-    let group = groupMap.get(key);
-    if (!group) {
-      group = {
-        targetName: constant.targetName,
-        targetSourceFile: constant.targetSourceFile,
-        targetLine: constant.targetLine,
-        params: [],
-      };
-      groupMap.set(key, group);
-    }
-
-    group.params.push({
-      paramName: constant.paramName,
-      value: constant.value,
-      usageCount: constant.usages.length,
-      usages: constant.usages,
-    });
-  }
-
-  return Array.from(groupMap.values());
-}
-
-/**
- * exportされた関数の一覧を出力
- */
-function printExportedFunctions(exported: Exported[]): void {
+function printDeclarations(declarations: AnalyzedDeclarations): void {
   const lines = [
     "Collecting exported functions...",
-    `   → Found ${exported.length} function(s)`,
-    ...exported.map(
-      (fn) =>
-        `      - ${bold(green(fn.name))} (${path.relative(
+    `   → Found ${declarations.length} function(s)`,
+    ...declarations.map(
+      (decl) =>
+        `      - ${bold(green(decl.name))} (${path.relative(
           process.cwd(),
-          fn.sourceFilePath,
+          decl.sourceFilePath,
         )})`,
     ),
     "",
@@ -93,28 +34,29 @@ function printExportedFunctions(exported: Exported[]): void {
 /**
  * 常に同じ値が渡されている引数を出力
  */
-function printConstantArguments(constants: Constant[]): void {
-  if (constants.length === 0) {
+function printConstantParams(constantParams: ConstantParams): void {
+  if (constantParams.isEmpty()) {
     return;
   }
 
-  const grouped = groupConstantsByTarget(constants);
+  const grouped = constantParams.groupByDeclaration();
 
-  for (const group of grouped) {
-    const relativePath = path.relative(process.cwd(), group.targetSourceFile);
-    const usageCount = group.params[0]?.usageCount ?? 0;
+  for (const constantParamGroup of grouped) {
+    const relativePath = path.relative(
+      process.cwd(),
+      constantParamGroup.declarationSourceFile,
+    );
+    const usageCount = constantParamGroup.params[0]?.usageCount ?? 0;
     // 使用箇所は全パラメータで同じなので、最初のパラメータから取得
-    const usages = group.params[0]?.usages ?? [];
+    const usages = constantParamGroup.params[0]?.usages ?? [];
 
     console.log(
-      `${bold(green(group.targetName))} ${relativePath}:${group.targetLine}`,
+      `${bold(green(constantParamGroup.declarationName))} ${relativePath}:${constantParamGroup.declarationLine}`,
     );
     console.log("Constant Arguments:");
 
-    for (const param of group.params) {
-      console.log(
-        `  - ${param.paramName} = ${formatValueForDisplay(param.value)}`,
-      );
+    for (const param of constantParamGroup.params) {
+      console.log(`  - ${param.paramName} = ${param.value.outputString()}`);
     }
 
     console.log(`Usages (${usageCount}):`);
@@ -131,10 +73,9 @@ function printConstantArguments(constants: Constant[]): void {
  * 統計情報を出力
  */
 function printStatistics(result: AnalysisResult): void {
-  const totalFunctions = result.exported.length;
-  const functionsWithConstants = groupConstantsByTarget(
-    result.constants,
-  ).length;
+  const totalFunctions = result.declarations.length;
+  const functionsWithConstants =
+    result.constantParams.groupByDeclaration().length;
 
   console.log("---");
   console.log(
@@ -150,13 +91,13 @@ export function printAnalysisResult(
   mode: OutputMode,
 ): void {
   if (mode === "verbose") {
-    printExportedFunctions(result.exported);
+    printDeclarations(result.declarations);
   }
 
-  if (result.constants.length === 0) {
+  if (result.constantParams.isEmpty()) {
     console.log("No arguments with constant values were found.");
   } else {
-    printConstantArguments(result.constants);
+    printConstantParams(result.constantParams);
   }
 
   printStatistics(result);

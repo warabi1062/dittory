@@ -1,12 +1,13 @@
 import { Node, SyntaxKind } from "ts-morph";
-import { getProps } from "@/components/getProps";
+import {
+  type AnalyzedDeclaration,
+  AnalyzedDeclarations,
+} from "@/domain/analyzedDeclarations";
+import type { AnalyzerOptions } from "@/domain/analyzerOptions";
+import type { ClassifiedDeclaration } from "@/domain/classifiedDeclaration";
+import { UsagesByParam } from "@/domain/usagesByParam";
 import { ExtractUsages } from "@/extraction/extractUsages";
-import type {
-  AnalyzerOptions,
-  ClassifiedDeclaration,
-  Exported,
-  Usage,
-} from "@/types";
+import { getProps } from "@/react/getProps";
 import { BaseAnalyzer } from "./baseAnalyzer";
 
 /**
@@ -30,14 +31,16 @@ export class ComponentAnalyzer extends BaseAnalyzer {
   /**
    * 事前分類済みの宣言からReactコンポーネントを収集する
    *
-   * @param declarations - 事前分類済みの宣言配列
-   * @returns exportされたコンポーネントとその使用状況の配列
+   * @param classifiedDeclarations - 事前分類済みの宣言配列
+   * @returns 分析対象のコンポーネントとその使用状況
    */
-  protected collect(declarations: ClassifiedDeclaration[]): Exported[] {
-    const exportedComponents: Exported[] = [];
+  protected collect(
+    classifiedDeclarations: ClassifiedDeclaration[],
+  ): AnalyzedDeclarations {
+    const analyzedDeclarations = new AnalyzedDeclarations();
 
-    for (const classified of declarations) {
-      const { exportName, sourceFile, declaration } = classified;
+    for (const classifiedDeclaration of classifiedDeclarations) {
+      const { exportName, sourceFile, declaration } = classifiedDeclaration;
 
       // FunctionDeclaration または VariableDeclaration のみを処理
       if (
@@ -59,17 +62,17 @@ export class ComponentAnalyzer extends BaseAnalyzer {
       // コンポーネントの宣言からprops定義を取得
       const props = getProps(declaration);
 
-      const component: Exported = {
+      const usageGroup = new UsagesByParam();
+      const analyzed: AnalyzedDeclaration = {
         name: exportName,
         sourceFilePath: sourceFile.getFilePath(),
         sourceLine: declaration.getStartLineNumber(),
         definitions: props,
         declaration,
-        usages: {},
+        usages: usageGroup,
       };
 
       // 参照からJSX要素を抽出し、usagesをprop名ごとにグループ化
-      const groupedUsages: Record<string, Usage[]> = {};
       for (const reference of references) {
         const refNode = reference.getNode();
         const parent = refNode.getParent();
@@ -95,16 +98,15 @@ export class ComponentAnalyzer extends BaseAnalyzer {
         // JSX要素からprops使用状況を抽出
         const usages = ExtractUsages.fromJsxElement(
           jsxElement,
-          component.definitions,
-          this.getResolveContext(),
+          analyzed.definitions,
+          this.getExpressionResolver(),
         );
-        this.addUsagesToGroup(groupedUsages, usages);
+        usageGroup.addAll(usages);
       }
 
-      component.usages = groupedUsages;
-      exportedComponents.push(component);
+      analyzedDeclarations.push(analyzed);
     }
 
-    return exportedComponents;
+    return analyzedDeclarations;
   }
 }

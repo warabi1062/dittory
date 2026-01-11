@@ -4,7 +4,7 @@ layout: home
 hero:
   name: dittory
   text: Find Repetitive Patterns
-  tagline: A static analysis CLI tool that detects parameters always receiving the same value in React components and functions.
+  tagline: A static analysis CLI tool that detects parameters that always receive the same value in React components and functions.
   actions:
     - theme: brand
       text: Get Started
@@ -48,5 +48,3 @@ When a prop or argument is always passed the same value across your codebase, it
 - The parameter could be **removed** and replaced with a default value
 - The API could be **simplified** by eliminating unnecessary options
 - There's **copy-paste code** that should be refactored
-
-**dittory** = "ditto" (same) + "-ory" — finds the repetitive patterns in your code.

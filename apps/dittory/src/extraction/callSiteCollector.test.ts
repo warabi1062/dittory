@@ -1,8 +1,12 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { collectCallSites, createTargetId } from "./callSiteCollector";
+import {
+  ParamRefArgValue,
+  StringLiteralArgValue,
+} from "@/domain/argValueClasses";
+import { CallSiteCollector } from "./callSiteCollector";
 
-describe("collectCallSites", () => {
+describe("CallSiteCollector", () => {
   it("JSX要素からの呼び出し情報を収集すること", () => {
     // Arrange
     const project = new Project({ useInMemoryFileSystem: true });
@@ -26,18 +30,26 @@ describe("collectCallSites", () => {
     const sourceFiles = project.getSourceFiles();
 
     // Act
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
 
     // Assert
-    const childTargetId = createTargetId("/src/Child.tsx", "Child");
+    const childTargetId = "/src/Child.tsx:Child";
     const childInfo = callSiteMap.get(childTargetId);
 
-    expect(childInfo).toBeDefined();
-    expect(childInfo?.get("value")).toBeDefined();
-    expect(childInfo?.get("value")?.length).toBe(1);
+    if (!childInfo) {
+      expect.unreachable("childInfo should be defined");
+    }
+    const valueUsages = childInfo.get("value");
+    if (!valueUsages) {
+      expect.unreachable("valueUsages should be defined");
+    }
+    expect(valueUsages.length).toBe(1);
 
-    const value = childInfo?.get("value")?.[0].value;
-    expect(value).toEqual({ type: "literal", value: '"hello"' });
+    const value = valueUsages[0].value;
+    if (!(value instanceof StringLiteralArgValue)) {
+      expect.unreachable("value should be StringLiteralArgValue");
+    }
+    expect(value.value).toBe("hello");
   });
 
   it("パラメータ参照を含む呼び出し情報を収集すること", () => {
@@ -66,23 +78,28 @@ describe("collectCallSites", () => {
     const sourceFiles = project.getSourceFiles();
 
     // Act
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
 
     // Assert
-    const childTargetId = createTargetId("/src/Child.tsx", "ChildComponent");
+    const childTargetId = "/src/Child.tsx:ChildComponent";
     const childInfo = callSiteMap.get(childTargetId);
 
-    expect(childInfo).toBeDefined();
-    expect(childInfo?.get("number")).toBeDefined();
-    expect(childInfo?.get("number")?.length).toBe(1);
+    if (!childInfo) {
+      expect.unreachable("childInfo should be defined");
+    }
+    const numberUsages = childInfo.get("number");
+    if (!numberUsages) {
+      expect.unreachable("numberUsages should be defined");
+    }
+    expect(numberUsages.length).toBe(1);
 
-    const value = childInfo?.get("number")?.[0].value;
-    expect(value).toEqual({
-      type: "paramRef",
-      filePath: "/src/Parent.tsx",
-      functionName: "ParentComponent",
-      path: "props.number",
-    });
+    const value = numberUsages[0].value;
+    if (!(value instanceof ParamRefArgValue)) {
+      expect.unreachable("value should be ParamRefArgValue");
+    }
+    expect(value.filePath).toBe("/src/Parent.tsx");
+    expect(value.functionName).toBe("ParentComponent");
+    expect(value.path).toBe("props.number");
   });
 
   it("親コンポーネントへの呼び出し情報も収集すること", () => {
@@ -121,17 +138,25 @@ describe("collectCallSites", () => {
     const sourceFiles = project.getSourceFiles();
 
     // Act
-    const callSiteMap = collectCallSites(sourceFiles);
+    const callSiteMap = new CallSiteCollector().collect(sourceFiles);
 
     // Assert
-    const parentTargetId = createTargetId("/src/Parent.tsx", "ParentComponent");
+    const parentTargetId = "/src/Parent.tsx:ParentComponent";
     const parentInfo = callSiteMap.get(parentTargetId);
 
-    expect(parentInfo).toBeDefined();
-    expect(parentInfo?.get("number")).toBeDefined();
-    expect(parentInfo?.get("number")?.length).toBe(1);
+    if (!parentInfo) {
+      expect.unreachable("parentInfo should be defined");
+    }
+    const numberUsages = parentInfo.get("number");
+    if (!numberUsages) {
+      expect.unreachable("numberUsages should be defined");
+    }
+    expect(numberUsages.length).toBe(1);
 
-    const value = parentInfo?.get("number")?.[0].value;
-    expect(value).toEqual({ type: "literal", value: '"42"' });
+    const value = numberUsages[0].value;
+    if (!(value instanceof StringLiteralArgValue)) {
+      expect.unreachable("value should be StringLiteralArgValue");
+    }
+    expect(value.value).toBe("42");
   });
 });

@@ -1,7 +1,7 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import { ComponentAnalyzer } from "@/analyzer/componentAnalyzer";
-import { UNDEFINED_VALUE } from "@/extraction/resolveExpressionValue";
+import { UndefinedArgValue } from "@/domain/argValueClasses";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 
 /**
@@ -37,8 +37,8 @@ describe("ComponentAnalyzer", () => {
     const result = analyzer.analyze(declarations);
 
     // Assert
-    expect(result.exported.length).toBe(2);
-    expect(result.exported.map((c) => c.name)).toEqual(
+    expect(result.declarations.length).toBe(2);
+    expect(result.declarations.map((c) => c.name)).toEqual(
       expect.arrayContaining(["Button", "App"]),
     );
   });
@@ -64,8 +64,12 @@ describe("ComponentAnalyzer", () => {
     const result = analyzer.analyze(components);
 
     // Assert
-    expect(result.exported.length).toBe(1);
-    expect(result.exported[0].name).toBe("Button");
+    expect(result.declarations.length).toBe(1);
+    const button = result.declarations.get(0);
+    if (!button) {
+      expect.unreachable("button should be defined");
+    }
+    expect(button.name).toBe("Button");
   });
 
   it("optional propsの情報を含むこと", () => {
@@ -90,13 +94,17 @@ describe("ComponentAnalyzer", () => {
     const result = analyzer.analyze(declarations);
 
     // Assert
-    expect(result.exported.length).toBe(1);
-    expect(result.exported[0].name).toBe("Button");
-    const colorProp = result.exported[0].definitions.find(
-      (p) => p.name === "color",
-    );
-    expect(colorProp).toBeDefined();
-    expect(colorProp?.required).toBe(false);
+    expect(result.declarations.length).toBe(1);
+    const button = result.declarations.get(0);
+    if (!button) {
+      expect.unreachable("button should be defined");
+    }
+    expect(button.name).toBe("Button");
+    const colorProp = button.definitions.find((p) => p.name === "color");
+    if (!colorProp) {
+      expect.unreachable("colorProp should be defined");
+    }
+    expect(colorProp.required).toBe(false);
   });
 
   it("JSX属性からprops使用状況を抽出すること", () => {
@@ -129,14 +137,18 @@ describe("ComponentAnalyzer", () => {
     const result = analyzer.analyze(declarations);
 
     // Assert
-    const button = result.exported.find((c) => c.name === "Button");
-    expect(button).toBeDefined();
-    expect(button?.usages.color).toHaveLength(1);
-    expect(button?.usages.color[0].value).toBe('"blue"');
-    expect(button?.usages.size).toHaveLength(1);
-    expect(button?.usages.size[0].value).toBe('"large"');
-    expect(button?.usages.disabled).toHaveLength(1);
-    expect(button?.usages.disabled[0].value).toBe("true");
+    const button = result.declarations.find((c) => c.name === "Button");
+    if (!button) {
+      expect.unreachable("button should be defined");
+    }
+    expect(button.usages.get("color")).toHaveLength(1);
+    expect(button.usages.get("color")?.[0].value.outputString()).toBe('"blue"');
+    expect(button.usages.get("size")).toHaveLength(1);
+    expect(button.usages.get("size")?.[0].value.outputString()).toBe('"large"');
+    expect(button.usages.get("disabled")).toHaveLength(1);
+    expect(button.usages.get("disabled")?.[0].value.outputString()).toBe(
+      "true",
+    );
   });
 
   it("オブジェクトリテラルのpropsをネストして抽出すること", () => {
@@ -167,12 +179,18 @@ describe("ComponentAnalyzer", () => {
     const result = analyzer.analyze(declarations);
 
     // Assert
-    const box = result.exported.find((c) => c.name === "Box");
-    expect(box).toBeDefined();
-    expect(box?.usages["style.color"]).toHaveLength(1);
-    expect(box?.usages["style.color"][0].value).toBe('"red"');
-    expect(box?.usages["style.fontSize"]).toHaveLength(1);
-    expect(box?.usages["style.fontSize"][0].value).toBe("16");
+    const box = result.declarations.find((c) => c.name === "Box");
+    if (!box) {
+      expect.unreachable("box should be defined");
+    }
+    expect(box.usages.get("style.color")).toHaveLength(1);
+    expect(box.usages.get("style.color")?.[0].value.outputString()).toBe(
+      '"red"',
+    );
+    expect(box.usages.get("style.fontSize")).toHaveLength(1);
+    expect(box.usages.get("style.fontSize")?.[0].value.outputString()).toBe(
+      "16",
+    );
   });
 
   it("渡されていないpropsをundefinedとして記録すること", () => {
@@ -204,11 +222,15 @@ describe("ComponentAnalyzer", () => {
     const result = analyzer.analyze(declarations);
 
     // Assert
-    const button = result.exported.find((c) => c.name === "Button");
-    expect(button).toBeDefined();
-    expect(button?.usages.color).toHaveLength(1);
-    expect(button?.usages.color[0].value).toBe('"blue"');
-    expect(button?.usages.size).toHaveLength(1);
-    expect(button?.usages.size[0].value).toBe(UNDEFINED_VALUE);
+    const button = result.declarations.find((c) => c.name === "Button");
+    if (!button) {
+      expect.unreachable("button should be defined");
+    }
+    expect(button.usages.get("color")).toHaveLength(1);
+    expect(button.usages.get("color")?.[0].value.outputString()).toBe('"blue"');
+    expect(button.usages.get("size")).toHaveLength(1);
+    expect(button.usages.get("size")?.[0].value).toBeInstanceOf(
+      UndefinedArgValue,
+    );
   });
 });

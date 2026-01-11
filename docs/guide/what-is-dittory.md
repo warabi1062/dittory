@@ -1,8 +1,6 @@
 # What is dittory?
 
-dittory is a static analysis CLI tool that detects **parameters always receiving the same value** in React components and functions.
-
-> **dittory** = "ditto" (same) + "-ory" — finds the repetitive patterns in your code
+dittory is a static analysis CLI tool that detects **parameters that always receive the same value** in React components and functions.
 
 ## The Problem
 
@@ -33,7 +31,7 @@ These patterns indicate:
 | Target | Description |
 |--------|-------------|
 | **React Components** | Props passed to JSX elements (`<Button variant="primary" />`) |
-| **Functions** | Arguments passed to exported function calls |
+| **Functions** | Arguments passed to exported functions |
 | **Class Methods** | Arguments passed to methods of exported classes |
 
 ## How It Works
@@ -43,6 +41,27 @@ These patterns indicate:
 3. **Finds** all usages (JSX elements, function calls, method calls)
 4. **Analyzes** each parameter to check if it always receives the same value
 5. **Reports** parameters that are constant across all usages
+
+### Parameter Propagation (Call Graph Analysis)
+
+dittory can track values through component/function chains:
+
+```tsx
+// App passes "42" to Parent, Parent passes props.number to Child
+// → Child.number is detected as constant "42"
+
+const Child = ({ number }) => <div>{number}</div>;
+const Parent = ({ number }) => <Child number={number} />;
+export const App = () => <Parent number="42" />;
+```
+
+| Pattern | Example | Supported |
+|---------|---------|-----------|
+| Direct props access | `props.value` | ✅ |
+| Destructured props | `({ value }) => ...` | ✅ |
+| Nested access | `props.user.name` | ✅ |
+| Multi-level chains | `A → B → C` propagation | ✅ |
+| Circular reference protection | Prevents infinite loops | ✅ |
 
 ## Example Output
 
@@ -84,7 +103,7 @@ Found 2 function(s) with constant arguments out of 24 function(s).
 <Button onClick={handleClick}>Submit</Button>
 ```
 
-### Remove Unused Flexibility
+### Remove Unnecessary Flexibility
 
 ```ts
 // Before: cache is always false in all 15 call sites

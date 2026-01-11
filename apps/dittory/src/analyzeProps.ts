@@ -1,15 +1,17 @@
 import type { SourceFile } from "ts-morph";
 import { ComponentAnalyzer } from "@/analyzer/componentAnalyzer";
-import type { CallSiteMap } from "@/extraction/callSiteCollector";
+import type { AnalysisResult } from "@/domain/analysisResult";
+import type { FileFilter } from "@/domain/analyzerOptions";
+import type { CallSiteMap } from "@/domain/callSiteMap";
+import type { ValueType } from "@/extraction/valueTypeDetector";
 import { classifyDeclarations } from "@/source/classifyDeclarations";
 import { isTestOrStorybookFile } from "@/source/fileFilters";
-import type { AnalysisResult, FileFilter, ValueType } from "@/types";
 
 interface AnalyzePropsOptions {
   shouldExcludeFile?: FileFilter;
   minUsages?: number;
   /** 検出対象の値種別。デフォルト: "all" */
-  valueTypes?: ValueType[] | "all";
+  allowedValueTypes?: ValueType[] | "all";
   /** 呼び出し情報（パラメータ経由で渡された値を解決するために使用） */
   callSiteMap: CallSiteMap;
 }
@@ -33,7 +35,7 @@ export function analyzePropsCore(
   const {
     shouldExcludeFile = isTestOrStorybookFile,
     minUsages = 2,
-    valueTypes = "all",
+    allowedValueTypes = "all",
     callSiteMap,
   } = options;
 
@@ -44,7 +46,7 @@ export function analyzePropsCore(
   const analyzer = new ComponentAnalyzer({
     shouldExcludeFile,
     minUsages,
-    valueTypes,
+    allowedValueTypes,
   });
   analyzer.setCallSiteMap(callSiteMap);
 

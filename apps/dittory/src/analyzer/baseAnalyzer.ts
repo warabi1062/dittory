@@ -4,25 +4,28 @@ import {
   type ParameterDeclaration,
   type ReferencedSymbol,
 } from "ts-morph";
-import type { CallSiteMap } from "@/extraction/callSiteCollector";
-import {
-  FUNCTION_VALUE_PREFIX,
-  type ResolveContext,
-} from "@/extraction/resolveExpressionValue";
-import { isTestOrStorybookFile } from "@/source/fileFilters";
+import type { AnalysisResult } from "@/domain/analysisResult";
 import type {
-  AnalysisResult,
-  AnalyzerOptions,
-  ClassifiedDeclaration,
-  Constant,
-  Definition,
-  Exported,
-  FileFilter,
-  Usage,
-  ValueType,
-} from "@/types";
-import { getSingleValueFromSet } from "@/utils/getSingleValueFromSet";
-import { matchesValueTypes } from "@/utils/valueTypeDetector";
+  AnalyzedDeclaration,
+  AnalyzedDeclarations,
+} from "@/domain/analyzedDeclarations";
+import type { AnalyzerOptions, FileFilter } from "@/domain/analyzerOptions";
+import {
+  FunctionArgValue,
+  MethodCallLiteralArgValue,
+  ParamRefArgValue,
+} from "@/domain/argValueClasses";
+import type { CallSiteMap } from "@/domain/callSiteMap";
+import type { ClassifiedDeclaration } from "@/domain/classifiedDeclaration";
+import { ConstantCandidate } from "@/domain/constantCandidate";
+import { ConstantParams } from "@/domain/constantParams";
+import type { Definition } from "@/domain/usagesByParam";
+import { ExpressionResolver } from "@/extraction/expressionResolver";
+import {
+  matchesValueTypes,
+  type ValueType,
+} from "@/extraction/valueTypeDetector";
+import { isTestOrStorybookFile } from "@/source/fileFilters";
 
 /**
  * ts-morph の参照情報を表す型
@@ -30,34 +33,135 @@ import { matchesValueTypes } from "@/utils/valueTypeDetector";
 type ReferenceEntry = ReturnType<ReferencedSymbol["getReferences"]>[number];
 
 /**
- * 使用データのグループ
- * values.size === 1 の場合、そのパラメータは「定数」として検出される
+ * 宣言ごとの使用状況プロファイル（行番号とパラメータ使用状況）
  */
-interface UsageData {
-  values: Set<string>;
-  usages: Usage[];
-}
-
-/**
- * 対象ごとの情報（行番号とパラメータ使用状況）
- */
-interface TargetInfo {
-  line: number;
-  params: Map<string, UsageData>;
+class DeclarationUsageProfile {
+  readonly sourceLine: number;
+  private readonly candidatesByParam: Map<string, ConstantCandidate>;
   /** 総呼び出し回数（ネストしたプロパティの存在チェックに使用） */
-  totalCallCount: number;
+  private readonly totalCallCount: number;
+
+  constructor(
+    sourceLine: number,
+    candidatesByParam: Map<string, ConstantCandidate>,
+    totalCallCount: number,
+  ) {
+    this.sourceLine = sourceLine;
+    this.candidatesByParam = candidatesByParam;
+    this.totalCallCount = totalCallCount;
+  }
+
+  /**
+   * 定数として認識されるパラメータを返す
+   */
+  *findConstantParams(
+    minUsages: number,
+  ): IterableIterator<[string, ConstantCandidate]> {
+    for (const [paramName, candidate] of this.candidatesByParam) {
+      if (candidate.isConstant(minUsages, this.totalCallCount)) {
+        yield [paramName, candidate];
+      }
+    }
+  }
 }
 
 /**
- * 使用状況を階層的にグループ化したマップ
+ * ファイル内の宣言（関数/コンポーネント）を管理するレジストリ
+ */
+class DeclarationRegistry extends Map<string, DeclarationUsageProfile> {
+  /**
+   * AnalyzedDeclaration から DeclarationUsageProfile を作成して追加
+   */
+  addFromDeclaration(analyzedDeclaration: AnalyzedDeclaration): void {
+    const paramMap = new Map<string, ConstantCandidate>();
+    for (const [paramName, usages] of analyzedDeclaration.usages.entries()) {
+      paramMap.set(paramName, new ConstantCandidate(usages));
+    }
+
+    // 総呼び出し回数を計算（最大のUsage配列の長さを使用）
+    // すべての呼び出しで存在するパラメータのUsage数が基準となる
+    const totalCallCount = Math.max(
+      ...[...analyzedDeclaration.usages.values()].map(
+        (usages) => usages.length,
+      ),
+      0,
+    );
+
+    this.set(
+      analyzedDeclaration.name,
+      new DeclarationUsageProfile(
+        analyzedDeclaration.sourceLine,
+        paramMap,
+        totalCallCount,
+      ),
+    );
+  }
+}
+
+/**
+ * 使用状況を階層的に管理するレジストリ
  *
- * 3階層の構造で使用状況を整理する:
- * 1. ソースファイルパス: どのファイルで定義された対象か
- * 2. 対象名: 関数名/コンポーネント名（+ 行番号とパラメータ使用状況）
+ * 2階層の構造で使用状況を整理する:
+ * 1. ソースファイルパス: どのファイルで定義された宣言か
+ * 2. 宣言名: 関数名/コンポーネント名（+ 行番号とパラメータ使用状況）
  *
  * この構造により、定数検出時に効率的に走査できる。
  */
-type GroupedMap = Map<string, Map<string, TargetInfo>>;
+class UsageRegistry extends Map<string, DeclarationRegistry> {
+  /**
+   * DeclarationRegistry を取得（存在しなければ作成）
+   */
+  private getOrCreateDeclarationRegistry(
+    sourceFilePath: string,
+  ): DeclarationRegistry {
+    let declarationRegistry = this.get(sourceFilePath);
+    if (!declarationRegistry) {
+      declarationRegistry = new DeclarationRegistry();
+      this.set(sourceFilePath, declarationRegistry);
+    }
+    return declarationRegistry;
+  }
+
+  /**
+   * AnalyzedDeclarations から UsageRegistry を作成
+   */
+  static fromDeclarations(declarations: AnalyzedDeclarations): UsageRegistry {
+    const usageRegistry = new UsageRegistry();
+    for (const analyzedDeclaration of declarations) {
+      usageRegistry
+        .getOrCreateDeclarationRegistry(analyzedDeclaration.sourceFilePath)
+        .addFromDeclaration(analyzedDeclaration);
+    }
+    return usageRegistry;
+  }
+
+  /**
+   * すべての定数パラメータをフラットに取得
+   */
+  *findAllConstantParams(minUsages: number): IterableIterator<{
+    sourceFile: string;
+    declarationName: string;
+    declarationLine: number;
+    paramName: string;
+    candidate: ConstantCandidate;
+  }> {
+    for (const [sourceFile, declarationRegistry] of this) {
+      for (const [declarationName, usageProfile] of declarationRegistry) {
+        for (const [paramName, candidate] of usageProfile.findConstantParams(
+          minUsages,
+        )) {
+          yield {
+            sourceFile,
+            declarationName,
+            declarationLine: usageProfile.sourceLine,
+            paramName,
+            candidate,
+          };
+        }
+      }
+    }
+  }
+}
 
 /**
  * 分析処理の基底クラス
@@ -65,13 +169,13 @@ type GroupedMap = Map<string, Map<string, TargetInfo>>;
 export abstract class BaseAnalyzer {
   protected shouldExcludeFile: FileFilter;
   protected minUsages: number;
-  protected valueTypes: ValueType[] | "all";
+  protected allowedValueTypes: ValueType[] | "all";
   protected callSiteMap!: CallSiteMap;
 
   constructor(options: AnalyzerOptions = {}) {
     this.shouldExcludeFile = options.shouldExcludeFile ?? isTestOrStorybookFile;
     this.minUsages = options.minUsages ?? 2;
-    this.valueTypes = options.valueTypes ?? "all";
+    this.allowedValueTypes = options.allowedValueTypes ?? "all";
   }
 
   /**
@@ -85,12 +189,10 @@ export abstract class BaseAnalyzer {
   }
 
   /**
-   * コンテキストを取得する
+   * 式のリゾルバを取得する
    */
-  protected getResolveContext(): ResolveContext {
-    return {
-      callSiteMap: this.callSiteMap,
-    };
+  protected getExpressionResolver(): ExpressionResolver {
+    return new ExpressionResolver(this.callSiteMap);
   }
 
   /**
@@ -106,24 +208,6 @@ export abstract class BaseAnalyzer {
       .filter(
         (ref) => !this.shouldExcludeFile(ref.getSourceFile().getFilePath()),
       );
-  }
-
-  /**
-   * 使用状況をグループに追加する
-   *
-   * @param groupedUsages - 使用状況のグループ（パラメータ名 → 使用状況配列）
-   * @param usages - 追加する使用状況の配列
-   */
-  protected addUsagesToGroup(
-    groupedUsages: Record<string, Usage[]>,
-    usages: Usage[],
-  ): void {
-    for (const usage of usages) {
-      if (!groupedUsages[usage.name]) {
-        groupedUsages[usage.name] = [];
-      }
-      groupedUsages[usage.name].push(usage);
-    }
   }
 
   /**
@@ -182,117 +266,74 @@ export abstract class BaseAnalyzer {
   /**
    * メイン分析処理
    *
-   * @param declarations - 事前分類済みの宣言配列
+   * @param classifiedDeclarations - 事前分類済みの宣言配列
    */
-  analyze(declarations: ClassifiedDeclaration[]): AnalysisResult {
-    // 1. エクスポートされた対象を収集
-    const exported = this.collect(declarations);
+  analyze(classifiedDeclarations: ClassifiedDeclaration[]): AnalysisResult {
+    // 1. 分析対象を収集
+    const declarations = this.collect(classifiedDeclarations);
 
-    // 2. 使用状況をグループ化
-    const groupedMap = this.createGroupedMap(exported);
+    // 2. 使用状況をレジストリに登録
+    const usageRegistry = UsageRegistry.fromDeclarations(declarations);
 
     // 3. 常に同じ値が渡されているパラメータを抽出
-    const constants = this.extractConstants(groupedMap);
+    const constantParams = this.extractConstantParams(usageRegistry);
 
     // 4. 結果を構築
-    return { constants, exported };
+    return { constantParams, declarations };
   }
 
   /**
-   * エクスポートされた対象を収集する（サブクラスで実装）
+   * 分析対象を収集する（サブクラスで実装）
    *
-   * @param declarations - 事前分類済みの宣言配列
+   * @param classifiedDeclarations - 事前分類済みの宣言配列
    */
-  protected abstract collect(declarations: ClassifiedDeclaration[]): Exported[];
-
-  /**
-   * 使用状況をグループ化したマップを作成
-   */
-  private createGroupedMap(exported: Exported[]): GroupedMap {
-    const groupedMap: GroupedMap = new Map();
-
-    for (const item of exported) {
-      let fileMap = groupedMap.get(item.sourceFilePath);
-      if (!fileMap) {
-        fileMap = new Map();
-        groupedMap.set(item.sourceFilePath, fileMap);
-      }
-
-      const paramMap = new Map<string, UsageData>();
-      for (const [paramName, usages] of Object.entries(item.usages)) {
-        const values = new Set<string>();
-        for (const usage of usages) {
-          values.add(usage.value);
-        }
-        paramMap.set(paramName, { values, usages });
-      }
-
-      // 総呼び出し回数を計算（最大のUsage配列の長さを使用）
-      // すべての呼び出しで存在するパラメータのUsage数が基準となる
-      const totalCallCount = Math.max(
-        ...Object.values(item.usages).map((usages) => usages.length),
-        0,
-      );
-
-      fileMap.set(item.name, {
-        line: item.sourceLine,
-        params: paramMap,
-        totalCallCount,
-      });
-    }
-
-    return groupedMap;
-  }
+  protected abstract collect(
+    classifiedDeclarations: ClassifiedDeclaration[],
+  ): AnalyzedDeclarations;
 
   /**
    * 常に同じ値が渡されているパラメータを抽出
    */
-  private extractConstants(groupedMap: GroupedMap): Constant[] {
-    const result: Constant[] = [];
+  private extractConstantParams(usageRegistry: UsageRegistry): ConstantParams {
+    const constantParams = new ConstantParams();
 
-    for (const [sourceFile, targetMap] of groupedMap) {
-      for (const [targetName, targetInfo] of targetMap) {
-        for (const [paramName, usageData] of targetInfo.params) {
-          // 定数として認識する条件:
-          // 1. 使用回数が最小使用回数以上
-          // 2. すべての使用箇所で同じ値
-          // 3. Usage数が総呼び出し回数と一致（すべての呼び出しで値が存在）
-          //    これにより、オプショナルなプロパティが一部の呼び出しでのみ
-          //    指定されている場合を定数として誤検出しない
-          const isConstant =
-            usageData.usages.length >= this.minUsages &&
-            usageData.values.size === 1 &&
-            usageData.usages.length === targetInfo.totalCallCount;
+    for (const entry of usageRegistry.findAllConstantParams(this.minUsages)) {
+      const {
+        sourceFile,
+        declarationName,
+        declarationLine,
+        paramName,
+        candidate,
+      } = entry;
+      const value = candidate.representativeValue;
 
-          if (!isConstant) {
-            continue;
-          }
-
-          const value = getSingleValueFromSet(usageData.values);
-
-          // 関数型の値は定数として報告しない
-          // （onClickに同じハンドラを渡している等は、デフォルト値化の候補ではない）
-          if (value.startsWith(FUNCTION_VALUE_PREFIX)) {
-            continue;
-          }
-
-          // 値種別によるフィルタリング
-          if (!matchesValueTypes(value, this.valueTypes)) {
-            continue;
-          }
-
-          result.push({
-            targetName,
-            targetSourceFile: sourceFile,
-            targetLine: targetInfo.line,
-            paramName,
-            value,
-            usages: usageData.usages,
-          });
-        }
+      // 以下の値種別は定数として報告しない（デフォルト値化の候補ではない）
+      // - FunctionArgValue: 関数型の値（onClickに同じハンドラを渡している等）
+      // - ParamRefArgValue: パラメータ参照（パラメータをそのまま次の関数に渡すパススルーパターン）
+      // - MethodCallLiteralArgValue: メソッド呼び出し結果（実行時に異なる値を返す可能性がある）
+      if (
+        value instanceof FunctionArgValue ||
+        value instanceof ParamRefArgValue ||
+        value instanceof MethodCallLiteralArgValue
+      ) {
+        continue;
       }
+
+      // 値種別によるフィルタリング
+      if (!matchesValueTypes(value, this.allowedValueTypes)) {
+        continue;
+      }
+
+      constantParams.push({
+        declarationName,
+        declarationSourceFile: sourceFile,
+        declarationLine,
+        paramName,
+        value,
+        usages: candidate.usages,
+      });
     }
 
-    return result;
+    return constantParams;
   }
 }

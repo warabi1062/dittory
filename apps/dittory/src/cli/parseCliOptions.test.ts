@@ -23,7 +23,7 @@ describe("parseCliOptions", () => {
       expect(result.target).toBeUndefined();
       expect(result.output).toBeUndefined();
       expect(result.tsconfig).toBeUndefined();
-      expect(result.valueTypes).toBeUndefined();
+      expect(result.allowedValueTypes).toBeUndefined();
       expect(result.showHelp).toBe(false);
     });
   });
@@ -223,7 +223,7 @@ describe("parseCliOptions", () => {
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.valueTypes).toEqual(["boolean"]);
+      expect(result.allowedValueTypes).toEqual(["boolean"]);
     });
 
     it("複数の種別をカンマ区切りで指定した場合は配列として使用すること", () => {
@@ -234,7 +234,7 @@ describe("parseCliOptions", () => {
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.valueTypes).toEqual(["boolean", "number", "string"]);
+      expect(result.allowedValueTypes).toEqual(["boolean", "number", "string"]);
     });
 
     it("すべての有効な種別を指定できること", () => {
@@ -245,7 +245,7 @@ describe("parseCliOptions", () => {
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.valueTypes).toEqual([
+      expect(result.allowedValueTypes).toEqual([
         "boolean",
         "number",
         "string",
@@ -262,7 +262,7 @@ describe("parseCliOptions", () => {
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.valueTypes).toBeUndefined();
+      expect(result.allowedValueTypes).toBeUndefined();
     });
 
     it("値が空の場合はエラーを投げること", () => {
@@ -306,7 +306,7 @@ describe("parseCliOptions", () => {
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.valueTypes).toBeUndefined();
+      expect(result.allowedValueTypes).toBeUndefined();
     });
   });
 

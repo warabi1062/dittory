@@ -1,5 +1,8 @@
 import fs from "node:fs";
-import { VALID_VALUE_TYPES, type ValueType } from "@/types";
+import {
+  VALID_VALUE_TYPES,
+  type ValueType,
+} from "@/extraction/valueTypeDetector";
 
 export type AnalyzeMode = "all" | "components" | "functions";
 export type OutputMode = "simple" | "verbose";
@@ -13,7 +16,7 @@ export interface RawCliOptions {
   target?: AnalyzeMode;
   output?: OutputMode;
   tsconfig?: string;
-  valueTypes?: ValueType[];
+  allowedValueTypes?: ValueType[];
   showHelp: boolean;
 }
 
@@ -26,7 +29,7 @@ export interface ResolvedOptions {
   target: AnalyzeMode;
   output: OutputMode;
   tsconfig: string;
-  valueTypes: ValueType[] | "all";
+  allowedValueTypes: ValueType[] | "all";
 }
 
 /** デフォルトのオプション値 */
@@ -36,7 +39,7 @@ export const DEFAULT_OPTIONS: ResolvedOptions = {
   target: "all",
   output: "simple",
   tsconfig: "./tsconfig.json",
-  valueTypes: "all",
+  allowedValueTypes: "all",
 };
 
 export class CliValidationError extends Error {
@@ -151,7 +154,7 @@ export function parseCliOptions(args: string[]): RawCliOptions {
         }
       }
 
-      result.valueTypes = types as ValueType[];
+      result.allowedValueTypes = types as ValueType[];
     } else if (arg.startsWith("--")) {
       const optionName = arg.split("=")[0];
 

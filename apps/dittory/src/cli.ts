@@ -12,10 +12,12 @@ import {
   validateTargetDir,
   validateTsConfig,
 } from "@/cli/parseCliOptions";
-import { collectCallSites } from "@/extraction/callSiteCollector";
+import type { AnalysisResult } from "@/domain/analysisResult";
+import { AnalyzedDeclarations } from "@/domain/analyzedDeclarations";
+import { ConstantParams } from "@/domain/constantParams";
+import { CallSiteCollector } from "@/extraction/callSiteCollector";
 import { printAnalysisResult } from "@/output/printAnalysisResult";
 import { createFilteredSourceFiles } from "@/source/createFilteredSourceFiles";
-import type { AnalysisResult } from "@/types";
 
 /**
  * エラーメッセージを表示してプロセスを終了する
@@ -64,13 +66,13 @@ async function main(): Promise<void> {
     output: cliOptions.output ?? fileConfig.output ?? DEFAULT_OPTIONS.output,
     tsconfig:
       cliOptions.tsconfig ?? fileConfig.tsconfig ?? DEFAULT_OPTIONS.tsconfig,
-    valueTypes:
-      cliOptions.valueTypes ??
-      fileConfig.valueTypes ??
-      DEFAULT_OPTIONS.valueTypes,
+    allowedValueTypes:
+      cliOptions.allowedValueTypes ??
+      fileConfig.allowedValueTypes ??
+      DEFAULT_OPTIONS.allowedValueTypes,
   };
 
-  const { targetDir, minUsages, target, output, tsconfig, valueTypes } =
+  const { targetDir, minUsages, target, output, tsconfig, allowedValueTypes } =
     options;
 
   // 対象ディレクトリの存在を検証
@@ -104,35 +106,35 @@ async function main(): Promise<void> {
   });
 
   // 呼び出し情報を事前収集（パラメータ経由で渡された値を解決するために使用）
-  const callSiteMap = collectCallSites(sourceFilesToAnalyze);
+  const callSiteMap = new CallSiteCollector().collect(sourceFilesToAnalyze);
 
   // 各解析結果を収集
-  const allExported: AnalysisResult["exported"] = [];
-  const allConstants: AnalysisResult["constants"] = [];
+  const declarationsToMerge: AnalyzedDeclarations[] = [];
+  const constantParamsToMerge: ConstantParams[] = [];
 
   if (target === "all" || target === "components") {
     const propsResult = analyzePropsCore(sourceFilesToAnalyze, {
       minUsages,
-      valueTypes,
+      allowedValueTypes,
       callSiteMap,
     });
-    allExported.push(...propsResult.exported);
-    allConstants.push(...propsResult.constants);
+    declarationsToMerge.push(propsResult.declarations);
+    constantParamsToMerge.push(propsResult.constantParams);
   }
 
   if (target === "all" || target === "functions") {
     const functionsResult = analyzeFunctionsCore(sourceFilesToAnalyze, {
       minUsages,
-      valueTypes,
+      allowedValueTypes,
       callSiteMap,
     });
-    allExported.push(...functionsResult.exported);
-    allConstants.push(...functionsResult.constants);
+    declarationsToMerge.push(functionsResult.declarations);
+    constantParamsToMerge.push(functionsResult.constantParams);
   }
 
   const result: AnalysisResult = {
-    exported: allExported,
-    constants: allConstants,
+    declarations: AnalyzedDeclarations.merge(...declarationsToMerge),
+    constantParams: ConstantParams.merge(...constantParamsToMerge),
   };
 
   printAnalysisResult(result, output);

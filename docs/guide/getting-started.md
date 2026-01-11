@@ -32,8 +32,8 @@ dittory --target=functions   # Functions and class methods only
 dittory --target=all         # Both (default)
 
 # Output mode
-dittory --output=simple      # Show only constants (default)
-dittory --output=verbose     # Show all exported functions and details
+dittory --output=simple      # Show only constant parameters (default)
+dittory --output=verbose     # Also show all analyzed functions
 ```
 
 ## Quick Example

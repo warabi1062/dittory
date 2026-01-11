@@ -1,11 +1,12 @@
 import { Node } from "ts-morph";
+import {
+  type AnalyzedDeclaration,
+  AnalyzedDeclarations,
+} from "@/domain/analyzedDeclarations";
+import type { AnalyzerOptions } from "@/domain/analyzerOptions";
+import type { ClassifiedDeclaration } from "@/domain/classifiedDeclaration";
+import { UsagesByParam } from "@/domain/usagesByParam";
 import { ExtractUsages } from "@/extraction/extractUsages";
-import type {
-  AnalyzerOptions,
-  ClassifiedDeclaration,
-  Exported,
-  Usage,
-} from "@/types";
 import { BaseAnalyzer } from "./baseAnalyzer";
 
 /**
@@ -30,14 +31,16 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
   /**
    * 事前分類済みの宣言からクラスメソッドを収集する
    *
-   * @param declarations - 事前分類済みの宣言配列（type: "class"）
-   * @returns クラスメソッドとその使用状況の配列（名前は「ClassName.methodName」形式）
+   * @param classifiedDeclarations - 事前分類済みの宣言配列（type: "class"）
+   * @returns 分析対象のメソッドとその使用状況（名前は「ClassName.methodName」形式）
    */
-  protected collect(declarations: ClassifiedDeclaration[]): Exported[] {
-    const results: Exported[] = [];
+  protected collect(
+    classifiedDeclarations: ClassifiedDeclaration[],
+  ): AnalyzedDeclarations {
+    const analyzedDeclarations = new AnalyzedDeclarations();
 
-    for (const classified of declarations) {
-      const { exportName, sourceFile, declaration } = classified;
+    for (const classifiedDeclaration of classifiedDeclarations) {
+      const { exportName, sourceFile, declaration } = classifiedDeclaration;
 
       if (!Node.isClassDeclaration(declaration)) {
         continue;
@@ -49,13 +52,14 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
         const methodName = method.getName();
         const parameters = this.getParameterDefinitions(method);
 
-        const callable: Exported = {
+        const usageGroup = new UsagesByParam();
+        const analyzed: AnalyzedDeclaration = {
           name: `${exportName}.${methodName}`,
           sourceFilePath: sourceFile.getFilePath(),
           sourceLine: method.getStartLineNumber(),
           definitions: parameters,
           declaration: method,
-          usages: {},
+          usages: usageGroup,
         };
 
         // メソッド名から参照を検索
@@ -68,7 +72,6 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
         const references = this.findFilteredReferences(nameNode);
 
         // 参照からメソッド呼び出しを抽出し、usagesをパラメータ名ごとにグループ化
-        const groupedUsages: Record<string, Usage[]> = {};
         for (const reference of references) {
           const refNode = reference.getNode();
 
@@ -95,17 +98,16 @@ export class ClassMethodAnalyzer extends BaseAnalyzer {
           // メソッド呼び出しから引数使用状況を抽出
           const usages = ExtractUsages.fromCall(
             callExpression,
-            callable,
-            this.getResolveContext(),
+            analyzed,
+            this.getExpressionResolver(),
           );
-          this.addUsagesToGroup(groupedUsages, usages);
+          usageGroup.addAll(usages);
         }
 
-        callable.usages = groupedUsages;
-        results.push(callable);
+        analyzedDeclarations.push(analyzed);
       }
     }
 
-    return results;
+    return analyzedDeclarations;
   }
 }

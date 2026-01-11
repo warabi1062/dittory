@@ -1,6 +1,9 @@
 import { Node, type SourceFile } from "ts-morph";
-import { isReactComponent } from "@/components/isReactComponent";
-import type { ClassifiedDeclaration, DeclarationType } from "@/types";
+import type {
+  ClassifiedDeclaration,
+  DeclarationType,
+} from "@/domain/classifiedDeclaration";
+import { isReactComponent } from "@/react/isReactComponent";
 
 /**
  * ソースファイルからexportされた関数/コンポーネント/クラス宣言を収集し、
@@ -12,27 +15,31 @@ import type { ClassifiedDeclaration, DeclarationType } from "@/types";
 export function classifyDeclarations(
   sourceFiles: SourceFile[],
 ): ClassifiedDeclaration[] {
-  const results: ClassifiedDeclaration[] = [];
+  const classifiedDeclarations: ClassifiedDeclaration[] = [];
 
   for (const sourceFile of sourceFiles) {
     const exportedDecls = sourceFile.getExportedDeclarations();
 
     for (const [exportName, declarations] of exportedDecls) {
       // 関数宣言または変数宣言（アロー関数/関数式）を見つける
-      const funcDecl = declarations.find((decl) => isFunctionLike(decl));
+      const functionLikeDeclaration = declarations.find((declaration) =>
+        isFunctionLike(declaration),
+      );
 
-      if (funcDecl) {
+      if (functionLikeDeclaration) {
         if (
-          Node.isFunctionDeclaration(funcDecl) ||
-          Node.isVariableDeclaration(funcDecl)
+          Node.isFunctionDeclaration(functionLikeDeclaration) ||
+          Node.isVariableDeclaration(functionLikeDeclaration)
         ) {
-          const type: DeclarationType = isReactComponent(funcDecl)
+          const type: DeclarationType = isReactComponent(
+            functionLikeDeclaration,
+          )
             ? "react"
             : "function";
-          results.push({
+          classifiedDeclarations.push({
             exportName,
             sourceFile,
-            declaration: funcDecl,
+            declaration: functionLikeDeclaration,
             type,
           });
         }
@@ -40,22 +47,22 @@ export function classifyDeclarations(
       }
 
       // クラス宣言を見つける
-      const classDecl = declarations.find((decl) =>
-        Node.isClassDeclaration(decl),
+      const classDeclaration = declarations.find((declaration) =>
+        Node.isClassDeclaration(declaration),
       );
 
-      if (classDecl && Node.isClassDeclaration(classDecl)) {
-        results.push({
+      if (classDeclaration && Node.isClassDeclaration(classDeclaration)) {
+        classifiedDeclarations.push({
           exportName,
           sourceFile,
-          declaration: classDecl,
+          declaration: classDeclaration,
           type: "class",
         });
       }
     }
   }
 
-  return results;
+  return classifiedDeclarations;
 }
 
 /**
