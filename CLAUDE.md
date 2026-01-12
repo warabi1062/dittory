@@ -43,7 +43,6 @@ pnpm docs:preview   # プレビュー
 - `docs/guide/cli-options.md` - CLIオプションの説明
 - `docs/config/options.md` - 設定オプションのリファレンス
 - `docs/guide/what-is-dittory.md` - ツールの概要
-- `docs/guide/disabling-detection.md` - 検出の無効化方法
 - `docs/guide/limitations.md` - 制限事項
 
 CLIオプションや設定を変更した場合は、対応するドキュメントも更新すること。

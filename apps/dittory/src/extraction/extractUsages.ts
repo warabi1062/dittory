@@ -12,7 +12,6 @@ import {
 } from "@/domain/argValueClasses";
 import type { Definition, Usage } from "@/domain/usagesByParam";
 import type { ExpressionResolver } from "./expressionResolver";
-import { hasDisableComment } from "./hasDisableComment";
 
 /**
  * 使用状況を抽出するユーティリティクラス
@@ -34,11 +33,6 @@ export class ExtractUsages {
     declaration: AnalyzedDeclaration,
     resolver: ExpressionResolver,
   ): Usage[] {
-    // dittory-disable-next-line コメントがある場合は除外
-    if (hasDisableComment(callExpression)) {
-      return [];
-    }
-
     const usages: Usage[] = [];
     const sourceFile = callExpression.getSourceFile();
     const args = callExpression.getArguments();
@@ -87,11 +81,6 @@ export class ExtractUsages {
     definitions: Definition[],
     resolver: ExpressionResolver,
   ): Usage[] {
-    // dittory-disable-next-line コメントがある場合は除外
-    if (hasDisableComment(element)) {
-      return [];
-    }
-
     const usages: Usage[] = [];
     const sourceFile = element.getSourceFile();
 
