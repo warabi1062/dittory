@@ -109,7 +109,7 @@ async function loadJsConfig(configPath: string): Promise<DittoryConfig> {
 
 const VALID_TARGETS: readonly AnalyzeMode[] = [
   "all",
-  "components",
+  "react-components",
   "functions",
 ];
 

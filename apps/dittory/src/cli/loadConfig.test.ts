@@ -36,7 +36,7 @@ describe("loadConfig", () => {
   describe("JSON コンフィグ", () => {
     it("dittory.config.json を読み込むこと", async () => {
       // Arrange
-      const config = { minUsages: 5, target: "components" };
+      const config = { minUsages: 5, target: "react-components" };
       fs.writeFileSync(
         path.join(testDir, "dittory.config.json"),
         JSON.stringify(config),
@@ -47,7 +47,7 @@ describe("loadConfig", () => {
 
       // Assert
       expect(result.minUsages).toBe(5);
-      expect(result.target).toBe("components");
+      expect(result.target).toBe("react-components");
     });
 
     it("無効な JSON の場合はエラーを投げること", async () => {

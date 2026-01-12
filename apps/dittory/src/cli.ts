@@ -112,7 +112,7 @@ async function main(): Promise<void> {
   const declarationsToMerge: AnalyzedDeclarations[] = [];
   const constantParamsToMerge: ConstantParams[] = [];
 
-  if (target === "all" || target === "components") {
+  if (target === "all" || target === "react-components") {
     const propsResult = analyzePropsCore(sourceFilesToAnalyze, {
       minUsages,
       allowedValueTypes,

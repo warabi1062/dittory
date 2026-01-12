@@ -11,7 +11,7 @@ $ dittory [options] [directory]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--min=<n>` | Minimum number of usages required to report | `2` |
-| `--target=<mode>` | What to analyze: `all`, `components`, `functions` | `all` |
+| `--target=<mode>` | What to analyze: `all`, `react-components`, `functions` | `all` |
 | `--debug` | Show verbose output | `false` |
 | `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |
 | `--value-types=<types>` | Value types to detect (comma-separated) | `all` |
@@ -49,7 +49,7 @@ $ dittory --min=3
 Analyze only React components:
 
 ```sh
-$ dittory --target=components
+$ dittory --target=react-components
 ```
 
 Analyze only functions and class methods:
@@ -91,7 +91,7 @@ $ dittory --value-types=number
 ### Combining Options
 
 ```sh
-$ dittory --min=3 --target=components --debug ./src/features
+$ dittory --min=3 --target=react-components --debug ./src/features
 ```
 
 ```sh

@@ -59,13 +59,12 @@ $ dittory ./path/to/src
 $ dittory --min=3
 
 # Analyze specific targets
-$ dittory --target=components  # React components only
-$ dittory --target=functions   # Functions and class methods only
-$ dittory --target=all         # Both (default)
+$ dittory --target=react-components  # React components only
+$ dittory --target=functions         # Functions and class methods only
+$ dittory --target=all               # Both (default)
 
-# Output mode
-$ dittory --output=simple      # Show only constant parameters (default)
-$ dittory --output=verbose     # Also show all analyzed functions
+# Debug mode
+$ dittory --debug              # Show verbose output
 ```
 
 ## Quick Example

@@ -4,7 +4,7 @@ import {
   type ValueType,
 } from "@/extraction/valueTypeDetector";
 
-export type AnalyzeMode = "all" | "components" | "functions";
+export type AnalyzeMode = "all" | "react-components" | "functions";
 
 /**
  * CLI で明示的に指定されたオプション（デフォルト値なし）
@@ -50,7 +50,7 @@ export class CliValidationError extends Error {
 
 const VALID_TARGETS: readonly AnalyzeMode[] = [
   "all",
-  "components",
+  "react-components",
   "functions",
 ];
 
@@ -192,7 +192,7 @@ Usage: dittory [options] [directory]
 
 Options:
   --min=<number>       Minimum usage count (default: 2)
-  --target=<mode>      Analysis target: all, components, functions (default: all)
+  --target=<mode>      Analysis target: all, react-components, functions (default: all)
   --debug              Show verbose output (default: false)
   --tsconfig=<path>    Path to tsconfig.json (default: ./tsconfig.json)
   --value-types=<types> Value types to detect: boolean, number, string, enum, undefined, all (default: all)

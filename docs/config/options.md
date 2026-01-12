@@ -33,19 +33,19 @@ Setting this higher reduces noise from rarely-used functions. A value of 3-5 is 
 
 Specifies what types of exports to analyze.
 
-- **Type:** `"all" | "components" | "functions"`
+- **Type:** `"all" | "react-components" | "functions"`
 - **Default:** `"all"`
 - **CLI:** `--target=<mode>`
 
 | Value | Description |
 |-------|-------------|
 | `"all"` | Analyze both React components and functions |
-| `"components"` | Analyze only React components (JSX usage) |
+| `"react-components"` | Analyze only React components (JSX usage) |
 | `"functions"` | Analyze only functions and class methods |
 
 ```js
 export default {
-  target: "components", // Only analyze React components
+  target: "react-components", // Only analyze React components
 };
 ```
 
