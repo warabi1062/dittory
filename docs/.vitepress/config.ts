@@ -33,7 +33,6 @@ export default defineConfig({
 
     nav: [
       { text: "Guide", link: "/guide/getting-started" },
-      { text: "Config", link: "/config/" },
       {
         text: "npm",
         link: "https://www.npmjs.com/package/dittory",
@@ -56,13 +55,11 @@ export default defineConfig({
             { text: "Limitations", link: "/guide/limitations" },
           ],
         },
-      ],
-      "/config/": [
         {
           text: "Configuration",
           items: [
-            { text: "Config File", link: "/config/" },
-            { text: "Options Reference", link: "/config/options" },
+            { text: "Config File", link: "/guide/config" },
+            { text: "Options Reference", link: "/guide/config-options" },
           ],
         },
       ],

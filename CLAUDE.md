@@ -41,7 +41,8 @@ pnpm docs:preview   # プレビュー
 主要なドキュメントファイル:
 - `docs/guide/getting-started.md` - 導入ガイド
 - `docs/guide/cli-options.md` - CLIオプションの説明
-- `docs/config/options.md` - 設定オプションのリファレンス
+- `docs/guide/config.md` - 設定ファイルの説明
+- `docs/guide/config-options.md` - 設定オプションのリファレンス
 - `docs/guide/what-is-dittory.md` - ツールの概要
 - `docs/guide/limitations.md` - 制限事項
 

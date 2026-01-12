@@ -126,5 +126,5 @@ This tells you that `variant` is always `"primary"` across all usages, suggestin
 ## Next Steps
 
 - Learn about [CLI Options](/guide/cli-options) for more control
-- Configure dittory with a [Config File](/config/)
+- Configure dittory with a [Config File](/guide/config)
 - Understand the [Limitations](/guide/limitations) of the analysis
