@@ -1,6 +1,6 @@
 {
   "name": "dittory",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A static analysis CLI for TypeScript projects that detects parameters that always receive the same value",
   "type": "module",
   "main": "./dist/index.mjs",
