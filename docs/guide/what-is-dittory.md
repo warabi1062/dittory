@@ -123,4 +123,4 @@ When multiple unrelated files pass the same hardcoded values, it might indicate:
 ## Requirements
 
 - Node.js >= 18
-- Project must have a `tsconfig.json`
+- TypeScript project with a `tsconfig.json`

@@ -4,10 +4,7 @@ layout: home
 hero:
   name: dittory
   text: Find Repetitive Patterns
-  tagline: A static analysis CLI tool that detects parameters that always receive the same value.
-  image:
-    src: /logo.svg
-    alt: VitePress
+  tagline: A static analysis CLI for TypeScript projects that detects parameters that always receive the same value.
   actions:
     - theme: brand
       text: Get Started
@@ -22,7 +19,7 @@ features:
     details: Automatically finds props and arguments that are always passed the same value across your entire codebase.
   - icon: "⚡"
     title: Fast Analysis
-    details: Built on ts-morph for efficient TypeScript/TSX parsing with full type awareness.
+    details: Built on ts-morph for efficient TypeScript/TSX parsing. Requires a tsconfig.json in your project.
   - icon: "🛠️"
     title: Flexible Configuration
     details: Configure via CLI options or config files. Supports both JavaScript and JSON configs.

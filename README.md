@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/dittory.svg)](https://www.npmjs.com/package/dittory)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A static analysis CLI that detects **parameters that always receive the same value**.
+A static analysis CLI for TypeScript projects that detects **parameters that always receive the same value**.
 
 ## Why?
 
@@ -287,7 +287,7 @@ const data = await fetchData(id);
 ## Requirements
 
 - Node.js >= 18
-- Project must have a `tsconfig.json`
+- TypeScript project with a `tsconfig.json`
 
 ## License
 

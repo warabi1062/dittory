@@ -1,5 +1,10 @@
 # Getting Started
 
+## Requirements
+
+- Node.js >= 18
+- TypeScript project with a `tsconfig.json`
+
 ## Installation
 
 Install dittory as a dev dependency:
