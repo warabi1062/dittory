@@ -247,21 +247,6 @@ export default {
 
 **Priority:** CLI options > Config file > Default values
 
-## Disabling Detection
-
-Exclude specific usages from detection using comments:
-
-```ts
-// Exclude the next line
-// dittory-disable-next-line
-fetchData(id, { cache: false });
-
-// Exclude the same line
-fetchData(id, { cache: false }); // dittory-disable-line
-```
-
-Works alongside other directives like `eslint-disable-line` or `@ts-ignore`.
-
 ## Use Cases
 
 ### Simplify Component APIs
