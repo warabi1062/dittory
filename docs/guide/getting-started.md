@@ -2,38 +2,70 @@
 
 ## Installation
 
-Install dittory globally:
+Install dittory as a dev dependency:
 
-```bash
-npm install -g dittory
+::: code-group
+
+```sh [npm]
+$ npm install -D dittory
 ```
 
-Or use it directly with npx:
-
-```bash
-npx dittory
+```sh [pnpm]
+$ pnpm add -D dittory
 ```
+
+```sh [yarn]
+$ yarn add -D dittory
+```
+
+```sh [bun]
+$ bun add -D dittory
+```
+
+:::
+
+Or run directly without installing:
+
+::: code-group
+
+```sh [npm]
+$ npx dittory
+```
+
+```sh [pnpm]
+$ pnpm dlx dittory
+```
+
+```sh [yarn]
+$ yarn dlx dittory
+```
+
+```sh [bun]
+$ bunx dittory
+```
+
+:::
 
 ## Basic Usage
 
-```bash
+```sh
 # Analyze ./src directory (default)
-dittory
+$ dittory
 
 # Analyze a specific directory
-dittory ./path/to/src
+$ dittory ./path/to/src
 
 # Set minimum usage count (default: 2)
-dittory --min=3
+$ dittory --min=3
 
 # Analyze specific targets
-dittory --target=components  # React components only
-dittory --target=functions   # Functions and class methods only
-dittory --target=all         # Both (default)
+$ dittory --target=components  # React components only
+$ dittory --target=functions   # Functions and class methods only
+$ dittory --target=all         # Both (default)
 
 # Output mode
-dittory --output=simple      # Show only constant parameters (default)
-dittory --output=verbose     # Also show all analyzed functions
+$ dittory --output=simple      # Show only constant parameters (default)
+$ dittory --output=verbose     # Also show all analyzed functions
 ```
 
 ## Quick Example

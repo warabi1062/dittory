@@ -103,8 +103,8 @@ export default {
 ::: info
 When specified via CLI as a positional argument, it takes precedence over the config file:
 
-```bash
-dittory ./custom/path  # Uses ./custom/path, not config's targetDir
+```sh
+$ dittory ./custom/path  # Uses ./custom/path, not config's targetDir
 ```
 :::
 

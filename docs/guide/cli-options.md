@@ -2,8 +2,8 @@
 
 ## Usage
 
-```bash
-dittory [options] [directory]
+```sh
+$ dittory [options] [directory]
 ```
 
 ## Options
@@ -40,62 +40,62 @@ The `--value-types` option accepts the following values:
 
 Only report parameters that appear in at least 3 usages:
 
-```bash
-dittory --min=3
+```sh
+$ dittory --min=3
 ```
 
 ### Target Mode
 
 Analyze only React components:
 
-```bash
-dittory --target=components
+```sh
+$ dittory --target=components
 ```
 
 Analyze only functions and class methods:
 
-```bash
-dittory --target=functions
+```sh
+$ dittory --target=functions
 ```
 
 ### Output Mode
 
 Show detailed output including all exported functions:
 
-```bash
-dittory --output=verbose
+```sh
+$ dittory --output=verbose
 ```
 
 ### Custom tsconfig
 
 Use a specific tsconfig.json file:
 
-```bash
-dittory --tsconfig=./tsconfig.app.json
+```sh
+$ dittory --tsconfig=./tsconfig.app.json
 ```
 
 ### Value Types Filter
 
 Only detect boolean and string constants:
 
-```bash
-dittory --value-types=boolean,string
+```sh
+$ dittory --value-types=boolean,string
 ```
 
 Only detect numeric constants:
 
-```bash
-dittory --value-types=number
+```sh
+$ dittory --value-types=number
 ```
 
 ### Combining Options
 
-```bash
-dittory --min=3 --target=components --output=verbose ./src/features
+```sh
+$ dittory --min=3 --target=components --output=verbose ./src/features
 ```
 
-```bash
-dittory --min=2 --value-types=boolean,number,string ./src
+```sh
+$ dittory --min=2 --value-types=boolean,number,string ./src
 ```
 
 ## Output Formats

@@ -45,8 +45,8 @@ CLI options > Config file > Default values
 
 For example, if your config file sets `minUsages: 3` but you run:
 
-```bash
-dittory --min=5
+```sh
+$ dittory --min=5
 ```
 
 The effective `minUsages` will be `5`.

@@ -1,10 +1,67 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="29 29 142 142">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#646cff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#42b883;stop-opacity:1" />
+    <!-- Glow filter for the neon effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Inner shadow/glow for the lens -->
+    <radialGradient id="lensGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a4d1a"/>
+      <stop offset="70%" stop-color="#0d2d0d"/>
+      <stop offset="100%" stop-color="#0a1f0a"/>
+    </radialGradient>
+    
+    <!-- Gradient for the outer ring -->
+    <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#90EE90"/>
+      <stop offset="50%" stop-color="#32CD32"/>
+      <stop offset="100%" stop-color="#228B22"/>
+    </linearGradient>
+    
+    <!-- Gradient for handle -->
+    <linearGradient id="handleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ADFF2F"/>
+      <stop offset="100%" stop-color="#32CD32"/>
     </linearGradient>
   </defs>
-  <circle cx="50" cy="50" r="45" fill="url(#grad)"/>
-  <text x="50" y="65" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" text-anchor="middle">D</text>
+  
+  <!-- Outer ring of magnifying glass -->
+  <circle cx="100" cy="100" r="55" 
+          fill="none" 
+          stroke="url(#ringGradient)" 
+          stroke-width="12"
+          filter="url(#glow)"/>
+  
+  <!-- Inner glow ring -->
+  <circle cx="100" cy="100" r="49" 
+          fill="none" 
+          stroke="#ADFF2F" 
+          stroke-width="4"
+         />
+  
+  <!-- Lens background -->
+  <circle cx="100" cy="100" r="48" fill="url(#lensGradient)"/>
+  
+  <!-- Checklist items -->
+  <g filter="url(#glow)">
+    <!-- Item 1 - rectangle -->
+    <rect x="67" y="70" width="28" height="12" rx="3" fill="#ADFF2F" opacity="0.9"/>
+    <!-- Checkmark 1 -->
+    <path d="M105 73 L113 81 L127 67" stroke="#ADFF2F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    
+    <!-- Item 2 - rectangle -->
+    <rect x="67" y="94" width="28" height="12" rx="3" fill="#ADFF2F" opacity="0.9"/>
+    <!-- Checkmark 2 -->
+    <path d="M105 97 L113 105 L127 91" stroke="#ADFF2F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    
+    <!-- Item 3 - rectangle -->
+    <rect x="67" y="118" width="28" height="12" rx="3" fill="#ADFF2F" opacity="0.9"/>
+    <!-- Checkmark 3 -->
+    <path d="M105 121 L113 129 L127 115" stroke="#ADFF2F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
 </svg>

@@ -1,6 +1,14 @@
 # What is dittory?
 
-dittory is a static analysis CLI tool that detects **parameters that always receive the same value** in React components and functions.
+dittory is a static analysis CLI tool that detects **parameters that always receive the same value**.
+
+## Supported Targets
+
+| Target | Description |
+|--------|-------------|
+| **React Components** | Props passed to JSX elements (`<Button variant="primary" />`) |
+| **Functions** | Arguments passed to exported functions |
+| **Class Methods** | Arguments passed to methods of exported classes |
 
 ## The Problem
 
@@ -25,14 +33,6 @@ These patterns indicate:
 - The parameter could be **removed** and replaced with a default value
 - The API could be **simplified** by eliminating unnecessary options
 - There's **copy-paste code** that should be refactored
-
-## What It Detects
-
-| Target | Description |
-|--------|-------------|
-| **React Components** | Props passed to JSX elements (`<Button variant="primary" />`) |
-| **Functions** | Arguments passed to exported functions |
-| **Class Methods** | Arguments passed to methods of exported classes |
 
 ## How It Works
 
