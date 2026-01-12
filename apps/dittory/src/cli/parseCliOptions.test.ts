@@ -21,7 +21,7 @@ describe("parseCliOptions", () => {
       expect(result.targetDir).toBeUndefined();
       expect(result.minUsages).toBeUndefined();
       expect(result.target).toBeUndefined();
-      expect(result.output).toBeUndefined();
+      expect(result.debug).toBeUndefined();
       expect(result.tsconfig).toBeUndefined();
       expect(result.allowedValueTypes).toBeUndefined();
       expect(result.showHelp).toBe(false);
@@ -133,38 +133,16 @@ describe("parseCliOptions", () => {
     });
   });
 
-  describe("--output オプション", () => {
-    it("simpleを指定した場合はsimpleを使用すること", () => {
+  describe("--debug オプション", () => {
+    it("--debugを指定した場合はtrueになること", () => {
       // Arrange
-      const args = ["--output=simple"];
+      const args = ["--debug"];
 
       // Act
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.output).toBe("simple");
-    });
-
-    it("verboseを指定した場合はverboseを使用すること", () => {
-      // Arrange
-      const args = ["--output=verbose"];
-
-      // Act
-      const result = parseCliOptions(args);
-
-      // Assert
-      expect(result.output).toBe("verbose");
-    });
-
-    it("無効な値を指定した場合はエラーを投げること", () => {
-      // Arrange
-      const args = ["--output=invalid"];
-
-      // Act & Assert
-      expect(() => parseCliOptions(args)).toThrow(CliValidationError);
-      expect(() => parseCliOptions(args)).toThrow(
-        'Invalid value for --output: "invalid" (valid values: simple, verbose)',
-      );
+      expect(result.debug).toBe(true);
     });
 
     it("指定しない場合はundefinedであること", () => {
@@ -175,7 +153,7 @@ describe("parseCliOptions", () => {
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.output).toBeUndefined();
+      expect(result.debug).toBeUndefined();
     });
   });
 

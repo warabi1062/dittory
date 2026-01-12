@@ -63,7 +63,7 @@ async function main(): Promise<void> {
     minUsages:
       cliOptions.minUsages ?? fileConfig.minUsages ?? DEFAULT_OPTIONS.minUsages,
     target: cliOptions.target ?? fileConfig.target ?? DEFAULT_OPTIONS.target,
-    output: cliOptions.output ?? fileConfig.output ?? DEFAULT_OPTIONS.output,
+    debug: cliOptions.debug ?? fileConfig.debug ?? DEFAULT_OPTIONS.debug,
     tsconfig:
       cliOptions.tsconfig ?? fileConfig.tsconfig ?? DEFAULT_OPTIONS.tsconfig,
     allowedValueTypes:
@@ -72,7 +72,7 @@ async function main(): Promise<void> {
       DEFAULT_OPTIONS.allowedValueTypes,
   };
 
-  const { targetDir, minUsages, target, output, tsconfig, allowedValueTypes } =
+  const { targetDir, minUsages, target, debug, tsconfig, allowedValueTypes } =
     options;
 
   // 対象ディレクトリの存在を検証
@@ -95,7 +95,7 @@ async function main(): Promise<void> {
     throw error;
   }
 
-  if (output === "verbose") {
+  if (debug) {
     console.log(`Target directory: ${targetDir}`);
     console.log(`Minimum usage count: ${minUsages}`);
     console.log(`Analysis target: ${target}\n`);
@@ -137,7 +137,7 @@ async function main(): Promise<void> {
     constantParams: ConstantParams.merge(...constantParamsToMerge),
   };
 
-  printAnalysisResult(result, output);
+  printAnalysisResult(result, debug);
 }
 
 main().catch((error) => {

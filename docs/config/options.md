@@ -6,7 +6,7 @@
 |--------|------|---------|-------------|
 | `minUsages` | `number` | `2` | Minimum number of usages required to report |
 | `target` | `AnalyzeMode` | `"all"` | What to analyze |
-| `output` | `OutputMode` | `"simple"` | Output verbosity |
+| `debug` | `boolean` | `false` | Show verbose output |
 | `tsconfig` | `string` | `"./tsconfig.json"` | Path to tsconfig.json |
 | `targetDir` | `string` | `"./src"` | Target directory to analyze |
 | `valueTypes` | `ValueType[] \| "all"` | `"all"` | Value types to detect |
@@ -49,22 +49,19 @@ export default {
 };
 ```
 
-## output
+## debug
 
 Controls the verbosity of the output.
 
-- **Type:** `"simple" | "verbose"`
-- **Default:** `"simple"`
-- **CLI:** `--output=<mode>`
+- **Type:** `boolean`
+- **Default:** `false`
+- **CLI:** `--debug`
 
-| Value | Description |
-|-------|-------------|
-| `"simple"` | Show only constant parameters |
-| `"verbose"` | Also show all analyzed functions |
+When `true`, shows all analyzed functions in addition to constant parameters.
 
 ```js
 export default {
-  output: "verbose", // Show all exported functions
+  debug: true, // Show all exported functions
 };
 ```
 
@@ -143,7 +140,7 @@ Use this option to focus on specific types of constants. For example, if you onl
 export default {
   minUsages: 3,
   target: "all",
-  output: "simple",
+  debug: false,
   tsconfig: "./tsconfig.json",
   targetDir: "./src",
   valueTypes: ["boolean", "number", "string"],

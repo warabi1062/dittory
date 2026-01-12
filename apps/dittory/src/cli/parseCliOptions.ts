@@ -5,7 +5,6 @@ import {
 } from "@/extraction/valueTypeDetector";
 
 export type AnalyzeMode = "all" | "components" | "functions";
-export type OutputMode = "simple" | "verbose";
 
 /**
  * CLI で明示的に指定されたオプション（デフォルト値なし）
@@ -14,7 +13,7 @@ export interface RawCliOptions {
   targetDir?: string;
   minUsages?: number;
   target?: AnalyzeMode;
-  output?: OutputMode;
+  debug?: boolean;
   tsconfig?: string;
   allowedValueTypes?: ValueType[];
   showHelp: boolean;
@@ -27,7 +26,7 @@ export interface ResolvedOptions {
   targetDir: string;
   minUsages: number;
   target: AnalyzeMode;
-  output: OutputMode;
+  debug: boolean;
   tsconfig: string;
   allowedValueTypes: ValueType[] | "all";
 }
@@ -37,7 +36,7 @@ export const DEFAULT_OPTIONS: ResolvedOptions = {
   targetDir: "./src",
   minUsages: 2,
   target: "all",
-  output: "simple",
+  debug: false,
   tsconfig: "./tsconfig.json",
   allowedValueTypes: "all",
 };
@@ -55,13 +54,11 @@ const VALID_TARGETS: readonly AnalyzeMode[] = [
   "functions",
 ];
 
-const VALID_OUTPUTS: readonly OutputMode[] = ["simple", "verbose"];
-
 /** 不明なオプションの検出に使用 */
 const VALID_OPTIONS: readonly string[] = [
   "--min",
   "--target",
-  "--output",
+  "--debug",
   "--tsconfig",
   "--value-types",
   "--help",
@@ -109,18 +106,8 @@ export function parseCliOptions(args: string[]): RawCliOptions {
       }
 
       result.target = value as AnalyzeMode;
-    } else if (arg.startsWith("--output=")) {
-      const value = arg.slice(9);
-
-      if (!VALID_OUTPUTS.includes(value as OutputMode)) {
-        throw new CliValidationError(
-          `Invalid value for --output: "${value}" (valid values: ${VALID_OUTPUTS.join(
-            ", ",
-          )})`,
-        );
-      }
-
-      result.output = value as OutputMode;
+    } else if (arg === "--debug") {
+      result.debug = true;
     } else if (arg.startsWith("--tsconfig=")) {
       const value = arg.slice(11);
 
@@ -206,7 +193,7 @@ Usage: dittory [options] [directory]
 Options:
   --min=<number>       Minimum usage count (default: 2)
   --target=<mode>      Analysis target: all, components, functions (default: all)
-  --output=<mode>      Output mode: simple, verbose (default: simple)
+  --debug              Show verbose output (default: false)
   --tsconfig=<path>    Path to tsconfig.json (default: ./tsconfig.json)
   --value-types=<types> Value types to detect: boolean, number, string, enum, undefined, all (default: all)
                         Multiple types can be specified with comma: --value-types=boolean,string

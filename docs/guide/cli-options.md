@@ -12,7 +12,7 @@ $ dittory [options] [directory]
 |--------|-------------|---------|
 | `--min=<n>` | Minimum number of usages required to report | `2` |
 | `--target=<mode>` | What to analyze: `all`, `components`, `functions` | `all` |
-| `--output=<mode>` | Output verbosity: `simple`, `verbose` | `simple` |
+| `--debug` | Show verbose output | `false` |
 | `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |
 | `--value-types=<types>` | Value types to detect (comma-separated) | `all` |
 | `--help` | Show help message | — |
@@ -58,12 +58,12 @@ Analyze only functions and class methods:
 $ dittory --target=functions
 ```
 
-### Output Mode
+### Debug Mode
 
 Show detailed output including all exported functions:
 
 ```sh
-$ dittory --output=verbose
+$ dittory --debug
 ```
 
 ### Custom tsconfig
@@ -91,7 +91,7 @@ $ dittory --value-types=number
 ### Combining Options
 
 ```sh
-$ dittory --min=3 --target=components --output=verbose ./src/features
+$ dittory --min=3 --target=components --debug ./src/features
 ```
 
 ```sh
@@ -100,7 +100,7 @@ $ dittory --min=2 --value-types=boolean,number,string ./src
 
 ## Output Formats
 
-### Simple Mode (default)
+### Default Mode
 
 Only shows functions/components with constant arguments:
 
@@ -120,7 +120,7 @@ Usages (5):
 Found 1 function(s) with constant arguments out of 24 function(s).
 ```
 
-### Verbose Mode
+### Debug Mode
 
 Shows all exported functions, including those without constant arguments:
 
