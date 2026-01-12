@@ -1,4 +1,8 @@
 import { defineConfig } from "vitepress";
+import {
+  groupIconMdPlugin,
+  groupIconVitePlugin,
+} from "vitepress-plugin-group-icons";
 
 export default defineConfig({
   title: "dittory",
@@ -9,11 +13,23 @@ export default defineConfig({
 
   head: [
     ["link", { rel: "icon", type: "image/svg+xml", href: "/logo.svg" }],
-    ["meta", { name: "theme-color", content: "#646cff" }],
+    ["meta", { name: "theme-color", content: "#10b981" }],
   ],
+  markdown: {
+    config(md) {
+      md.use(groupIconMdPlugin);
+    },
+  },
+  vite: {
+    plugins: [groupIconVitePlugin()],
+  },
 
   themeConfig: {
-    logo: "/logo.svg",
+    logo: {
+      light: "/logo.svg",
+      dark: "/logo-dark.svg",
+    },
+    siteTitle: false,
 
     nav: [
       { text: "Guide", link: "/guide/getting-started" },

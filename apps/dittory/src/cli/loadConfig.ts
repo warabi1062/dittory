@@ -5,7 +5,7 @@ import {
   VALID_VALUE_TYPES,
   type ValueType,
 } from "@/extraction/valueTypeDetector";
-import type { AnalyzeMode, OutputMode } from "./parseCliOptions";
+import type { AnalyzeMode } from "./parseCliOptions";
 
 /** コンフィグファイルの検索順序 */
 const CONFIG_FILE_NAMES = [
@@ -20,7 +20,7 @@ const CONFIG_FILE_NAMES = [
 export interface DittoryConfig {
   minUsages?: number;
   target?: AnalyzeMode;
-  output?: OutputMode;
+  debug?: boolean;
   tsconfig?: string;
   targetDir?: string;
   allowedValueTypes?: ValueType[] | "all";
@@ -109,10 +109,9 @@ async function loadJsConfig(configPath: string): Promise<DittoryConfig> {
 
 const VALID_TARGETS: readonly AnalyzeMode[] = [
   "all",
-  "components",
+  "react-components",
   "functions",
 ];
-const VALID_OUTPUTS: readonly OutputMode[] = ["simple", "verbose"];
 
 /**
  * コンフィグの値を検証する
@@ -138,13 +137,13 @@ function validateConfig(config: Record<string, unknown>): DittoryConfig {
     result.target = config.target as AnalyzeMode;
   }
 
-  if ("output" in config) {
-    if (!VALID_OUTPUTS.includes(config.output as OutputMode)) {
+  if ("debug" in config) {
+    if (typeof config.debug !== "boolean") {
       throw new Error(
-        `Invalid config: output must be one of ${VALID_OUTPUTS.join(", ")}, got ${config.output}`,
+        `Invalid config: debug must be a boolean, got ${typeof config.debug}`,
       );
     }
-    result.output = config.output as OutputMode;
+    result.debug = config.debug;
   }
 
   if ("tsconfig" in config) {

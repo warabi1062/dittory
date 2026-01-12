@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/dittory.svg)](https://www.npmjs.com/package/dittory)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A static analysis CLI that detects **parameters that always receive the same value** in React components and functions.
+A static analysis CLI for TypeScript projects that detects **parameters that always receive the same value**.
 
 ## Why?
 
@@ -17,36 +17,49 @@ dittory helps you identify these opportunities automatically.
 
 ## Installation
 
-```bash
-npm install -g dittory
+```sh
+# npm
+$ npm install -D dittory
+
+# pnpm
+$ pnpm add -D dittory
+
+# yarn
+$ yarn add -D dittory
+
+# bun
+$ bun add -D dittory
 ```
 
-Or use directly with npx:
+Or run directly without installing:
 
-```bash
-npx dittory
+```sh
+$ npx dittory
+$ pnpm dlx dittory
+$ yarn dlx dittory
+$ bunx dittory
 ```
 
 ## Usage
 
-```bash
+```sh
 # Analyze ./src directory (default)
-dittory
+$ dittory
 
 # Analyze a specific directory
-dittory ./path/to/src
+$ dittory ./path/to/src
 
 # Set minimum usage count (default: 2)
-dittory --min=3
+$ dittory --min=3
 
 # Analyze specific targets
-dittory --target=components  # React components only
-dittory --target=functions   # Functions and class methods only
-dittory --target=all         # Both (default)
+$ dittory --target=components  # React components only
+$ dittory --target=functions   # Functions and class methods only
+$ dittory --target=all         # Both (default)
 
 # Output mode
-dittory --output=simple      # Show only constant parameters (default)
-dittory --output=verbose     # Also show all analyzed functions
+$ dittory --output=simple      # Show only constant parameters (default)
+$ dittory --output=verbose     # Also show all analyzed functions
 ```
 
 ## Example Output
@@ -274,7 +287,7 @@ const data = await fetchData(id);
 ## Requirements
 
 - Node.js >= 18
-- Project must have a `tsconfig.json`
+- TypeScript project with a `tsconfig.json`
 
 ## License
 

@@ -1,5 +1,4 @@
 import path from "node:path";
-import type { OutputMode } from "@/cli/parseCliOptions";
 import type { AnalysisResult } from "@/domain/analysisResult";
 import type { AnalyzedDeclarations } from "@/domain/analyzedDeclarations";
 import type { ConstantParams } from "@/domain/constantParams";
@@ -88,9 +87,9 @@ function printStatistics(result: AnalysisResult): void {
  */
 export function printAnalysisResult(
   result: AnalysisResult,
-  mode: OutputMode,
+  debug: boolean,
 ): void {
-  if (mode === "verbose") {
+  if (debug) {
     printDeclarations(result.declarations);
   }
 

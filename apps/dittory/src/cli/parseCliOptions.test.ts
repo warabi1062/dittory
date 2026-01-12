@@ -21,7 +21,7 @@ describe("parseCliOptions", () => {
       expect(result.targetDir).toBeUndefined();
       expect(result.minUsages).toBeUndefined();
       expect(result.target).toBeUndefined();
-      expect(result.output).toBeUndefined();
+      expect(result.debug).toBeUndefined();
       expect(result.tsconfig).toBeUndefined();
       expect(result.allowedValueTypes).toBeUndefined();
       expect(result.showHelp).toBe(false);
@@ -86,15 +86,15 @@ describe("parseCliOptions", () => {
       expect(result.target).toBe("all");
     });
 
-    it("componentsを指定した場合はcomponentsを使用すること", () => {
+    it("react-componentsを指定した場合はreact-componentsを使用すること", () => {
       // Arrange
-      const args = ["--target=components"];
+      const args = ["--target=react-components"];
 
       // Act
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.target).toBe("components");
+      expect(result.target).toBe("react-components");
     });
 
     it("functionsを指定した場合はfunctionsを使用すること", () => {
@@ -115,7 +115,7 @@ describe("parseCliOptions", () => {
       // Act & Assert
       expect(() => parseCliOptions(args)).toThrow(CliValidationError);
       expect(() => parseCliOptions(args)).toThrow(
-        'Invalid value for --target: "invalid" (valid values: all, components, functions)',
+        'Invalid value for --target: "invalid" (valid values: all, react-components, functions)',
       );
     });
   });
@@ -133,38 +133,16 @@ describe("parseCliOptions", () => {
     });
   });
 
-  describe("--output オプション", () => {
-    it("simpleを指定した場合はsimpleを使用すること", () => {
+  describe("--debug オプション", () => {
+    it("--debugを指定した場合はtrueになること", () => {
       // Arrange
-      const args = ["--output=simple"];
+      const args = ["--debug"];
 
       // Act
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.output).toBe("simple");
-    });
-
-    it("verboseを指定した場合はverboseを使用すること", () => {
-      // Arrange
-      const args = ["--output=verbose"];
-
-      // Act
-      const result = parseCliOptions(args);
-
-      // Assert
-      expect(result.output).toBe("verbose");
-    });
-
-    it("無効な値を指定した場合はエラーを投げること", () => {
-      // Arrange
-      const args = ["--output=invalid"];
-
-      // Act & Assert
-      expect(() => parseCliOptions(args)).toThrow(CliValidationError);
-      expect(() => parseCliOptions(args)).toThrow(
-        'Invalid value for --output: "invalid" (valid values: simple, verbose)',
-      );
+      expect(result.debug).toBe(true);
     });
 
     it("指定しない場合はundefinedであること", () => {
@@ -175,7 +153,7 @@ describe("parseCliOptions", () => {
       const result = parseCliOptions(args);
 
       // Assert
-      expect(result.output).toBeUndefined();
+      expect(result.debug).toBeUndefined();
     });
   });
 
@@ -344,14 +322,14 @@ describe("parseCliOptions", () => {
 
     it("複数のオプションとディレクトリを組み合わせて指定できること", () => {
       // Arrange
-      const args = ["--min=3", "--target=components", "/custom/dir"];
+      const args = ["--min=3", "--target=react-components", "/custom/dir"];
 
       // Act
       const result = parseCliOptions(args);
 
       // Assert
       expect(result.minUsages).toBe(3);
-      expect(result.target).toBe("components");
+      expect(result.target).toBe("react-components");
       expect(result.targetDir).toBe("/custom/dir");
     });
   });

@@ -6,7 +6,7 @@
 |--------|------|---------|-------------|
 | `minUsages` | `number` | `2` | Minimum number of usages required to report |
 | `target` | `AnalyzeMode` | `"all"` | What to analyze |
-| `output` | `OutputMode` | `"simple"` | Output verbosity |
+| `debug` | `boolean` | `false` | Show verbose output |
 | `tsconfig` | `string` | `"./tsconfig.json"` | Path to tsconfig.json |
 | `targetDir` | `string` | `"./src"` | Target directory to analyze |
 | `valueTypes` | `ValueType[] \| "all"` | `"all"` | Value types to detect |
@@ -33,38 +33,35 @@ Setting this higher reduces noise from rarely-used functions. A value of 3-5 is 
 
 Specifies what types of exports to analyze.
 
-- **Type:** `"all" | "components" | "functions"`
+- **Type:** `"all" | "react-components" | "functions"`
 - **Default:** `"all"`
 - **CLI:** `--target=<mode>`
 
 | Value | Description |
 |-------|-------------|
 | `"all"` | Analyze both React components and functions |
-| `"components"` | Analyze only React components (JSX usage) |
+| `"react-components"` | Analyze only React components (JSX usage) |
 | `"functions"` | Analyze only functions and class methods |
 
 ```js
 export default {
-  target: "components", // Only analyze React components
+  target: "react-components", // Only analyze React components
 };
 ```
 
-## output
+## debug
 
 Controls the verbosity of the output.
 
-- **Type:** `"simple" | "verbose"`
-- **Default:** `"simple"`
-- **CLI:** `--output=<mode>`
+- **Type:** `boolean`
+- **Default:** `false`
+- **CLI:** `--debug`
 
-| Value | Description |
-|-------|-------------|
-| `"simple"` | Show only constant parameters |
-| `"verbose"` | Also show all analyzed functions |
+When `true`, shows all analyzed functions in addition to constant parameters.
 
 ```js
 export default {
-  output: "verbose", // Show all exported functions
+  debug: true, // Show all exported functions
 };
 ```
 
@@ -103,8 +100,8 @@ export default {
 ::: info
 When specified via CLI as a positional argument, it takes precedence over the config file:
 
-```bash
-dittory ./custom/path  # Uses ./custom/path, not config's targetDir
+```sh
+$ dittory ./custom/path  # Uses ./custom/path, not config's targetDir
 ```
 :::
 
@@ -143,7 +140,7 @@ Use this option to focus on specific types of constants. For example, if you onl
 export default {
   minUsages: 3,
   target: "all",
-  output: "simple",
+  debug: false,
   tsconfig: "./tsconfig.json",
   targetDir: "./src",
   valueTypes: ["boolean", "number", "string"],

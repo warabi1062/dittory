@@ -1,7 +1,7 @@
 export { analyzeFunctionsCore } from "@/analyzeFunctions";
 export { analyzePropsCore } from "@/analyzeProps";
 export type { DittoryConfig } from "@/cli/loadConfig";
-export type { AnalyzeMode, OutputMode } from "@/cli/parseCliOptions";
+export type { AnalyzeMode } from "@/cli/parseCliOptions";
 export type { AnalysisResult } from "@/domain/analysisResult";
 export type { AnalyzedDeclaration } from "@/domain/analyzedDeclarations";
 export type { FileFilter } from "@/domain/analyzerOptions";

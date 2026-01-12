@@ -2,8 +2,8 @@
 
 ## Usage
 
-```bash
-dittory [options] [directory]
+```sh
+$ dittory [options] [directory]
 ```
 
 ## Options
@@ -11,8 +11,8 @@ dittory [options] [directory]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--min=<n>` | Minimum number of usages required to report | `2` |
-| `--target=<mode>` | What to analyze: `all`, `components`, `functions` | `all` |
-| `--output=<mode>` | Output verbosity: `simple`, `verbose` | `simple` |
+| `--target=<mode>` | What to analyze: `all`, `react-components`, `functions` | `all` |
+| `--debug` | Show verbose output | `false` |
 | `--tsconfig=<path>` | Path to tsconfig.json | `./tsconfig.json` |
 | `--value-types=<types>` | Value types to detect (comma-separated) | `all` |
 | `--help` | Show help message | — |
@@ -40,67 +40,67 @@ The `--value-types` option accepts the following values:
 
 Only report parameters that appear in at least 3 usages:
 
-```bash
-dittory --min=3
+```sh
+$ dittory --min=3
 ```
 
 ### Target Mode
 
 Analyze only React components:
 
-```bash
-dittory --target=components
+```sh
+$ dittory --target=react-components
 ```
 
 Analyze only functions and class methods:
 
-```bash
-dittory --target=functions
+```sh
+$ dittory --target=functions
 ```
 
-### Output Mode
+### Debug Mode
 
 Show detailed output including all exported functions:
 
-```bash
-dittory --output=verbose
+```sh
+$ dittory --debug
 ```
 
 ### Custom tsconfig
 
 Use a specific tsconfig.json file:
 
-```bash
-dittory --tsconfig=./tsconfig.app.json
+```sh
+$ dittory --tsconfig=./tsconfig.app.json
 ```
 
 ### Value Types Filter
 
 Only detect boolean and string constants:
 
-```bash
-dittory --value-types=boolean,string
+```sh
+$ dittory --value-types=boolean,string
 ```
 
 Only detect numeric constants:
 
-```bash
-dittory --value-types=number
+```sh
+$ dittory --value-types=number
 ```
 
 ### Combining Options
 
-```bash
-dittory --min=3 --target=components --output=verbose ./src/features
+```sh
+$ dittory --min=3 --target=react-components --debug ./src/features
 ```
 
-```bash
-dittory --min=2 --value-types=boolean,number,string ./src
+```sh
+$ dittory --min=2 --value-types=boolean,number,string ./src
 ```
 
 ## Output Formats
 
-### Simple Mode (default)
+### Default Mode
 
 Only shows functions/components with constant arguments:
 
@@ -120,7 +120,7 @@ Usages (5):
 Found 1 function(s) with constant arguments out of 24 function(s).
 ```
 
-### Verbose Mode
+### Debug Mode
 
 Shows all exported functions, including those without constant arguments:
 
